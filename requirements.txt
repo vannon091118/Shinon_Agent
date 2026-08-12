@@ -1,0 +1,45 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Shinon Control Plane · Python Requirements
+#
+# Konsolidiert aus:
+#   - limen-main/pyproject.toml (FastAPI + uvicorn + httpx + pydantic)
+#   - karma-main/pyproject.toml  (click + rich + mcp + pydantic)
+#   - install.sh                 (legacy pip install directives)
+#   - fusion-main/fusion         (zusätzliche Hilfsdeps)
+#
+# Versionen sind auf denMinor gepinnt (X.Y.*-Range), sodass
+# Sicherheits-Patches rein kommen aber keine Breaking Changes.
+# ════════════════════════════════════════════════════════════════════════════
+
+# ─── HTTP-Server (LIMEN) ──────────────────────────────────────────────
+fastapi>=0.115.0,<0.116.0
+uvicorn[standard]>=0.32.0,<0.34.0
+
+# ─── Async HTTP-Client (Provider-Calls in LIMEN) ─────────────────────
+httpx>=0.28.0,<0.30.0
+aiohttp>=3.10.0,<3.12.0
+
+# ─── Validation + Settings ───────────────────────────────────────────
+pydantic>=2.9.0,<3.0.0
+pydantic-settings>=2.6.0,<3.0.0
+tomli-w>=1.0.0,<2.0.0
+
+# ─── CLI / Terminal-UI (LIMEN textual + KARMA rich) ──────────────────
+textual>=0.86.0,<0.90.0
+rich>=13.9.0,<14.0.0
+click>=8.1.0,<9.0.0
+
+# ─── Token-Schätzung (TPM-Bucket in LIMEN) ───────────────────────────
+# tiktoken braucht einen Rust-Compiler zum Bauen aus Source, wenn keine
+# pre-built Wheels passend zur Python-Version verfügbar sind (z.B. Py 3.14
+# in den ersten Wochen nach Release). Der Installer prüft rustc und
+# installiert es bei Bedarf via rustup (user-local, kein sudo nötig).
+tiktoken>=0.9.0,<0.11.0
+
+# ─── KARMA Middleware ────────────────────────────────────────────────
+pyyaml>=6.0,<7.0
+mcp>=1.2.0,<2.0.0
+
+# ─── Optional: Fast-Testing während Installer-Smoke-Tests ───────────
+# (nicht für Runtime, aber praktisch für eine schnelle Selbstdiagnose)
+# pytest>=8.3.0,<9.0.0

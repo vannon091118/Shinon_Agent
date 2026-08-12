@@ -1,0 +1,147 @@
+# ═══════════════════════════════════════════════════════════════════════
+# CI · Cross-Platform Installer Validation
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Runs `install.py` end-to-end on Ubuntu + Windows to gate every PR.
+# Two-layer gate:
+#   1. install.cmd / install.sh --check           (pre-flight + smoke, fast)
+#   2. install.cmd / install.sh --python-only     (real venv + pip install)
+#
+# Matrix uses `include:` to supply per-OS values (shell, env setup,
+# install commands). Two jobs total — Ubuntu + Windows running in parallel.
+# Cross-version Python coverage lives in separate workflow (see ci-versions.yml).
+#
+# Failures upload data/logs/*.log + install.log as artifacts for debugging.
+#
+# ═══════════════════════════════════════════════════════════════════════
+
+name: CI · Install Cross-Platform
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'install.py'
+      - 'install.sh'
+      - 'install.cmd'
+      - 'requirements.txt'
+      - '.github/workflows/ci-install.yml'
+      - 'shinon-server.mjs'
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Hardening: minimal permissions + workflow-name in concurrency group to
+# avoid clashing with sibling workflows on the same ref.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-install-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-install:
+    name: Install/Verify on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      # fail-fast off: let both Ubuntu + Windows report independently so
+      # one OS failure doesn't mask the other.
+      fail-fast: false
+      matrix:
+        # include-only pattern: each entry is one full job configuration.
+        # No cross-multiplication -> exactly 2 jobs (Ubuntu + Windows).
+        include:
+          - os: ubuntu-latest
+            python-version: '3.12'
+            node-version: '20'
+            shell: bash
+            preflight-cmd: bash install.sh --check
+            install-cmd: bash install.sh --python-only --verbose
+            env-export: |
+              export PATH="$HOME/.cargo/bin:$PATH"
+              export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+          - os: windows-latest
+            python-version: '3.12'
+            node-version: '20'
+            # PowerShell native — no Git-Bash dependency.
+            shell: pwsh
+            preflight-cmd: install.cmd --check
+            install-cmd: install.cmd --python-only --verbose
+            env-export: |
+              $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
+              $env:PYO3_USE_ABI3_FORWARD_COMPATIBILITY = "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history so git submodule commands work.
+          fetch-depth: 0
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          # Cache pip wheels keyed on requirements.txt hash.
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ShinonLLM-main/frontend/package-lock.json
+
+      # Step 1: Pre-flight gate (fast, no network).
+      # Exit code 1 means missing tools (Python/Node/RAM/Disk) -> fail fast.
+      - name: Pre-flight (install --check)
+        shell: ${{ matrix.shell }}
+        run: ${{ matrix.preflight-cmd }}
+        timeout-minutes: 5
+        env:
+          INSTALL_LOG_PREFIX: "01-preflight"
+
+      # Step 2: Real installer. Idempotent — safe to re-run.
+      # Wraps the install with env-export so Rust toolchain is on PATH for
+      # tiktoken compilation (only relevant on Python 3.14; harmless otherwise
+      # since 3.11/3.12 already ship prebuilt wheels and skip cargo entirely).
+      - name: Run real installer (install --python-only)
+        shell: ${{ matrix.shell }}
+        run: |
+          ${{ matrix.env-export }}
+          echo "─── installer start (log directory: data/logs) ───"
+          ${{ matrix.install-cmd }} 2>&1 | tee data/logs/ci-install.log || true
+          echo "─── installer end ───"
+        timeout-minutes: 15
+
+      # Step 3: Re-run --check which now exercises the smoke tests against
+      # the just-installed venv. This is what gates the PR.
+      - name: Verify installation (post-install smoke)
+        shell: ${{ matrix.shell }}
+        run: ${{ matrix.preflight-cmd }}
+        timeout-minutes: 5
+
+      # Diagnostic: dump pip freeze for reproducibility comparison across OS.
+      - name: Capture installed pip versions
+        shell: ${{ matrix.shell }}
+        if: always()
+        run: |
+          ${{ matrix.env-export }}
+          python -m pip freeze 2>&1 | tee data/logs/pip-freeze-${{ matrix.os }}.txt || true
+          echo "─── captured pip freeze ───"
+
+      # Always upload logs so failed runs are debuggable from the GH UI
+      # without needing to re-run the workflow locally.
+      - name: Upload install logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-logs-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: |
+            data/logs/*.log
+            data/logs/*.txt
+          retention-days: 14
+          if-no-files-found: warn

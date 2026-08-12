@@ -1,0 +1,31 @@
+# Shinon Control Plane · Konfiguration
+# Erstellt von install.py im Projekt-Root (NICHT in $HOME).
+# Dadurch ist das Projekt verschiebbar.
+
+[shinon]
+# Persönlichkeit (0-10, Standard: kritisch/skeptisch)
+skepticism = 8
+directness = 7
+helpfulness = 4
+patience = 5
+curiosity = 6
+display_name = "Shinon"
+
+[limen]
+url = "http://127.0.0.1:8000"
+auto_start = true
+
+[dashboard]
+port = 4200
+auto_start = true
+
+[goal_chain]
+db_path = ".agents/skills/goal-chain/db/tid-state.db"
+auto_discover_skills = true
+
+[paths]
+# Standalone-Mode: alles im Projekt, nicht im User-Dir.
+data_dir = "data"
+config_dir = "config"
+log_dir = "data/logs"
+pid_dir = "data/pids"

@@ -80,6 +80,26 @@ fusion-main/data/
 .promtset/state/*.jsonl
 !.promtset/state/*.md
 
+# ─── Shinon Control Plane runtime data (project-relative, fully portable) ──
+# Standalone Mode: all state is inside the project, NOT in $HOME.
+# This makes the project folder moveable / portable.
+data/**/*.db
+data/**/*.db-shm
+data/**/*.db-wal
+data/logs/**
+data/pids/**
+!data/**/.gitkeep
+config/*.local.*
+config/*.bak.*
+# Runtime install marker (JSON timestamp written by install.py). Don't commit.
+config/.install-done
+# Stray npm artifact from a one-off install experiment on the backend (backend is
+# intentionally excluded by install.py — the unified shinon-server.mjs is the source of truth).
+ShinonLLM-main/backend/package-lock.json
+# Backward-compat: legacy `.ctl/` runtime directory (deprecated — now ./data/{logs,pids}/)
+.ctl/
+.venv/
+
 # ─── Test residue ──────────────────────────────────────────────
 /goal-chain-test-*.db
 .test_*

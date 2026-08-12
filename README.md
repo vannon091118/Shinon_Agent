@@ -26,26 +26,30 @@ State Container → explizit validierte Aktionen → externes Modell (read-only)
 
 ---
 
-## Quickstart
+## Quickstart (cross-platform: Windows · Linux · macOS)
 
 ```bash
-# 1. Installieren (eine Minute)
-bash install.sh
+# ─── LINUX / macOS ───────────────────────────────────────────────────
+bash install.sh          # installiert Python-venv, pip + npm ci, DBs, Configs
+./shinon --setup          # Onboarding-Wizard (6 Schritte, API-Keys)
+./shinon start            # alle Komponenten starten
+./shinon chat             # Chat-Oefffnen (:4300)
+./shinon --doc            # Doctor Mous Diagnose
 
-# 2. Onboarding (API-Keys + Setup)
-./shinon --setup
+# ─── WINDOWS ──────────────────────────────────────────────────────────────────────────────────
+install.cmd               # ruft python install.py
+shinon.cmd --setup        # Onboarding-Wizard
+shinon.cmd start          # startet alles
+shinon.cmd chat           # Browser oeffnet http://127.0.0.1:4300
+shinon.cmd --doc          # Doctor Mous
 
-# 3. Starten
-./shinon start
-
-# 4. Chat öffnen
-./shinon chat
-
-# 5. Diagnose bei Problemen
-./shinon --doc
+# ─── UNIVERSAL (jedes OS) ───────────────────────────────────────
+python install.py --quick   # eine Zeile, alle Plattformen
+python install.py --check   # nur Pre-Flight + Smoke-Tests
+python shinon.py start      # eine Zeile, ruft ctl.py auf
 ```
 
-**Voraussetzungen:** Python 3, Node.js, Bash, SQLite — prüft `install.sh` automatisch.
+**Voraussetzungen** (Pruefung beim `install.py`): Python **>= 3.11**, Node.js **>= 18**, npm. Auf Windows: PowerShell 5+. Auf Linux/macOS: bash 4+. Alles weitere wird automatisch installiert in `./venv`, `./data/`, `./config/` — **kein** `$HOME`-Zustand.
 
 ---
 
@@ -176,11 +180,25 @@ FalsificationGate.run(claims, evidence)
 
 ```
 PZ/
-├── shinon                 CLI Entry-Point
-├── install.sh             Vollständige Installation
-├── shinon-setup           Onboarding-Wizard + Doctor Mous
-├── shinon-server.mjs      Frontend-Server (Chat + Stats)
-├── ctl                    Komponenten-Lifecycle (start/stop/status)
+├── install.py             Cross-Platform Installer (Python, single source of truth)
+├── install.sh             Linux/macOS shim → python install.py
+├── install.cmd            Windows shim → python install.py
+├── shinon.py              User-CLI (dispatcht auf ctl.py + shinon-setup.py)
+├── shinon                 Linux/macOS shim → python shinon.py
+├── shinon.cmd             Windows shim → python shinon.py
+├── shinon-setup.py        Onboarding-Wizard + Doctor Mous (6 Schritte)
+├── ctl.py                 Cross-Platform Lifecycle (start/stop/status — pure-Python sockets, kein lsof)
+├── shinon-server.mjs      Frontend-Server (Chat + Stats + Settings, port 4300)
+├── requirements.txt       Konsolidierte Python-Deps (limen + karma); gepinnt
+│
+├── data/                  STANDALONE-MODE: alle State-Files im Projekt
+│   ├── shinon/            Shinon-Memory-DB
+│   ├── karma/             KARMA-DB
+│   ├── logs/              Komponenten-Logs
+│   └── pids/              PID-Files
+├── config/                STANDALONE-MODE: alle Configs im Projekt
+│   ├── shinon.toml
+│   └── limen.toml
 │
 ├── ShinonLLM-main/        Shinon Character Layer (TypeScript)
 ├── fusion-main/fusion/    Runtime · EventBus · Subscriber · Shinon (Python)

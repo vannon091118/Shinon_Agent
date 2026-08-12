@@ -27,9 +27,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.argv[2] || '4300', 10);
 
 const PROJECT_ROOT = __dirname;
-const LIMEN_DB = path.join(PROJECT_ROOT, 'limen-main/data/limen.db');
+const LIMEN_DB = path.join(PROJECT_ROOT, 'data/limen/limen.db');
 const TID_DB = path.join(PROJECT_ROOT, '.agents/skills/goal-chain/db/tid-state.db');
-const SHINON_MEM = path.join(process.env.HOME || '/tmp', '.shinon/memory.db');
+// ─── Project-relative SHINON memory (Standalone Mode, no $HOME leak)
+const SHINON_DATA_DIR = process.env.SHINON_DATA_DIR
+  || path.join(__dirname, 'data', 'shinon');
+try { fs.mkdirSync(SHINON_DATA_DIR, { recursive: true }); } catch (_) {}
+const SHINON_MEM = path.join(SHINON_DATA_DIR, 'memory.db');
 const LIMEN_URL = 'http://127.0.0.1:8000';
 
 // ═══ HTML ══════════════════════════════════════════════════════════════
