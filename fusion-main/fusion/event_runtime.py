@@ -715,6 +715,19 @@ class ControlPlaneRuntime:
                                      "context_snapshot", "timestamp")})
                     )
 
+        # ── Prompt Quality Scoring (auto after every process()) ──
+        try:
+            from fusion.prompt_quality_scorer import get_quality_scorer
+            scorer = get_quality_scorer()
+            score = scorer.score_and_persist(result)
+            logger.debug(
+                "PromptQuality: score=%.2f claims/100c=%.1f mode=%s cid=%s",
+                score.quality_score, score.claims_per_100_chars,
+                score.preprocess_mode, result.correlation_id,
+            )
+        except Exception as exc:
+            logger.debug("PromptQuality scoring skipped: %s", exc)
+
         return result
 
     # ── Convenience ──────────────────────────────────────────────────

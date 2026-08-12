@@ -14,22 +14,7 @@ AUTO_FLAG="${3:-}"
 
 ensure_db
 
-echo ""
-echo "══════════════════════════════════════════════════════════"
-echo "  COMPLETE: $TID"
-echo "══════════════════════════════════════════════════════════"
-
-# Get TID details
-OUTPUT_FILE=$(task_field "$TID" "output_artifact")
-REQUIRES_APPROVAL=$(task_field "$TID" "requires_approval")
-RUN_ID=$(task_field "$TID" "run_id")
-
-echo ""
-echo "══════════════════════════════════════════════════════════"
-echo "  COMPLETE: $TID"
-echo "══════════════════════════════════════════════════════════"
-
-# Get TID details
+# Get TID details (de-duplicated — was duplicated twice)
 OUTPUT_FILE=$(task_field "$TID" "output_artifact")
 REQUIRES_APPROVAL=$(task_field "$TID" "requires_approval")
 RUN_ID=$(task_field "$TID" "run_id")
@@ -43,11 +28,12 @@ if [[ -n "$SNAPSHOT_GLOB" && -x "$SCRIPT_DIR/update-snapshot.sh" ]]; then
     bash "$SCRIPT_DIR/update-snapshot.sh" "$RUN_ID" "TID_${RESULT} · $(progress_summary "$RUN_ID")" > "$SNAPSHOT_GLOB" 2>/dev/null || true
 fi
 
-# 1. Auto-verification (DRIFT DETECTION) — VOR Status-Transition
+# 1. Auto-verification (DRIFT DETECTION) — NUR bei DONE
 #    Bugfix (P0-1): verify-template MUSS VOR tid_done laufen.
-#    Sonst: TID auf DONE, verify schlaegt fehl → Pipeline-Stall.
+#    Bugfix (P0-4): verify-template NUR bei RESULT=DONE ausfuehren.
+#    Sonst: FAIL auf partial Output → verify schlaegt fehl → exit 1 → tid_fail nie erreicht.
 GATE_RESULT=""
-if [[ -n "$OUTPUT_FILE" && "$OUTPUT_FILE" != "None" && -f "$OUTPUT_FILE" ]]; then
+if [[ "$RESULT" == "DONE" && -n "$OUTPUT_FILE" && "$OUTPUT_FILE" != "None" && -f "$OUTPUT_FILE" ]]; then
     echo ""
     echo "── DRIFT-VERIFICATION ──────────────────────────────────────"
     if bash "$SCRIPT_DIR/verify-template.sh" "$TID" "$OUTPUT_FILE"; then
@@ -75,17 +61,30 @@ if [[ "$RESULT" == "DONE" ]]; then
     tid_done "$TID"
 elif [[ "$RESULT" == "ROOT_CAUSE" ]]; then
     # Agent hat Root-Cause-Analyse durchgeführt statt blind zu skippen
-    local rc_reason="${4:-Gate verified: no gap to fill}"
+    rc_reason="${4:-Gate verified: no gap to fill}"
     tid_root_cause_done "$TID" "$rc_reason"
 elif [[ "$RESULT" == "FAIL" ]]; then
-    tid_fail "$TID" "Agent reported failure"
+    FAIL_REASON="${4:-Agent reported failure}"
+    tid_fail "$TID" "$FAIL_REASON"
 fi
 
 # Notify live dashboard
 notify_dashboard "TID_${RESULT}" "$TID" "$PROGRESS_SNAPSHOT"
 
-# Record decision (inkl. Gate-Result fuer Gate-TIDs)
-record_decision "$TID" "GATE_RESULT" "${GATE_RESULT:-$RESULT}" "Agent completed TID" "" ""
+# Record decision — ONLY for actual gate results (PASS/FAIL from gate evaluation).
+# Worker.sh records its own decisions (CHAIN_SCRIPT_FAILED, EMPTY_OUTPUT, PROMPT_CAPTURED)
+# via --auto mode. complete.sh's GATE_RESULT is only meaningful when a gate TID
+# produced a real PASS/FAIL evaluation.
+if [[ -n "$GATE_RESULT" ]]; then
+    record_decision "$TID" "GATE_RESULT" "$GATE_RESULT" "Gate ${TID_PHASE:-?} evaluated: ${GATE_RESULT}" "" ""
+elif [[ "$AUTO_FLAG" != "--auto" ]]; then
+    # Manual/interactive mode — record the result for audit trail
+    if [[ "$RESULT" == "FAIL" ]]; then
+        record_decision "$TID" "COMPLETION" "${RESULT}" "FAIL: ${FAIL_REASON:-Agent reported failure}" "" ""
+    else
+        record_decision "$TID" "COMPLETION" "${RESULT}" "Agent completed TID" "" ""
+    fi
+fi
 
 # 3. Gate-Phase-Skip (Bugfix P0-2): MUSS VOR user-checkpoint laufen,
 #    da user-checkpoint mit exit 0 beendet und die Gate-Logik sonst nie erreicht wird.

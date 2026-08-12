@@ -83,3 +83,13 @@ fusion-main/data/
 # ─── Test residue ──────────────────────────────────────────────
 /goal-chain-test-*.db
 .test_*
+test_*.py
+test_*.json
+
+# ─── Shinon UI / Server ───────────────────────────────────────
+/tmp/shinon-*.log
+.freebuff/shinon-ui.html
+
+# ─── Stray chain scripts (test artifacts) ─────────────────────
+.agents/skills/goal-chain/scripts/[a-z][0-9].sh
+.agents/skills/goal-chain/scripts/[a-z][0-9]*.sh

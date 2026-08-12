@@ -191,9 +191,14 @@ execute_next() {
     echo ""
 
     if [[ $exit_code -ne 0 ]]; then
-        echo "❌ Chain-Script fehlgeschlagen (exit=$exit_code)"
+        # ROOT CAUSE: Extract error details from chain script output
+        local fail_reason="Chain-Script exit=$exit_code"
+        local err_tail; err_tail=$(tail -8 "$output.tmp" 2>/dev/null | paste -sd '|' - | head -c 400)
+        [[ -n "$err_tail" ]] && fail_reason="Chain-Script exit=$exit_code | $err_tail"
+        echo "❌ $fail_reason"
         echo "   TID $tid wird als FAILED markiert"
-        bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto"
+        record_decision "$tid" "CHAIN_SCRIPT_FAILED" "$fail_reason" "Chain script exited non-zero; output captured for root cause" "" "" || true
+        bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" "$fail_reason"
         return 2
     fi
 
@@ -265,7 +270,8 @@ execute_all() {
         # Check if script exists
         if [[ ! -f "$script" ]]; then
             echo "  ❌ SCRIPT NICHT GEFUNDEN: $script → FAILED"
-            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" > /dev/null 2>&1 || true
+            record_decision "$tid" "SCRIPT_NOT_FOUND" "$script" "Chain script file does not exist" "" "" || true
+            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" "Script not found: $script" > /dev/null 2>&1 || true
             fail_count=$((fail_count + 1))
             continue
         fi
@@ -292,14 +298,10 @@ execute_all() {
             output_mtime_before=$(stat -c%Y "$resolved_output" 2>/dev/null || echo 0)
         fi
 
-        # Run chain script, capture output
+        # Run chain script, capture output (ALWAYS capture for root cause analysis)
         local tmp_output="/tmp/worker-${tid}-$$.tmp"
         local exit_code=0
-        if [[ -n "$output" ]]; then
-            bash "$script" "$RUN_ID" "$tid" > "$tmp_output" 2>&1 || exit_code=$?
-        else
-            bash "$script" "$RUN_ID" "$tid" > /dev/null 2>&1 || exit_code=$?
-        fi
+        bash "$script" "$RUN_ID" "$tid" > "$tmp_output" 2>&1 || exit_code=$?
 
         # Check if chain script CREATED/MODIFIED the output file
         local output_size=0
@@ -320,18 +322,33 @@ execute_all() {
 
         # ── Classify and complete ──
         if [[ $exit_code -ne 0 ]]; then
-            echo "  ❌ Chain-Script exit=$exit_code → FAILED"
-            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" > /dev/null 2>&1 || true
+            # ROOT CAUSE: Extract error details from chain script output
+            local fail_reason="Chain-Script exit=$exit_code"
+            if [[ -f "$tmp_output" && -s "$tmp_output" ]]; then
+                local err_tail; err_tail=$(tail -8 "$tmp_output" 2>/dev/null | paste -sd '|' - | head -c 400)
+                [[ -n "$err_tail" ]] && fail_reason="Chain-Script exit=$exit_code | $err_tail"
+            fi
+            echo "  ❌ $fail_reason → FAILED"
+            record_decision "$tid" "CHAIN_SCRIPT_FAILED" "$fail_reason" "Chain script exited non-zero; output captured for root cause" "" "" || true
+            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" "$fail_reason" > /dev/null 2>&1 || true
             fail_count=$((fail_count + 1))
 
-        elif $output_is_new && [[ "$output_size" -gt 50 ]]; then
-            echo "  ✅ AUTONOM: $resolved_output (${output_size} bytes) → DONE"
+        elif $output_is_new && { [[ "$output_size" -gt 50 ]] || $is_gate; }; then
+            # AUTONOM: chain script wrote output file.
+            # Gate TIDs always pass (output may be small: "PASS\n# comments\n").
+            # Non-gate TIDs require > 50 bytes.
+            if $is_gate; then
+                echo "  ✅ GATE AUTONOM: $resolved_output (${output_size} bytes) → DONE"
+            else
+                echo "  ✅ AUTONOM: $resolved_output (${output_size} bytes) → DONE"
+                record_decision "$tid" "AUTONOM_OUTPUT" "$resolved_output (${output_size} bytes)" "Chain script wrote output file autonomously" "" "" || true
+            fi
             bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1 || true
             done_count=$((done_count + 1))
             auto_count=$((auto_count + 1))
 
-        elif [[ -f "$tmp_output" && -s "$tmp_output" ]]; then
-            # PROMPT script: captured output becomes the artifact
+        elif [[ -f "$tmp_output" && -s "$tmp_output" ]] && grep -q '[^[:space:]]' "$tmp_output" 2>/dev/null; then
+            # PROMPT script: captured output becomes the artifact (must have non-whitespace content)
             local target
             if [[ -n "$output" ]]; then
                 target="$resolved_output"
@@ -362,11 +379,12 @@ execute_all() {
             prompt_count=$((prompt_count + 1))
 
         else
-            echo "  ⚠️  Kein Output → DONE (leer)"
-            tid_done "$tid"
-            notify_dashboard "TID_DONE" "$tid" "$(progress_summary "$RUN_ID")" || true
-            record_decision "$tid" "EMPTY_OUTPUT" "DONE" "Worker: no output produced by chain script" "" "" || true
-            done_count=$((done_count + 1))
+            # REGEL 1: Kein Output = NICHTS zu zeigen → FAIL, nicht DONE
+            local empty_reason="EMPTY_OUTPUT: chain script produced no output (not stdout, not file)"
+            echo "  ❌ $empty_reason → FAILED"
+            record_decision "$tid" "EMPTY_OUTPUT" "$empty_reason" "Chain script ran (exit=0) but produced zero output — needs investigation" "" "" || true
+            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" "$empty_reason" > /dev/null 2>&1 || true
+            fail_count=$((fail_count + 1))
         fi
 
         # Clean up tmp

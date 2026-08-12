@@ -1561,6 +1561,81 @@ function getPreProcessorData() {
 }
 
 
+// ═══════════════════════════════════════════════════════════════
+// API: /api/prompt-quality — Input Quality Scoring
+// ═══════════════════════════════════════════════════════════════
+
+function getPromptQualityData() {
+  const result = { available: false, scores: [], correlation: null, latest: null };
+
+  // Read from prompt-quality.jsonl
+  const logPath = '/tmp/prompt-quality.jsonl';
+  try {
+    if (existsSync(logPath)) {
+      const text = readFileSync(logPath, 'utf-8');
+      const lines = text.trim().split('\n');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try { result.scores.push(JSON.parse(line)); }
+        catch (_) { /* skip malformed lines */ }
+      }
+      result.available = result.scores.length > 0;
+      result.total_runs = result.scores.length;
+
+      // Correlation: direct vs preprocessed
+      const direct = result.scores.filter(s => s.input_source === 'direct');
+      const preprocessed = result.scores.filter(s => s.input_source === 'preprocessed');
+
+      const avg = (arr, key) => {
+        if (!arr.length) return 0;
+        return arr.reduce((s, v) => s + (v[key] || 0), 0) / arr.length;
+      };
+
+      result.correlation = {
+        direct_runs: direct.length,
+        preprocessed_runs: preprocessed.length,
+        direct: direct.length ? {
+          avg_claims_per_100c: +avg(direct, 'claims_per_100_chars').toFixed(2),
+          avg_falsification_rate: +avg(direct, 'falsification_rate').toFixed(2),
+          avg_verified_rate: +avg(direct, 'verified_rate').toFixed(2),
+          avg_quality_score: +avg(direct, 'quality_score').toFixed(2),
+        } : null,
+        preprocessed: preprocessed.length ? {
+          avg_claims_per_100c: +avg(preprocessed, 'claims_per_100_chars').toFixed(2),
+          avg_falsification_rate: +avg(preprocessed, 'falsification_rate').toFixed(2),
+          avg_verified_rate: +avg(preprocessed, 'verified_rate').toFixed(2),
+          avg_quality_score: +avg(preprocessed, 'quality_score').toFixed(2),
+        } : null,
+      };
+
+      // Insight
+      const d = result.correlation.direct;
+      const p = result.correlation.preprocessed;
+      if (d && p) {
+        const parts = [];
+        if (p.avg_claims_per_100c > d.avg_claims_per_100c)
+          parts.push('PreProcessor erhöht Claim-Dichte um +' + (p.avg_claims_per_100c - d.avg_claims_per_100c).toFixed(1) + ' claims/100c');
+        if (p.avg_quality_score > d.avg_quality_score)
+          parts.push('PreProcessor verbessert Quality-Score um +' + (p.avg_quality_score - d.avg_quality_score).toFixed(2));
+        result.correlation.insight = parts.join(' · ') || 'Kein signifikanter Unterschied';
+      } else if (d && !p) {
+        result.correlation.insight = 'Nur direkte Inputs — PreProcessor noch nicht verwendet.';
+      } else if (!d && p) {
+        result.correlation.insight = 'Alle Inputs preprocessed — keine Baseline.';
+      } else {
+        result.correlation.insight = 'Noch keine Daten für Korrelation.';
+      }
+
+      // Latest score
+      const sorted = [...result.scores].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+      result.latest = sorted[0] || null;
+    }
+  } catch (_) { /* file not found or read error */ }
+
+  return result;
+}
+
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const path = url.pathname;
@@ -1640,6 +1715,12 @@ const server = http.createServer((req, res) => {
 
   if (path === '/api/preprocessor') {
     try { sendJSON(res, 200, getPreProcessorData()); }
+    catch (e) { sendJSON(res, 500, { error: e.message }); }
+    return;
+  }
+
+  if (path === '/api/prompt-quality') {
+    try { sendJSON(res, 200, getPromptQualityData()); }
     catch (e) { sendJSON(res, 500, { error: e.message }); }
     return;
   }

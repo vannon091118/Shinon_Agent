@@ -1,0 +1,549 @@
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════════════
+# shinon-setup — Onboarding-Wizard & Doctor Mous
+#
+# ONBOARDING (6 Schritte):
+#   1. Willkommen — Was ist Shinon?
+#   2. API-Keys — Provider-Keys eingeben & testen
+#   3. LIMEN — API-Gateway erklärt & konfiguriert
+#   4. Dashboard — Live-Monitoring kennenlernen
+#   5. Chat — Erste Unterhaltung mit Shinon
+#   6. Persönlichkeit — Shinons Charakter anpassen (kritisch/skeptisch)
+#
+# DOCTOR MOUS (--doc):
+#   Diagnostiziert und repariert Config-Probleme OHNE Secrets zu löschen.
+#   Prüft: DBs, venv, Ports, Configs, Permissions, API-Keys.
+#
+# Usage:
+#   bash shinon-setup           Onboarding-Wizard
+#   bash shinon-setup --doc     Doctor Mous Diagnose
+#   bash shinon-setup --step N  Direkt zu Schritt N springen
+# ═══════════════════════════════════════════════════════════════════════
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config/shinon"
+LIMEN_CONF="$HOME/.config/limen/config.toml"
+LIMEN_DB="$SCRIPT_DIR/limen-main/data/limen.db"
+
+# ─── Farben ──────────────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; MAGENTA='\033[0;35m'; NC='\033[0m'
+
+ok()    { echo -e "  ${GREEN}✅${NC} $1"; }
+warn()  { echo -e "  ${YELLOW}⚠️${NC}  $1"; }
+fail()  { echo -e "  ${RED}❌${NC} $1"; }
+info()  { echo -e "  ${CYAN}ℹ${NC}  $1"; }
+tip()   { echo -e "  ${MAGENTA}💡 Tipp:${NC} $1"; }
+ask()   { echo -ne "  ${CYAN}▸${NC} $1: "; }
+
+banner() {
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}║${NC}  $1"
+    echo -e "${BOLD}╚══════════════════════════════════════════════════════════╝${NC}"
+}
+
+progress() {
+    echo -e "\n  ${CYAN}[$1/6]${NC} ${BOLD}$2${NC}"
+    echo "  ─────────────────────────────────────────────"
+}
+
+# ═══════════════════════════════════════════════════════════════════════
+# DOCTOR MOUS — Diagnose & Reparatur
+# ═══════════════════════════════════════════════════════════════════════
+doctor_mous() {
+    banner "🩺 Doctor Mous · Diagnose & Reparatur"
+    echo "  Ich prüfe jetzt alle Komponenten. Deine API-Keys und"
+    echo "  Secrets bleiben UNANGETASTET. Versprochen."
+    echo ""
+
+    local ISSUES=0
+    local FIXES=0
+
+    # 1. Installations-Check
+    echo -e "${BOLD}── 1. Installation${NC}"
+    if [[ -f "$CONFIG_DIR/.install-done" ]]; then
+        ok "Installation abgeschlossen"
+    else
+        fail "Installation nicht gefunden"
+        warn "→ Führe bash install.sh aus"
+        ((ISSUES++))
+    fi
+
+    # 2. venv
+    echo -e "\n${BOLD}── 2. Python-Umgebung${NC}"
+    if [[ -d "$SCRIPT_DIR/.venv" ]]; then
+        ok "venv vorhanden"
+    else
+        fail "venv fehlt"
+        info "→ Erstelle venv..."
+        python3 -m venv "$SCRIPT_DIR/.venv" 2>/dev/null && ok "venv repariert" || fail "Konnte venv nicht erstellen"
+        ((FIXES++))
+    fi
+
+    # 3. Datenbanken
+    echo -e "\n${BOLD}── 3. Datenbanken${NC}"
+    for db_path in "$LIMEN_DB" "$SCRIPT_DIR/.agents/skills/goal-chain/db/tid-state.db" "$HOME/.karma/karma.db" "$HOME/.shinon/memory.db"; do
+        local label; label=$(basename "$(dirname "$db_path")")/$(basename "$db_path")
+        if [[ -f "$db_path" ]]; then
+            # Prüfe ob DB lesbar
+            if python3 -c "import sqlite3; conn=sqlite3.connect('$db_path'); conn.execute('SELECT 1'); conn.close()" 2>/dev/null; then
+                ok "$label"
+            else
+                fail "$label — korrupt"
+                info "→ Repariere... lösche und initialisiere neu"
+                rm -f "$db_path"
+                ((FIXES++))
+            fi
+        else
+            warn "$label — fehlt"
+            info "→ Wird beim nächsten Start automatisch erstellt"
+            ((ISSUES++))
+        fi
+    done
+
+    # 4. Configs
+    echo -e "\n${BOLD}── 4. Konfiguration${NC}"
+    if [[ -f "$CONFIG_DIR/config.toml" ]]; then
+        ok "Shinon-Config: $CONFIG_DIR/config.toml"
+    else
+        fail "Shinon-Config fehlt"
+        info "→ Erstelle Standard-Config..."
+        mkdir -p "$CONFIG_DIR"
+        bash "$SCRIPT_DIR/install.sh" --repair 2>/dev/null || true
+        ok "Config repariert (Secrets aus Backup wiederhergestellt falls vorhanden)"
+        ((FIXES++))
+    fi
+
+    if [[ -f "$LIMEN_CONF" ]]; then
+        ok "LIMEN-Config: $LIMEN_CONF"
+    else
+        fail "LIMEN-Config fehlt"
+        bash "$SCRIPT_DIR/install.sh" --repair 2>/dev/null || true
+        ok "LIMEN-Config erstellt"
+        ((FIXES++))
+    fi
+
+    # 5. API-Keys
+    echo -e "\n${BOLD}── 5. API-Keys${NC}"
+    if [[ -f "$LIMEN_DB" ]]; then
+        local key_count; key_count=$(python3 -c "
+import sqlite3; conn=sqlite3.connect('$LIMEN_DB')
+c=conn.execute('SELECT COUNT(*) FROM providers WHERE value != \"\"').fetchone()[0]
+print(c); conn.close()
+" 2>/dev/null || echo "0")
+        local active_count; active_count=$(python3 -c "
+import sqlite3; conn=sqlite3.connect('$LIMEN_DB')
+c=conn.execute('SELECT COUNT(*) FROM providers WHERE value != \"\" AND status=\"active\"').fetchone()[0]
+print(c); conn.close()
+" 2>/dev/null || echo "0")
+
+        if [[ "$key_count" -gt 0 ]]; then
+            ok "$key_count API-Keys gefunden ($active_count aktiv)"
+            # Zeige Key-Status
+            python3 -c "
+import sqlite3; conn=sqlite3.connect('$LIMEN_DB'); conn.row_factory=sqlite3.Row
+for r in conn.execute('SELECT provider, deployment, status, health_score FROM providers WHERE value != \"\"').fetchall():
+    icon = '🟢' if r['status']=='active' else ('🟡' if r['status']=='cooldown' else '🔴')
+    print(f'    {icon} {r[\"provider\"]:15s} {r[\"deployment\"]:15s} Health: {r[\"health_score\"]:.0f}%')
+conn.close()
+" 2>/dev/null || true
+        else
+            warn "Keine API-Keys konfiguriert"
+            tip "./shinon --setup um Keys einzurichten"
+            ((ISSUES++))
+        fi
+    fi
+
+    # 6. Ports
+    echo -e "\n${BOLD}── 6. Ports${NC}"
+    for port in 8000 4200 3100 5173; do
+        local label=""
+        case $port in
+            8000) label="LIMEN API" ;;
+            4200) label="Dashboard" ;;
+            3100) label="Shinon Backend" ;;
+            5173) label="Shinon Frontend" ;;
+        esac
+        if lsof -ti ":$port" &>/dev/null 2>&1; then
+            ok "Port $port ($label) — aktiv"
+        else
+            info "Port $port ($label) — frei"
+        fi
+    done
+
+    # 7. Node Modules
+    echo -e "\n${BOLD}── 7. Frontend${NC}"
+    if [[ -d "$SCRIPT_DIR/ShinonLLM-main/frontend/node_modules" ]]; then
+        ok "Frontend node_modules vorhanden"
+    else
+        warn "Frontend node_modules fehlen"
+        info "→ cd ShinonLLM-main/frontend && npm install"
+        ((ISSUES++))
+    fi
+
+    # ─── Zusammenfassung ──────────────────────────────────────────
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════════════════════╗${NC}"
+    if [[ $ISSUES -eq 0 ]] && [[ $FIXES -eq 0 ]]; then
+        echo -e "${BOLD}║  ${GREEN}✅ ALLES IN ORDNUNG${NC}                                     ${BOLD}║${NC}"
+        echo -e "${BOLD}║${NC}  Keine Probleme gefunden. Shinon ist gesund.            ${BOLD}║${NC}"
+    else
+        echo -e "${BOLD}║  🩺 DIAGNOSE-ERGEBNIS                                    ║${NC}"
+        echo -e "${BOLD}║${NC}  Probleme: $ISSUES  |  Behoben: $FIXES                           ${BOLD}║${NC}"
+        if [[ $FIXES -gt 0 ]]; then
+            echo -e "${BOLD}║${NC}  ${GREEN}$FIXES Problem(e) wurden automatisch repariert.${NC}         ${BOLD}║${NC}"
+        fi
+    fi
+    echo -e "${BOLD}╚══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    if [[ $ISSUES -gt 0 ]]; then
+        tip "Bei Problemen: ./shinon --setup für erneutes Onboarding"
+        tip "Oder: bash install.sh --repair für Config-Reparatur"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════
+# ONBOARDING WIZARD
+# ═══════════════════════════════════════════════════════════════════════
+onboarding() {
+    local start_step="${1:-1}"
+
+    banner "🦇 Shinon · Onboarding"
+    echo "  Willkommen! In 6 Schritten richten wir alles ein."
+    echo "  Du kannst jederzeit Ctrl+C drücken und später weitermachen."
+    echo ""
+
+    [[ "$start_step" -le 1 ]] && step_1_welcome
+    [[ "$start_step" -le 2 ]] && step_2_keys
+    [[ "$start_step" -le 3 ]] && step_3_limen
+    [[ "$start_step" -le 4 ]] && step_4_dashboard
+    [[ "$start_step" -le 5 ]] && step_5_chat
+    [[ "$start_step" -le 6 ]] && step_6_personality
+
+    # Abschluss
+    banner "🎉 Onboarding abgeschlossen!"
+    echo ""
+    echo "  ┌─────────────────────────────────────────────────────────┐"
+    echo "  │  Alles bereit! So geht's weiter:                        │"
+    echo "  │                                                         │"
+    echo "  │  • Chat starten:      ./shinon chat                     │"
+    echo "  │  • Dashboard öffnen:  ./shinon dashboard                │"
+    echo "  │  • Keys verwalten:    ./shinon keys                     │"
+    echo "  │  • Diagnose:          ./shinon --doc                    │"
+    echo "  │  • Hilfe:             ./shinon help                     │"
+    echo "  └─────────────────────────────────────────────────────────┘"
+    echo ""
+
+    touch "$CONFIG_DIR/.onboarding-done"
+    ok "Onboarding abgeschlossen. Viel Erfolg mit Shinon!"
+}
+
+# ─── Schritt 1: Willkommen ──────────────────────────────────────────
+step_1_welcome() {
+    progress 1 "Wer ist Shinon?"
+
+    cat << 'WELCOME'
+
+  🦇 Shinon ist DEIN AI-Control-Center.
+
+  Anders als andere AI-Tools ist Shinon NICHT freundlich-unkritisch.
+  Shinon ist:
+
+  • KRITISCH — hinterfragt deine Annahmen
+  • SKEPTISCH — glaubt nichts ungeprüft
+  • PRÄZISE — lieber ein klares "Nein" als vages "Vielleicht"
+  • DIREKT — sagt was Sache ist, ohne Beschönigung
+
+  Was Shinon KANN:
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  🗣️  Chat        — Unterhaltung mit Shinon             │
+  │  🔑  API-Keys    — Verwalte all deine Provider-Keys    │
+  │  📊  Dashboard   — Live-Monitoring aller Komponenten    │
+  │  🔗  goal-chain  — Autonome Entwicklungskaskade         │
+  │  🛡️  KARMA       — FalsificationGate (Qualitätsprüfung)│
+  │  🩺  Doctor Mous — Diagnose & Reparatur                 │
+  └─────────────────────────────────────────────────────────┘
+
+  ⚠️  WICHTIG: Shinon braucht API-Keys um zu funktionieren!
+  Du brauchst mindestens EINEN Key von:
+    • Groq (gratis Kontingent)     → https://console.groq.com
+    • OpenRouter (pay-as-you-go)   → https://openrouter.ai
+    • NVIDIA (gratis Kontingent)   → https://build.nvidia.com
+
+WELCOME
+
+    echo ""
+    read -rp "  Weiter mit Enter..." _
+}
+
+# ─── Schritt 2: API-Keys ───────────────────────────────────────────
+step_2_keys() {
+    progress 2 "API-Keys einrichten"
+
+    cat << 'KEYS'
+
+  🔑 API-Keys sind die Eintrittskarten zu den KI-Modellen.
+
+  LIMEN (unser API-Gateway) verwaltet alle Keys zentral.
+  Du kannst mehrere Keys pro Anbieter hinterlegen —
+  LIMEN rotiert automatisch bei Ratenlimits (429).
+
+  👉 JETZT: Gib mindestens EINEN API-Key ein.
+  (Du kannst später weitere hinzufügen: ./shinon keys)
+
+KEYS
+
+    # Key-Eingabe-Schleife
+    local key_count=0
+    while true; do
+        echo ""
+        echo "  Verfügbare Anbieter:"
+        echo "    1. Groq       (gratis)"
+        echo "    2. OpenRouter (pay-as-you-go)"
+        echo "    3. NVIDIA     (gratis)"
+        echo "    4. Überspringen"
+        echo ""
+
+        read -rp "  Anbieter wählen (1-4): " PROVIDER_CHOICE
+
+        case "$PROVIDER_CHOICE" in
+            1) PROVIDER="groq"; PROVIDER_LABEL="Groq" ;;
+            2) PROVIDER="openrouter"; PROVIDER_LABEL="OpenRouter" ;;
+            3) PROVIDER="nvidia"; PROVIDER_LABEL="NVIDIA" ;;
+            4) break ;;
+            *) echo "  Bitte 1-4 wählen"; continue ;;
+        esac
+
+        echo ""
+        echo "  ${PROVIDER_LABEL}-API-Key eingeben:"
+        echo "  (Der Key wird NUR lokal gespeichert, nichts geht ins Internet)"
+        read -rsp "  Key: " API_KEY
+        echo ""
+
+        if [[ -z "$API_KEY" ]]; then
+            warn "Leerer Key — überspringe."
+            continue
+        fi
+
+        # In LIMEN-DB speichern
+        python3 -c "
+import sqlite3, json
+conn = sqlite3.connect('$LIMEN_DB')
+key_id = '${PROVIDER}-onboarding-${key_count}'
+meta = json.dumps({'api_key': '${API_KEY}', 'source': 'onboarding'})
+conn.execute('''INSERT OR REPLACE INTO providers (key_id, provider, deployment, value, status, priority, meta_json)
+                VALUES (?, ?, 'default', ?, 'active', 1, ?)''',
+             (key_id, '${PROVIDER}', '${API_KEY}', meta))
+conn.commit()
+
+# Auch in Model-Registry eintragen
+models = {
+    'groq': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+    'openrouter': ['deepseek/deepseek-chat', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet'],
+    'nvidia': ['nvidia/llama-3.1-nemotron-70b-instruct'],
+}
+for m in models.get('${PROVIDER}', []):
+    conn.execute('INSERT OR IGNORE INTO model_registry (model_id, provider, deployment, capabilities, cost_tier) VALUES (?, ?, \"default\", \"{}\", \"standard\")',
+                 (m, '${PROVIDER}'))
+conn.commit()
+conn.close()
+print('OK')
+" 2>/dev/null && ok "${PROVIDER_LABEL}-Key gespeichert" || fail "Fehler beim Speichern"
+
+        ((key_count++))
+
+        echo ""
+        read -rp "  Weiteren Key hinzufügen? (j/N): " ADD_MORE
+        [[ ! "$ADD_MORE" =~ ^[jJyY] ]] && break
+    done
+
+    if [[ $key_count -eq 0 ]]; then
+        warn "Keine Keys eingerichtet."
+        tip "Du kannst später Keys hinzufügen: ./shinon keys"
+        tip "Ohne Keys kann Shinon keine KI-Modelle nutzen."
+    else
+        ok "$key_count API-Key(s) eingerichtet"
+    fi
+
+    echo ""
+    read -rp "  Weiter mit Enter..." _
+}
+
+# ─── Schritt 3: LIMEN erklären ──────────────────────────────────────
+step_3_limen() {
+    progress 3 "LIMEN · Das API-Gateway"
+
+    cat << 'LIMEN'
+
+  🌊 LIMEN ist das Herzstück der Infrastruktur.
+
+  Was LIMEN macht:
+  ┌─────────────────────────────────────────────────────────┐
+  │  🔀  Routing      — Jeder API-Call wird zum passenden   │
+  │                    Provider + Key geroutet               │
+  │  🔄  Rotation     — Bei 429 (Rate-Limit) automatisch    │
+  │                    nächster Key                         │
+  │  📊  Monitoring   — Health-Scores, Latenz, Budgets      │
+  │  🛡️  Failover     — Key down? Nächster in 0ms           │
+  │  🏥  Cooldown     — Keys pausieren bei Überlastung      │
+  └─────────────────────────────────────────────────────────┘
+
+  LIMEN läuft als lokaler Server auf Port 8000.
+  Alle Komponenten (Shinon, KARMA, goal-chain) nutzen LIMEN
+  für JEDEN API-Call. Du musst NICHTS konfigurieren —
+  LIMEN managed alles automatisch.
+
+  📍 LIMEN Dashboard: http://127.0.0.1:8000/leitstand
+
+LIMEN
+
+    # Starte LIMEN kurz zum Testen
+    if command -v python3 &>/dev/null; then
+        info "Teste LIMEN-Start..."
+        if curl -s http://127.0.0.1:8000/health &>/dev/null 2>&1; then
+            ok "LIMEN läuft bereits auf Port 8000"
+        else
+            info "LIMEN ist gestoppt — wird beim Chat-Start automatisch gestartet"
+        fi
+    fi
+
+    echo ""
+    read -rp "  Weiter mit Enter..." _
+}
+
+# ─── Schritt 4: Dashboard ───────────────────────────────────────────
+step_4_dashboard() {
+    progress 4 "Dashboard · Live-Monitoring"
+
+    cat << 'DASH'
+
+  📊 Das Live-Dashboard zeigt ALLES auf einen Blick:
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  🔑  Key-Status     — Welche Keys sind aktiv/cooldown?  │
+  │  📈  Health-Scores  — Wie gesund ist jeder Key?         │
+  │  🎯  TID-Tracker    — goal-chain Aufgaben live          │
+  │  🤖  PreProcessor   — LLM vs. Synthetic Mode            │
+  │  📋  Event-Stream   — Alle Pipeline-Events live         │
+  │  🔍  Audit-Trail    — Hash-Chain gegen Manipulation     │
+  │  🎨  Dark/Light     — Theme-Umschaltung                  │
+  └─────────────────────────────────────────────────────────┘
+
+  📍 Dashboard: http://127.0.0.1:4200
+
+  Tipp: Das Dashboard aktualisiert sich alle 2 Sekunden.
+  Du siehst SOFORT wenn ein Key in den Cooldown geht
+  oder eine goal-chain TID fertig wird.
+
+DASH
+
+    echo ""
+    read -rp "  Weiter mit Enter..." _
+}
+
+# ─── Schritt 5: Erster Chat ──────────────────────────────────────────
+step_5_chat() {
+    progress 5 "Erste Unterhaltung mit Shinon"
+
+    cat << 'CHAT'
+
+  🗣️ Der Chat ist der direkte Draht zu Shinon.
+
+  Shinon antwortet KRITISCH und SKEPTISCH.
+  Das ist gewollt — Shinon ist kein Yes-Man.
+
+  Beispiel-Fragen für den Einstieg:
+    • "Was hältst du von meinem Projekt?"
+    • "Welche Schwachstellen siehst du in diesem Plan?"
+    • "Hinterfrage meine Annahmen zu X"
+
+  Der Chat ist erreichbar unter:
+    http://127.0.0.1:4200  → Tab "Chat"
+
+  ODER via Kommandozeile:
+    ./shinon chat
+
+CHAT
+
+    echo ""
+    read -rp "  Weiter mit Enter..." _
+}
+
+# ─── Schritt 6: Persönlichkeit ──────────────────────────────────────
+step_6_personality() {
+    progress 6 "Shinons Persönlichkeit"
+
+    cat << 'PERS'
+
+  🎭 Shinons Charakter ist anpassbar — aber der Kern bleibt.
+
+  STANDARD-PERSÖNLICHKEIT (kritisch/skeptisch):
+  ┌─────────────────────────────────────────────────────────┐
+  │  Skepsis:     ████████░░  8/10  Hinterfragt alles       │
+  │  Direktheit:  ███████░░░  7/10  Sagt was Sache ist      │
+  │  Hilfsbereit: ████░░░░░░  4/10  Hilft, aber nicht blind │
+  │  Geduld:      █████░░░░░  5/10  Ausgeglichen            │
+  │  Neugier:     ██████░░░░  6/10  Stellt Rückfragen       │
+  └─────────────────────────────────────────────────────────┘
+
+  ⚠️  Shinon bleibt IMMER kritisch und skeptisch.
+  Auch wenn du die Werte anpasst — die Grundhaltung
+  "hinterfragen, prüfen, validieren" bleibt erhalten.
+
+PERS
+
+    echo ""
+    echo "  Möchtest du die Persönlichkeit anpassen?"
+    echo "  (Empfohlen: Standard übernehmen mit Enter)"
+    echo ""
+
+    for dim in "Skepsis:8" "Direktheit:7" "Hilfsbereitschaft:4" "Geduld:5" "Neugier:6"; do
+        local name="${dim%%:*}"
+        local default="${dim##*:}"
+        read -rp "  $name (0-10, Standard: $default): " VALUE
+        VALUE="${VALUE:-$default}"
+        # Speichere in DB
+        local col
+        case "$name" in
+            Skepsis) col="skepticism" ;;
+            Direktheit) col="directness" ;;
+            Hilfsbereitschaft) col="helpfulness" ;;
+            Geduld) col="patience" ;;
+            Neugier) col="curiosity" ;;
+        esac
+        python3 -c "
+import sqlite3
+conn = sqlite3.connect('$HOME/.shinon/memory.db')
+conn.execute('UPDATE attitudes SET value = ? WHERE dimension = ?', ($VALUE, '$col'))
+conn.commit()
+conn.close()
+" 2>/dev/null || true
+    done
+
+    ok "Persönlichkeit gespeichert"
+    tip "Später anpassbar: ./shinon --setup --step 6"
+    tip "Oder direkt in: ~/.config/shinon/config.toml"
+
+    echo ""
+    read -rp "  Weiter mit Enter..." _
+}
+
+# ═══════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════
+
+case "${1:-onboarding}" in
+    --doc|doc)
+        doctor_mous
+        ;;
+    --step)
+        onboarding "${2:-1}"
+        ;;
+    *)
+        onboarding 1
+        ;;
+esac

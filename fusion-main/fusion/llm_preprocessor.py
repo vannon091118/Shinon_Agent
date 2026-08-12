@@ -455,41 +455,57 @@ def _synthetic_structure(user_text: str) -> StructuredInput:
 
 
 class LLMPreProcessor:
-    """Pre-processes raw user input through OpenRouter for structuring.
+    """Pre-processes raw user input through LIMEN API Gateway.
 
-    Two modes:
+    Three modes:
     - ``"auto"``: Uses quality heuristic to decide if structuring is needed
-    - ``"force"``: Always structures
+    - ``"force"``: Always structures via LLM (LIMEN or direct KeyPool)
     - ``"synthetic"``: Uses rule-based heuristic, no LLM call
 
-    When an OpenRouter key is available via KeyPool, uses the LLM.
-    Otherwise, falls back to synthetic mode.
+    When ``limen_backend`` is provided, routes LLM calls through LIMEN's
+    /v1/chat/completions — gaining automatic KeyPool rotation, 429 handling,
+    and provider routing. Falls back to synthetic if LIMEN is unreachable.
+
+    The ``key_pool`` parameter is kept for backward compatibility but
+    deprecates in favor of LIMENBackend.
     """
 
     def __init__(
         self,
         key_pool: Optional[Any] = None,
+        limen_backend: Optional[Any] = None,
         mode: str = "auto",
-        model: str = "deepseek/deepseek-chat",
+        model: str = "auto",
         max_tokens: int = 1500,
         timeout: float = 30.0,
     ):
         self._key_pool = key_pool
+        self._limen_backend = limen_backend
         self._mode = mode
         self._model = model
         self._max_tokens = max_tokens
         self._timeout = timeout
         self._calls: int = 0
         self._synthetic_fallbacks: int = 0
+        self._limen_calls: int = 0
 
     @property
     def stats(self) -> Dict[str, Any]:
-        return {
+        result: Dict[str, Any] = {
             "calls": self._calls,
             "synthetic_fallbacks": self._synthetic_fallbacks,
             "mode": self._mode,
             "model": self._model,
         }
+        if self._limen_backend is not None:
+            result["limen_calls"] = self._limen_calls
+            result["backend"] = "LIMEN"
+            result["backend_stats"] = self._limen_backend.stats
+        elif self._key_pool is not None:
+            result["backend"] = "KeyPool"
+        else:
+            result["backend"] = "none"
+        return result
 
     async def structure(self, user_text: str) -> StructuredInput:
         """Structure raw user input.
@@ -508,7 +524,12 @@ class LLMPreProcessor:
                 mode="passthrough",
             )
 
-        # Try LLM path first
+        # Try LLM path: LIMEN first, then KeyPool fallback
+        if self._limen_backend is not None:
+            try:
+                return await self._llm_structure_via_limen(user_text)
+            except Exception as exc:
+                logger.warning("LIMEN structuring failed — trying KeyPool: %s", exc)
         if self._key_pool is not None:
             try:
                 return await self._llm_structure(user_text)
@@ -519,8 +540,34 @@ class LLMPreProcessor:
         self._synthetic_fallbacks += 1
         return _synthetic_structure(user_text)
 
+    async def _llm_structure_via_limen(self, user_text: str) -> StructuredInput:
+        """Structure input via LIMEN API Gateway.
+
+        Routes through LIMEN's /v1/chat/completions — KeyPool rotation,
+        429 handling, and provider routing are all handled by LIMEN.
+        No claim/release needed — LIMEN owns key management.
+        """
+        if self._limen_backend is None:
+            raise RuntimeError("No LIMEN backend configured")
+
+        data = await self._limen_backend.chat(
+            messages=[{"role": "user", "content": user_text}],
+            model=self._model,
+            temperature=0.1,
+            max_tokens=self._max_tokens,
+            response_format={"type": "json_object"},
+            system=STRUCTURING_SYSTEM_PROMPT,
+        )
+
+        content = data["choices"][0]["message"]["content"]
+        parsed = json.loads(content)
+        self._calls += 1
+        self._limen_calls += 1
+
+        return StructuredInput.from_llm_response(parsed, user_text)
+
     async def _llm_structure(self, user_text: str) -> StructuredInput:
-        """Call OpenRouter LLM to structure the input."""
+        """Structure input via direct OpenRouter API (legacy KeyPool path)."""
         import httpx
 
         # Get an API key from the pool
@@ -588,15 +635,18 @@ class LLMPreProcessor:
 
 def create_preprocessor_from_limen(
     limen_db_path: str = "limen-main/data/limen.db",
+    limen_url: str = "http://127.0.0.1:8001",
     mode: str = "auto",
 ) -> LLMPreProcessor:
-    """Create an LLMPreProcessor wired to the LIMEN KeyPool.
+    """Create an LLMPreProcessor wired to the LIMEN API Gateway.
 
-    Loads the openrouter-free deployment config from the LIMEN database
-    and creates a KeyPool with the configured keys.
+    Routes all LLM calls through LIMEN's /v1/chat/completions —
+    gaining automatic KeyPool rotation, 429 handling, and provider routing.
+    Falls back to synthetic mode if LIMEN is unreachable.
 
     Args:
-        limen_db_path: Path to limen.db
+        limen_db_path: Path to limen.db (used for fallback KeyPool)
+        limen_url: LIMEN API base URL
         mode: "auto", "force", or "synthetic"
 
     Returns:
@@ -641,5 +691,9 @@ def create_preprocessor_from_limen(
     from limen.routing.key_pool import KeyPool
     pool = KeyPool(deployment="openrouter-free", keys=keys, provider="openrouter")
 
-    logger.info("LLMPreProcessor created: %d OpenRouter keys, mode=%s", len(keys), mode)
-    return LLMPreProcessor(key_pool=pool, mode=mode)
+    # Create LIMENBackend
+    from fusion.limen_backend import LIMENBackend
+    backend = LIMENBackend(base_url=limen_url, timeout=30.0)
+
+    logger.info("LLMPreProcessor created via LIMEN: %s, mode=%s", limen_url, mode)
+    return LLMPreProcessor(limen_backend=backend, key_pool=pool, mode=mode)

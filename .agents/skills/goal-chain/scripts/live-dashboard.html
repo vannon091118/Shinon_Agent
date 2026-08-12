@@ -262,6 +262,33 @@
     /* --- API Key Status --- */
     .keys-section { border-color: rgba(59,130,246,.5) !important; }
 
+    /* ── Prompt Quality Card ── */
+    .quality-section { border-color: rgba(245,158,11,.4) !important; }
+    .pq-correlation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+    .pq-compare { background: var(--bg-card-light); border-radius: 6px; padding: 10px; }
+    .pq-compare-title { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; margin-bottom: 6px; }
+    .pq-metric-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 10px; }
+    .pq-metric-val { font-weight: 700; font-family: monospace; }
+    .pq-metric-label { color: var(--fg-dim); }
+    .pq-quality-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 14px; font-weight: 800;
+    }
+    .pq-quality-high { background: rgba(16,185,129,.15); color: #10b981; }
+    .pq-quality-mid { background: rgba(245,158,11,.15); color: #f59e0b; }
+    .pq-quality-low { background: rgba(239,68,68,.15); color: #ef4444; }
+    .pq-insight { 
+      font-size: 10px; color: var(--accent); font-style: italic;
+      margin: 8px 0; padding: 6px 10px; background: rgba(167,139,250,.08);
+      border-radius: 4px; border-left: 3px solid #a78bfa;
+    }
+    .pq-history-row { display: flex; align-items: center; gap: 8px; font-size: 9px; padding: 2px 0; }
+    .pq-input-source-badge {
+      display: inline-block; padding: 1px 5px; border-radius: 6px; font-size: 7px; font-weight: 700;
+    }
+    .pq-source-direct { background: rgba(148,163,184,.15); color: #94a3b8; }
+    .pq-source-preprocessed { background: rgba(16,185,129,.15); color: #10b981; }
+
     /* ── PreProcessor Card ── */
     .preprocessor-section { border-color: rgba(167,139,250,.4) !important; }
     .pp-mode-badge { display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;text-transform:uppercase; }
@@ -864,6 +891,20 @@
     <div id="pp-runs"></div>
     <div class="pp-empty" id="pp-empty" style="display:none;">
       ⏳ No PreProcessor data. Run <code>test_gol_3_round_robin.py</code> or a GOL test to see structured input here.
+    </div>
+  </div>
+
+  <!-- 📊 Prompt Quality Score -->
+  <div class="card quality-section">
+    <div class="section-title" style="color:#f59e0b;display:flex;justify-content:space-between;align-items:center;">
+      <span>📊 Prompt Quality Score — Input × Falsification Correlation</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="pq-updated"></span>
+    </div>
+    <div id="pq-correlation"></div>
+    <div id="pq-latest"></div>
+    <div id="pq-history"></div>
+    <div class="pq-empty" id="pq-empty" style="display:none;">
+      ⏳ No quality scores yet. Run <code>ControlPlaneRuntime.process()</code> to auto-score inputs.
     </div>
   </div>
 
@@ -2389,6 +2430,51 @@ if(l.pool)h+='<div style="font-size:9px;color:var(--fg-dim);">🔑 '+l.pool.tota
 h+='</div>';document.getElementById('pp-latest').innerHTML=h;}
 if(d.runs&&d.runs.length>1){let rh='<div style="margin-top:8px;font-size:9px;color:var(--fg-dim);">📜 '+d.runs.length+' runs</div>';document.getElementById('pp-runs').innerHTML=rh;}else document.getElementById('pp-runs').innerHTML='';}
 fetchPP();setInterval(fetchPP,5000);
+
+// ── Prompt Quality Scorer ────────────────────────────────────
+function fetchPQ(){fetch('/api/prompt-quality').then(r=>r.json()).then(d=>renderPQ(d)).catch(()=>{document.getElementById('pq-empty').style.display='block';});}
+function renderPQ(d){document.getElementById('pq-updated').textContent=new Date().toTimeString().slice(0,8);
+if(!d.available){document.getElementById('pq-empty').style.display='block';['pq-correlation','pq-latest','pq-history'].forEach(id=>document.getElementById(id).innerHTML='');return;}
+document.getElementById('pq-empty').style.display='none';
+var c=d.correlation;if(!c){document.getElementById('pq-correlation').innerHTML='';return;}
+var dir=c.direct||{};var pre=c.preprocessed||{};
+// Quality badge helper
+function qBadge(v){var cls=v>=0.7?'pq-quality-high':v>=0.4?'pq-quality-mid':'pq-quality-low';return'<span class="pq-quality-badge '+cls+'">'+v.toFixed(2)+'</span>';}
+// Metric row helper
+function mRow(label,v1,v2,unit){return'<div class="pq-metric-row"><span class="pq-metric-label">'+label+'</span><span class="pq-metric-val">'+v1+'</span><span style="color:var(--muted);margin:0 8px;">vs</span><span class="pq-metric-val">'+v2+'</span></div>';}
+var html='<div class="pq-correlation-grid">';
+html+='<div class="pq-compare"><div class="pq-compare-title">📥 Direkter Input ('+c.direct_runs+' runs)</div>';
+if(c.direct)html+=mRow('Claims/100c',(dir.avg_claims_per_100c||0).toFixed(1),(pre.avg_claims_per_100c||0).toFixed(1))+
+mRow('Falsification',(dir.avg_falsification_rate||0).toFixed(2),(pre.avg_falsification_rate||0).toFixed(2))+
+mRow('Verified',(dir.avg_verified_rate||0).toFixed(2),(pre.avg_verified_rate||0).toFixed(2))+
+'<div class="pq-metric-row"><span class="pq-metric-label">Quality</span>'+qBadge(dir.avg_quality_score||0)+'</div>';
+else html+='<div style="font-size:9px;color:var(--muted);">No direct runs</div>';
+html+='</div>';
+html+='<div class="pq-compare"><div class="pq-compare-title">🤖 Preprocessed Input ('+c.preprocessed_runs+' runs)</div>';
+if(c.preprocessed)html+=mRow('Claims/100c',(pre.avg_claims_per_100c||0).toFixed(1),(dir.avg_claims_per_100c||0).toFixed(1))+
+mRow('Falsification',(pre.avg_falsification_rate||0).toFixed(2),(dir.avg_falsification_rate||0).toFixed(2))+
+mRow('Verified',(pre.avg_verified_rate||0).toFixed(2),(dir.avg_verified_rate||0).toFixed(2))+
+'<div class="pq-metric-row"><span class="pq-metric-label">Quality</span>'+qBadge(pre.avg_quality_score||0)+'</div>';
+else html+='<div style="font-size:9px;color:var(--muted);">No preprocessed runs</div>';
+html+='</div></div>';
+if(c.insight)html+='<div class="pq-insight">💡 '+c.insight+'</div>';
+document.getElementById('pq-correlation').innerHTML=html;
+
+// Latest score
+var l=d.latest;if(l){var cls=l.quality_score>=0.7?'pq-quality-high':l.quality_score>=0.4?'pq-quality-mid':'pq-quality-low';
+var srcBadge='pq-input-source-badge pq-source-'+(l.input_source==='preprocessed'?'preprocessed':'direct');
+var lh='<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:10px;">'+
+'<span class="'+cls+'" style="font-size:18px;">'+l.quality_score.toFixed(2)+'</span>'+
+'<span style="color:var(--fg-dim);">'+l.claims_per_100_chars.toFixed(1)+' claims/100c · '+l.claims_count+' claims · '+(l.falsification_rate*100).toFixed(0)+'% refuted</span>'+
+'<span class="'+srcBadge+'">'+l.input_source+'</span>'+
+'</div>';
+document.getElementById('pq-latest').innerHTML=lh;}
+
+// History
+if(d.scores&&d.scores.length>1){var rh='<div style="margin-top:6px;font-size:9px;color:var(--fg-dim);">📜 '+d.total_runs+' runs scored</div>';document.getElementById('pq-history').innerHTML=rh;}
+else document.getElementById('pq-history').innerHTML='';
+}
+fetchPQ();setInterval(fetchPQ,10000);
 // Audit trail changes slowly — poll every 10s
 setInterval(fetchAudit, 10000);
 
