@@ -29,6 +29,7 @@ from typing import Optional
 
 # Single source of truth for every data directory.
 import paths as P
+from sqlite_health import check_sqlite
 
 # ─── ANSI helpers ─────────────────────────────────────────────────────
 def _c() -> bool:
@@ -254,6 +255,76 @@ import tempfile  # noqa: E402
 # ═══════════════════════════════════════════════════════════════════════
 # Doctor Mous — Diagnose & Repair
 # ═══════════════════════════════════════════════════════════════════════
+def _heal_goalchain_db() -> bool:
+    """Ensure the goal-chain DB exists at the CENTRAL path.
+
+    Priority: migrate legacy project-relative DB if present; else init
+    from schema.sql (idempotent). Returns True if a repair happened.
+    """
+    if P.GOALCHAIN_DB.exists():
+        return False
+    P.GOALCHAIN_DIR.mkdir(parents=True, exist_ok=True)
+    legacy = P.PROJECT_PROJECT_GOALCHAIN_DB
+    if legacy.exists():
+        try:
+            shutil.move(str(legacy), str(P.GOALCHAIN_DB))
+            return True
+        except OSError:
+            pass
+    schema = P.PROJECT_ROOT / ".agents" / "skills" / "goal-chain" / "db" / "schema.sql"
+    if schema.exists():
+        with sqlite3.connect(str(P.GOALCHAIN_DB)) as conn:
+            conn.executescript(schema.read_text(encoding="utf-8"))
+            conn.commit()
+        return True
+    return False
+
+
+def _heal_keys_from_env() -> int:
+    """Auto-import keys from ~/.shinon/config/.env into LIMEN DB + mirror.
+
+    Imports only providers NOT already in the DB (idempotent, no spam).
+    Returns the number of keys imported (0 = nothing to do)."""
+    env_path = P.CONFIG_DIR / ".env"
+    if not env_path.exists():
+        return 0
+    env_map = read_env_file(env_path)
+    if not env_map:
+        return 0
+    existing = set()
+    if P.LIMEN_DB.exists():
+        with sqlite3.connect(str(P.LIMEN_DB)) as conn:
+            conn.row_factory = sqlite3.Row
+            for r in providers_has_keys(conn):
+                existing.add(r["provider"])
+    todo = {k: v for k, v in env_map.items()
+            if v and _provider_from_env_key(k) and _provider_from_env_key(k) not in existing}
+    if not todo:
+        return 0
+    return _save_keys_from_env(todo, source=str(env_path))
+
+
+def _rebuild_keys_json_from_limen() -> int:
+    """Rebuild keys.json mirror from LIMEN DB meta_json (if mirror missing)."""
+    if P.KEYS_FILE.exists() or not P.LIMEN_DB.exists():
+        return 0
+    mirror: dict[str, str] = {}
+    with sqlite3.connect(str(P.LIMEN_DB)) as conn:
+        conn.row_factory = sqlite3.Row
+        for r in providers_has_keys(conn):
+            try:
+                meta = json.loads(r["meta_json"] or "{}")
+            except (json.JSONDecodeError, TypeError):
+                meta = {}
+            key = meta.get("api_key")
+            if key:
+                mirror[r["provider"]] = key
+    if mirror:
+        _write_keys_json(mirror)
+        return len(mirror)
+    return 0
+
+
 def doctor_mous() -> int:
     banner("Doctor Mous  ·  Diagnose & Reparatur")
     print("  Pruefe alle Komponenten. API-Keys / Secrets bleiben UNANGETASTET.")
@@ -285,6 +356,16 @@ def doctor_mous() -> int:
 
     # 2. Datenbanken
     print(f"\n{BOLD}2. Datenbanken{NC}")
+    # Auto-heal: goal-chain DB lebt zentral — Legacy-Pfad wird migriert oder
+    # aus schema.sql neu angelegt. Kein manuelles 'install.py --repair' noetig.
+    if not P.GOALCHAIN_DB.exists() and _heal_goalchain_db():
+        ok(f"goal-chain: DB zentral angelegt ({P.GOALCHAIN_DB.relative_to(P.SHINON_HOME)})")
+        fixes += 1
+    # Verwaistes Backup nie stillschweigend überschreiben — echte TIDs.
+    legacy_bak = P.PROJECT_PROJECT_GOALCHAIN_DB.parent / "tid-state.db.bak"
+    if legacy_bak.exists():
+        warn(f"Backup vorhanden: {legacy_bak.relative_to(P.PROJECT_ROOT)} — "
+             f"ältere TIDs liegen dort; wird NIE automatisch überschrieben.")
     for db_path, label in [
         (P.LIMEN_DB, "LIMEN"),
         (P.GOALCHAIN_DB, "goal-chain"),
@@ -295,14 +376,14 @@ def doctor_mous() -> int:
             warn(f"{label}: fehlt ({db_path.relative_to(P.SHINON_HOME)})")
             issues += 1
             continue
-        try:
-            with sqlite3.connect(str(db_path)) as conn:
-                conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
-                n_tables = len(conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'").fetchall())
-            ok(f"{label}: {n_tables} Tabellen, integrity OK")
-        except sqlite3.DatabaseError as e:
-            fail(f"{label}: korrupt ({e})")
+        health = check_sqlite(db_path)
+        if health["ok"]:
+            ok(
+                f"{label}: {health['tables']} Tabellen, integrity OK, "
+                f"journal={health['journal_mode']}, lock/read OK"
+            )
+        else:
+            fail(f"{label}: SQLite-Healthcheck fehlgeschlagen – {health.get('error', health)}")
             warn(f"  -> Backup nach .bak, neu initialisiert beim naechsten Install")
             fixes += 1
 
@@ -323,6 +404,11 @@ def doctor_mous() -> int:
 
     # 4. API-Keys (LIMEN-DB — schema-aware query)
     print(f"\n{BOLD}4. API-Keys (LIMEN-DB){NC}")
+    # Auto-heal: wenn .env Keys hat und LIMEN noch keine, einmalig importieren.
+    n_env = _heal_keys_from_env()
+    if n_env:
+        ok(f"{n_env} API-Key(s) automatisch aus .env importiert")
+        fixes += n_env
     if P.LIMEN_DB.exists():
         try:
             with sqlite3.connect(str(P.LIMEN_DB)) as conn:
@@ -354,6 +440,10 @@ def doctor_mous() -> int:
 
     # 5. Keys-Mirror
     print(f"\n{BOLD}5. Key-Mirror (LIMEN-internal){NC}")
+    n_mirror = _rebuild_keys_json_from_limen()
+    if n_mirror:
+        ok(f"keys.json aus LIMEN-DB neu aufgebaut ({n_mirror} Eintrag/Eintraege)")
+        fixes += 1
     if P.KEYS_FILE.exists():
         try:
             mirror = json.loads(P.KEYS_FILE.read_text())
@@ -382,12 +472,13 @@ def doctor_mous() -> int:
     else:
         user_cargo = Path.home() / ".cargo" / "bin" / "cargo"
         if user_cargo.exists():
-            info(f"cargo lokal in {Path.home() / '.cargo'} — nicht im PATH. "
-                 f"Workaround: PATH=$HOME/.cargo/bin:$PATH vor 'install.py' setzen")
+            info(f"cargo lokal in {Path.home() / '.cargo'} — wird von install.py "
+                 f"automatisch in die Shell-RC-Dateien eingetragen; neues Terminal "
+                 f"oeffnen oder 'source ~/.bashrc' ausfuehren.")
         else:
             warn("Rust nicht installiert (kein Issue, solange alle pip-Wheels passen)")
 
-    # 8. LIMP-Healthcheck (Schema-upgrade test)
+    # 8. LIMEN-Healthcheck (Schema-upgrade test)
     print(f"\n{BOLD}8. LIMEN-DB Schema{NC}")
     if P.LIMEN_DB.exists():
         with sqlite3.connect(str(P.LIMEN_DB)) as conn:
@@ -400,6 +491,52 @@ def doctor_mous() -> int:
         else:
             warn(f"providers-Spalten passen NICHT (meta_json/api_key_fingerprint fehlt). "
                  f"Bitte 'python install.py --repair'.")
+            issues += 1
+
+    # 9. KARMA persistence access (read/write lock without mutation)
+    print(f"\n{BOLD}9. KARMA-Memory & SQLite-Zugriff{NC}")
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(P.PROJECT_ROOT / "karma-main"))
+        from karma.core.persistence import PersistenceConfig, PersistenceLayer
+        # Probe the actual central runtime DB. Do not create a persistent
+        # doctor-check project/database as a side effect of diagnostics.
+        karma_persistence = PersistenceLayer(
+            PersistenceConfig(framework_dir=P.KARMA_DIR, db_filename=P.KARMA_DB.name)
+        )
+        karma_health = karma_persistence.health_check()
+        if karma_health.get("ok"):
+            ok(
+                f"KARMA SQLite erreichbar: {karma_health['path']} "
+                f"(WAL={karma_health['journal_mode']}, "
+                f"integrity={karma_health['integrity']}, "
+                f"foreign_keys={karma_health['foreign_keys']})"
+            )
+        else:
+            fail(f"KARMA SQLite Healthcheck fehlgeschlagen: {karma_health}")
+            issues += 1
+    except Exception as e:
+        fail(f"KARMA-Memory nicht erreichbar: {e}")
+        issues += 1
+
+    # 10. Alle zentralen Runtime-Datenbanken nochmals mit dem gemeinsamen
+    # Health-Protokoll prüfen. Das deckt auch Datenbanken ab, die oben wegen
+    # eines fehlenden optionalen Starts noch nicht gelistet wurden.
+    print(f"\n{BOLD}10. Globaler SQLite-Zugriff{NC}")
+    for db_path, label in [
+        (P.LIMEN_DB, "LIMEN"),
+        (P.KARMA_DB, "KARMA"),
+        (P.SHINON_MEM, "Shinon-Memory"),
+        (P.GOALCHAIN_DB, "goal-chain"),
+    ]:
+        if not db_path.exists():
+            info(f"{label}: nicht angelegt — wird beim Komponentenstart erzeugt")
+            continue
+        health = check_sqlite(db_path)
+        if health["ok"]:
+            ok(f"{label}: Zugriff, Integritaet, WAL/Lock und Zweit-Handle OK")
+        else:
+            fail(f"{label}: globaler SQLite-Check fehlgeschlagen: {health.get('error', health)}")
             issues += 1
 
     # Zusammenfassung

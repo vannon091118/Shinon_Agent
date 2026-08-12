@@ -24,6 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { spawn } from 'node:child_process';
+import { DatabaseSync } from 'node:sqlite';
 import { HTML } from './shinon-ui.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -59,37 +60,52 @@ function readJSON(req) {
   });
 }
 
-function queryDB(dbPath, sql, ...params) {
+// ═══ Native SQLite (node:sqlite) — kein Python-Subprocess ═══════════════
+// Ersetzt das alte execSync(python3 -c "sqlite3 ...") Muster:
+//   * kein Shell-String-Escaping / keine SQL-Injection über die Shell
+//   * keine 50–100ms Python-Spawn pro Query — Mikrosekunden, in-process
+//   * parameterisiert via Prepared Statements (?,?,...) statt Interpolation
+// Gleiches Muster wie live-dashboard-server.mjs (DatabaseSync).
+
+const _dbCache = new Map();
+
+function getDB(dbPath) {
+  if (!fs.existsSync(dbPath)) return null;
+  if (_dbCache.has(dbPath)) return _dbCache.get(dbPath);
+  let db;
   try {
-    if (!fs.existsSync(dbPath)) return null;
-    const escaped = sql.replace(/'/g, "'\\''");
-    const result = execSync(
-      `python3 -c "
-import sqlite3,json
-conn=sqlite3.connect('${dbPath}')
-cur=conn.cursor()
-cur.execute('''${escaped}''')
-rows=[dict(r) for r in cur.fetchall()]
-print(json.dumps(rows,default=str))
-conn.close()
-"`, { timeout: 5000, encoding: 'utf-8', maxBuffer: 1024 * 1024 }
-    );
-    return JSON.parse(result.trim() || '[]');
-  } catch (e) { return []; }
+    db = new DatabaseSync(dbPath);
+    db.exec('PRAGMA busy_timeout=5000');
+    try { db.exec('PRAGMA journal_mode=WAL'); } catch (_) { /* schon gesetzt / gelockt */ }
+  } catch (e) {
+    console.error(`[db] open failed (${dbPath}):`, e.message);
+    return null;
+  }
+  _dbCache.set(dbPath, db);
+  return db;
 }
 
-function execDB(dbPath, sql) {
+function queryDB(dbPath, sql, ...params) {
+  const db = getDB(dbPath);
+  if (!db) return null;
   try {
-    const escaped = sql.replace(/'/g, "'\\''");
-    execSync(`python3 -c "
-import sqlite3
-conn=sqlite3.connect('${dbPath}')
-conn.execute('''${escaped}''')
-conn.commit()
-conn.close()
-"`, { timeout: 5000 });
+    return db.prepare(sql).all(...params);
+  } catch (e) {
+    console.error(`[db] query failed (${dbPath}):`, e.message);
+    return [];
+  }
+}
+
+function execDB(dbPath, sql, ...params) {
+  const db = getDB(dbPath);
+  if (!db) return false;
+  try {
+    db.prepare(sql).run(...params);
     return true;
-  } catch (e) { return false; }
+  } catch (e) {
+    console.error(`[db] exec failed (${dbPath}):`, e.message);
+    return false;
+  }
 }
 
 // ═══ Prosa-Renderer (NarrativeSpec → Text, rein, model vs. fallback) ═══
@@ -110,6 +126,69 @@ function renderProsa(spec) {
     if (out) { try { return JSON.parse(out); } catch (_) { /* fallthrough */ } }
     return { error: 'prosa render failed', detail: String(e.message || e) };
   }
+}
+
+// ═══ Chat Config (opt-in: Chat nutzt User-API / LIMEN) ════════════════════
+// [chat] use_api in shinon.toml. Der Bridge (Python) liest dieselbe Quelle.
+// Hier nur read/toggle für die UI. Env-Override SHINON_CHAT_USE_API gewinnt.
+
+function chatConfigPath() {
+  return process.env.SHINON_CONFIG || path.join(SHINON_HOME, 'config', 'shinon.toml');
+}
+
+function readChatConfig() {
+  const env = process.env.SHINON_CHAT_USE_API;
+  if (env !== undefined && env !== '') {
+    return { use_api: ['1', 'true', 'yes', 'on'].includes(env.toLowerCase()), default_intent: 'chat' };
+  }
+  const cfgPath = chatConfigPath();
+  try {
+    if (!fs.existsSync(cfgPath)) return { use_api: false, default_intent: 'chat' };
+    // Reiner JS-Parse der [chat]-Sektion (kein Python-Subprocess).
+    const lines = fs.readFileSync(cfgPath, 'utf-8').split('\n');
+    let inChat = false;
+    let useApi = false;
+    let defaultIntent = 'chat';
+    for (const line of lines) {
+      const l = line.trim();
+      if (/^\[chat\]\s*$/.test(l)) { inChat = true; continue; }
+      if (inChat && l.startsWith('[')) break;
+      if (inChat && /^use_api\s*=/.test(l)) useApi = /=\s*(true|1|yes|on)/i.test(l);
+      if (inChat && /^default_intent\s*=/.test(l)) {
+        const m = l.match(/=\s*"([^"]+)"/);
+        if (m && ['chat', 'task', 'ambiguous'].includes(m[1])) defaultIntent = m[1];
+      }
+    }
+    return { use_api: useApi, default_intent: defaultIntent };
+  } catch (e) {
+    return { use_api: false, default_intent: 'chat' };
+  }
+}
+
+function writeChatConfig(useApi) {
+  const cfgPath = chatConfigPath();
+  try {
+    if (!fs.existsSync(cfgPath)) return false;
+    const lines = fs.readFileSync(cfgPath, 'utf-8').split('\n');
+    let chatIdx = -1;
+    let useApiIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i].trim();
+      if (/^\[chat\]\s*$/.test(l)) { chatIdx = i; continue; }
+      if (chatIdx !== -1 && l.startsWith('[')) break;
+      if (chatIdx !== -1 && /^use_api\s*=/.test(l)) useApiIdx = i;
+    }
+    const newLine = `use_api = ${useApi ? 'true' : 'false'}`;
+    if (useApiIdx !== -1) {
+      lines[useApiIdx] = newLine;                       // ersetzen
+    } else if (chatIdx !== -1) {
+      lines.splice(chatIdx + 1, 0, newLine);            // direkt unter [chat]
+    } else {
+      lines.push('', '[chat]', newLine, 'default_intent = "chat"');  // Sektion anlegen
+    }
+    fs.writeFileSync(cfgPath, lines.join('\n'), 'utf-8');
+    return true;
+  } catch (e) { return false; }
 }
 
 // ═══ FUSION BRIDGE ═══════════════════════════════════════════════════════
@@ -272,6 +351,17 @@ const server = http.createServer(async (req, res) => {
   // API: Ping
   if (pathname === '/api/ping') return sendJSON(res, 200, { ok: true, time: new Date().toISOString() });
 
+  // API: Chat config — Opt-in ob Chat die User-API (LIMEN) nutzt
+  if (req.method === 'GET' && pathname === '/api/chat/config') {
+    return sendJSON(res, 200, readChatConfig());
+  }
+  if (req.method === 'POST' && pathname === '/api/chat/config') {
+    const body = await readJSON(req);
+    const useApi = !!body.use_api;
+    const ok = writeChatConfig(useApi);
+    return sendJSON(res, ok ? 200 : 500, ok ? readChatConfig() : { error: 'could not write chat config' });
+  }
+
   // API: Chat — Fusion-first orchestration
   // Flow:
   //   1. Call fusion bridge (ShinonEngine character layer + Promtguard + KARMA)
@@ -298,12 +388,13 @@ const server = http.createServer(async (req, res) => {
       // unexpected — treated as null (fallback)
     }
 
-    // ── Step 2a: Fusion produced a full LLM reply ─────────────────────
+    // ── Step 2a: Fusion produced a full reply (task OR local chat) ───
     if (fusionResult && fusionResult._exit === 0 && fusionResult.reply) {
       return sendJSON(res, 200, {
         reply:  fusionResult.reply,
         model:  fusionResult.model  || 'fusion',
-        source: 'fusion',
+        source: fusionResult.source || 'fusion',
+        intent: fusionResult.intent  || '',
         claims: fusionResult.claims_count || 0,
         cid:    fusionResult.correlation_id || '',
       });
@@ -387,23 +478,13 @@ const server = http.createServer(async (req, res) => {
       });
       return sendJSON(res, limenOk ? 200 : 500, { ok: limenOk });
     } catch (_) {
-      // Fallback: direct SQLite with sanitized params (BUG-P1-5: use python repr to escape)
+      // Fallback: direkter nativer SQLite-Write (Prepared Statement, keine Shell)
       const keyId = provider + '-shinon-ui';
       const meta = JSON.stringify({ api_key: value, source: 'shinon-ui' });
-      // Pass values as JSON args to python to avoid shell interpolation
-      const script = `
-import sqlite3, sys, json
-args = json.loads(sys.argv[1])
-con = sqlite3.connect(args['db'])
-con.execute('INSERT OR REPLACE INTO providers (key_id, provider, deployment, value, status, priority, meta_json) VALUES (?,?,?,?,?,?,?)',
-  [args['key_id'], args['provider'], 'default', args['value'], 'active', 1, args['meta']])
-con.commit(); con.close(); print('ok')
-`;
-      try {
-        const argsJson = JSON.stringify({ db: LIMEN_DB, key_id: keyId, provider, value: String(value), meta });
-        execSync(`python3 -c ${JSON.stringify(script)} ${JSON.stringify(argsJson)}`, { timeout: 5000 });
-        return sendJSON(res, 200, { ok: true });
-      } catch (e2) { return sendJSON(res, 500, { ok: false, error: String(e2.message) }); }
+      const ok = execDB(LIMEN_DB,
+        'INSERT OR REPLACE INTO providers (key_id, provider, deployment, value, status, priority, meta_json) VALUES (?,?,?,?,?,?,?)',
+        keyId, provider, 'default', String(value), 'active', 1, meta);
+      return sendJSON(res, ok ? 200 : 500, ok ? { ok: true } : { ok: false, error: 'db write failed' });
     }
   }
 
@@ -417,13 +498,12 @@ con.commit(); con.close(); print('ok')
 
   if (req.method === 'POST' && pathname === '/api/personality') {
     const body = await readJSON(req);
-    // BUG-P1-5 FIX: Pass dimension as parameterized query via python args, not interpolated
+    // Prepared Statements (native sqlite) — keine Shell, keine Interpolation.
     const updates = Object.entries(body)
       .filter(([k]) => /^[a-zA-Z0-9_]+$/.test(k))  // whitelist dimension names
       .map(([k, v]) => ({ dim: k, val: Math.max(-10, Math.min(10, Number(v))) }));
     for (const { dim, val } of updates) {
-      const script = `import sqlite3,sys,json; a=json.loads(sys.argv[1]); c=sqlite3.connect(a['db']); c.execute("UPDATE attitudes SET value=?,updated_at=datetime('now') WHERE dimension=?",[a['val'],a['dim']]); c.commit(); c.close()`;
-      try { execSync(`python3 -c ${JSON.stringify(script)} ${JSON.stringify(JSON.stringify({ db: SHINON_MEM, dim, val }))}`, { timeout: 3000 }); } catch (_) {}
+      execDB(SHINON_MEM, "UPDATE attitudes SET value=?,updated_at=datetime('now') WHERE dimension=?", val, dim);
     }
     return sendJSON(res, 200, { ok: true });
   }
@@ -450,6 +530,22 @@ con.commit(); con.close(); print('ok')
   if (req.method === 'GET' && pathname === '/api/triggers') {
     const rows = queryDB(TID_DB, "SELECT decision_type as skill, COUNT(*) as trigger_count FROM dispatcher_decisions WHERE decision_type LIKE '%TRIGGER%' OR decision_type = 'CHAIN_SCRIPT_FAILED' GROUP BY decision_type ORDER BY trigger_count DESC LIMIT 10");
     return sendJSON(res, 200, { triggers: rows || [] });
+  }
+
+  // API: Prosa-Status — Modell + llama-cli vorhanden? (Qualitätslayer-Badge)
+  if (req.method === 'GET' && pathname === '/api/prosa/status') {
+    const statusScript = path.join(PROJECT_ROOT, 'model_bootstrap.py');
+    try {
+      const out = execSync(`python3 "${statusScript}" --status --json`, {
+        cwd: PROJECT_ROOT,
+        timeout: 5000,
+        encoding: 'utf-8',
+        maxBuffer: 1024 * 1024,
+      });
+      return sendJSON(res, 200, JSON.parse(out.trim() || '{}'));
+    } catch (e) {
+      return sendJSON(res, 500, { error: 'prosa status failed', detail: String(e.message || e) });
+    }
   }
 
   // API: Prosa — NarrativeSpec → Text (rein, model vs. fallback)

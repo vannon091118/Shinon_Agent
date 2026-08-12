@@ -8,7 +8,18 @@
 # ═══════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Resolve symlinks so `shinon` works even when installed globally as a
+# symlink (e.g. ~/.local/bin/shinon -> <project>/shinon).  Plain
+# `dirname ${BASH_SOURCE[0]}` would resolve to the symlink's directory,
+# NOT the real script location.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+    DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 
 if command -v python3 >/dev/null 2>&1; then
     exec python3 "$SCRIPT_DIR/shinon.py" "$@"

@@ -50,6 +50,7 @@ from typing import Callable, List, Optional, Tuple
 
 # ─── Project Constants ──────────────────────────────────────────────────
 import paths as P  # canonical layout — see paths.py
+from sqlite_health import check_sqlite
 
 PROJECT_ROOT = P.PROJECT_ROOT
 PROJECT_NAME = "Shinon Control Plane"
@@ -792,13 +793,24 @@ def init_all_databases(console: Console) -> None:
     """, console, f"Shinon-Memory @ {_short(SHINON_MEM)}")
 
     # Goal-chain DB \u2014 call its existing db-init.sh which knows the schema.
-    # The init script writes into $SHINON_HOME/data/goal-chain/tid-state.db
-    # because install.py exports SHINON_HOME before spawning it.
+    # db-init.sh now honors SHINON_GOALCHAIN_DB and writes CENTRALLY
+    # ($SHINON_HOME/data/goal-chain/tid-state.db) + is idempotent (no rm).
     P.GOALCHAIN_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Migration VOR db-init: wenn eine Legacy-DB im Projekt liegt und die
+    # zentrale noch fehlt, verschieben wir sie zuerst — so geht kein TID-State
+    # verloren und Runtime + --doc + smoke-test lesen danach EINEN Ort.
+    legacy_chain_db = P.PROJECT_PROJECT_GOALCHAIN_DB
+    if not P.GOALCHAIN_DB.exists() and legacy_chain_db.exists():
+        try:
+            shutil.move(str(legacy_chain_db), str(P.GOALCHAIN_DB))
+            console.ok(f"goal-chain: Legacy-DB nach zentral verschoben ({_short(P.GOALCHAIN_DB)})")
+        except OSError as e:
+            console.warn(f"goal-chain Legacy-Migration fehlgeschlagen: {e}")
+
     init_script = (PROJECT_ROOT / ".agents" / "skills" / "goal-chain" / "scripts" / "db-init.sh")
     if init_script.exists():
         console.info(f"goal-chain: rufe bestehendes db-init.sh \u2026")
-        # Tell the script where to write its DB so we keep it central.
         env_with_shinon_home = {"SHINON_GOALCHAIN_DB": str(P.GOALCHAIN_DB),
                                 "SHINON_HOME": str(P.SHINON_HOME)}
         code, _, err = run_cmd(["bash", str(init_script)],
@@ -806,7 +818,7 @@ def init_all_databases(console: Console) -> None:
         if code == 0:
             console.ok(f"goal-chain @ {_short(GOALCHAIN_DB)}")
         else:
-            console.warn(f"goal-chain-db-init: codes {code} \u2013 manuelle \u00dcberpr\u00fcfung empfohlen")
+            console.warn(f"goal-chain-db-init: exit {code} \u2013 manuelle \u00dcberpr\u00fcfung empfohlen")
     else:
         console.warn("goal-chain db-init.sh fehlt \u2013 DB bleibt uninitialisiert")
 
@@ -832,6 +844,14 @@ display_name = "Shinon"
 [limen]
 url = "http://127.0.0.1:8000"
 auto_start = true
+
+[chat]
+# Chat ist der DEFAULT (kein /goal nötig). Deterministische Antworten
+# kosten KEINE API-Calls. Erst wenn use_api = true ist, wird der Chat
+# ueber LIMEN (echtes LLM) beantwortet — Opt-in fuer Qualitaet auf
+# Kosten deiner Keys. Env-Override: SHINON_CHAT_USE_API=1
+use_api = false
+default_intent = "chat"
 
 [dashboard]
 port = 4200
@@ -1020,6 +1040,112 @@ def write_install_marker(console: Console) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# Global `shinon` command (symlink into a user PATH dir)
+# ═══════════════════════════════════════════════════════════════════════
+
+_RC_FILES = (".profile", ".bashrc", ".zshrc", ".bash_profile")
+
+
+def _user_bin_dir() -> Path:
+    """Best-effort user-writable bin dir. POSIX: ~/.local/bin."""
+    if OS.current() == OS.WINDOWS:
+        return Path.home() / ".shinon" / "bin"
+    return Path.home() / ".local" / "bin"
+
+
+def _ensure_path_entry(console: Console, entry: str) -> None:
+    """Append `entry` to the user's shell rc files if not already present.
+
+    Idempotent (checks for the entry string before writing). This is what
+    makes `shinon` and `cargo` work in NEW shells without the user editing
+    their dotfiles by hand.  Recognises $HOME/~/literal spellings so a
+    path already present as `$HOME/.local/bin` is not added a second time.
+    """
+    home = str(Path.home())
+    variants = {entry}
+    if entry.startswith(home):
+        variants |= {entry.replace(home, "$HOME", 1), entry.replace(home, "~", 1)}
+    for name in _RC_FILES:
+        rc = Path.home() / name
+        if not rc.exists():
+            continue
+        try:
+            text = rc.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if any(v in text for v in variants):
+            continue  # already present in some form
+        try:
+            with rc.open("a", encoding="utf-8") as f:
+                f.write(f"\n# shinon install.py\nexport PATH=\"{entry}:$PATH\"\n")
+            console.debug(f"PATH-Eintrag {entry} in {name} ergänzt")
+        except OSError as e:
+            console.debug(f"konnte {name} nicht ergänzen: {e}")
+
+
+def install_global_command(console: Console) -> None:
+    """Make `shinon` callable from anywhere.
+
+    POSIX: symlink ~/.local/bin/shinon -> <project>/shinon and ensure
+           ~/.local/bin is on PATH for future shells.
+    Windows: write a tiny shinon.cmd launcher into %USERPROFILE%\\.shinon\\bin
+             (a .cmd cannot be a symlink without admin).
+    """
+    console.step("Globaler Befehl: 'shinon' (überall aufrufbar)")
+
+    shim = PROJECT_ROOT / "shinon"
+    if not shim.exists():
+        console.warn("Projekt-Shim 'shinon' fehlt – globaler Befehl übersprungen.")
+        return
+
+    if OS.current() == OS.WINDOWS:
+        bin_dir = _user_bin_dir()
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        launcher = bin_dir / "shinon.cmd"
+        shinon_py = PROJECT_ROOT / "shinon.py"
+        venv_py = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+        py_exe = str(venv_py) if venv_py.exists() else "python"
+        launcher.write_text(
+            f'@echo off\r\n'
+            f'"{py_exe}" "{shinon_py}" %*\r\n',
+            encoding="utf-8",
+        )
+        console.ok(f"Globaler Launcher: {launcher}")
+        _ensure_path_entry(console, str(bin_dir))
+        return
+
+    # POSIX
+    bin_dir = _user_bin_dir()
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    link = bin_dir / "shinon"
+    target = shim.resolve()
+    try:
+        if link.exists() or link.is_symlink():
+            if link.resolve() == target:
+                console.ok(f"Globaler Befehl schon verlinkt: {link}")
+            else:
+                link.unlink(missing_ok=True)
+                link.symlink_to(target)
+                console.ok(f"Globaler Befehl neu verlinkt: {link} -> {target}")
+        else:
+            link.symlink_to(target)
+            console.ok(f"Globaler Befehl verlinkt: {link} -> {target}")
+    except OSError as e:
+        console.warn(f"Symlink {link} fehlgeschlagen: {e}")
+        console.info(f"  Manuell: ln -s {target} {link}")
+        return
+
+    _ensure_path_entry(console, str(bin_dir))
+    # In-session usability: prepend to current PATH too.
+    os.environ["PATH"] = f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+
+    # Make user-local cargo persistent so `--doc` stops warning about it.
+    cargo_bin = str(Path.home() / ".cargo" / "bin")
+    if (Path.home() / ".cargo" / "bin" / "cargo").exists():
+        _ensure_path_entry(console, cargo_bin)
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # Smoke-Tests
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -1074,15 +1200,14 @@ def smoke_test_databases(console: Console) -> bool:
                 console.warn(f"{label}: nicht vorhanden ({rel})")
                 ok = False
             continue
-        try:
-            with sqlite3.connect(str(target_db)) as conn:
-                conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
-                tables = conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'"
-                ).fetchall()
-                console.ok(f"{label}: {len(tables)} Tabellen, integrity OK")
-        except sqlite3.DatabaseError as e:
-            console.fail(f"{label}: integrity fail \u2013 {e}")
+        health = check_sqlite(target_db)
+        if health["ok"]:
+            console.ok(
+                f"{label}: {health['tables']} Tabellen, integrity OK, "
+                f"journal={health['journal_mode']}, lock/read OK"
+            )
+        else:
+            console.fail(f"{label}: SQLite-Healthcheck fehlgeschlagen – {health.get('error', health)}")
             ok = False
     return ok
 
@@ -1329,6 +1454,7 @@ def mode_full(console: Console, args: argparse.Namespace) -> int:
     init_all_databases(console)
     write_configs(console, force=args.repair)
     write_install_marker(console)
+    install_global_command(console)
 
     if not run_smoke_tests(venv_py, console):
         console.fail("Smoke-Tests fehlgeschlagen \u2013 Installation unvollst\u00e4ndig!")

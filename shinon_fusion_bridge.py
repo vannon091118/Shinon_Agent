@@ -19,6 +19,7 @@ import asyncio
 import json
 import logging
 import sys
+import uuid
 from pathlib import Path
 
 # ── Path Setup ──────────────────────────────────────────────────────────
@@ -118,6 +119,67 @@ def _extract_model(shinon_output: object) -> str:
     return str(m) if m else "fusion"
 
 
+# ── Chat path (default — no API, deterministic) ────────────────────────
+
+
+async def _run_chat(message: str, session_id: str, history: list, intent: str) -> dict:
+    """Chat ist Default: Character-Layer (Mood/Attitudes) + deterministische Antwort.
+
+    Default kostet KEINE API. Opt-in ([chat] use_api=true / SHINON_CHAT_USE_API)
+    liefert reply="" → main() exit 2 → Node ruft LIMEN mit character_context.
+    """
+    from fusion.chat_router import chat_reply, clarify_reply, read_chat_config
+    from fusion.shinon import ShinonEngine, ShinonInput
+
+    correlation_id = str(uuid.uuid4())[:8]
+
+    character_context: dict = {}
+    try:
+        # Gleiche Character-Layer-DBs wie der Task-Pfad (fusion-Schema:
+        # personal_facts mit session_id/zone, attitudes mit user_id/dimension).
+        # Die zentrale ~/.shinon/data/shinon/memory.db hat ein Legacy-
+        # key/value-Schema, das ShinonEngine NICHT bedienen kann.
+        engine = ShinonEngine(
+            memory_db=_HERE / "fusion-main" / "data" / "shinon_memory.db",
+            attitude_db=_HERE / "fusion-main" / "data" / "shinon_attitudes.db",
+        )
+        output = engine.process(ShinonInput(
+            user_text=message,
+            session_id=session_id,
+            history=history,
+        ))
+        character_context = _extract_character_context(output)
+    except Exception as exc:
+        log.warning("Character layer failed in chat path — %s", exc)
+
+    cfg = read_chat_config()
+
+    if cfg.get("use_api"):
+        # Kein lokaler Reply → exit 2 → Node ruft LIMEN mit character_context
+        # (= API-backed Chat, Opt-in).
+        return {
+            "reply": "",
+            "model": "",
+            "source": "chat",
+            "character_context": character_context,
+            "claims_count": 0,
+            "correlation_id": correlation_id,
+            "intent": intent,
+        }
+
+    mood = character_context.get("emotional_state") or "neutral"
+    reply = clarify_reply() if intent == "ambiguous" else chat_reply(message, mood=mood)
+    return {
+        "reply": reply,
+        "model": "shinon-local",
+        "source": "chat",
+        "character_context": character_context,
+        "claims_count": 0,
+        "correlation_id": correlation_id,
+        "intent": intent,
+    }
+
+
 # ── Main async runner ────────────────────────────────────────────────────
 
 async def run(data: dict) -> dict:
@@ -129,14 +191,23 @@ async def run(data: dict) -> dict:
     if not message:
         raise ValueError("message is empty")
 
+    # ── Intent-Routing: Chat ist Default, Task nur explizit ──
+    from fusion.chat_router import TASK, classify_intent, strip_task_prefix  # type: ignore
+    intent = classify_intent(message)
+    if intent != TASK:
+        return await _run_chat(message, session_id, history, intent)
+
     from fusion.event_runtime import ControlPlaneRuntime  # type: ignore
+
+    # /goal- bzw. /task-Präfix abstreifen, damit es nicht in den Goal-Text leckt.
+    task_message = strip_task_prefix(message)
 
     # Use synthetic pre-processor when personality is configured (no extra LIMEN pre-call)
     preprocess_mode = "synthetic" if personality else "auto"
 
     rt = ControlPlaneRuntime(preprocess_mode=preprocess_mode)
     result = await rt.process(
-        user_text=message,
+        user_text=task_message,
         session_id=session_id,
         history=history,
     )
@@ -154,6 +225,7 @@ async def run(data: dict) -> dict:
         "character_context": character_context,
         "claims_count":      claims_count,
         "correlation_id":    correlation_id,
+        "intent":            "task",
     }
     if result.error:
         out["warning"] = _safe_str(result.error, 500)

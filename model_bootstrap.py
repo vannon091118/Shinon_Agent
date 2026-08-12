@@ -77,6 +77,31 @@ def resolve_llama_cli() -> str | None:
     return None
 
 
+def status() -> dict:
+    """Read-only Status des Prosa-Qualitätslayers (für /api/prosa/status).
+
+    Gibt zurück, ob Modell UND llama-cli vorhanden sind. Das Modell ist ein
+    pluggbarer Qualitätslayer — fehlt es, läuft der deterministische Fallback
+    (identische Kritik, template-basiert). Kein Download, kein Side-Effect.
+    """
+    model_path = resolve_model_path()
+    model_present = model_path.exists()
+    model_size = model_path.stat().st_size if model_present else None
+    llama_cli = resolve_llama_cli()
+    return {
+        "quality_layer_active": bool(model_present and llama_cli),
+        "model": {
+            "present": model_present,
+            "path": str(model_path),
+            "size_mb": (model_size // (1024 * 1024)) if model_size else None,
+        },
+        "llama_cli": {
+            "present": bool(llama_cli),
+            "path": llama_cli,
+        },
+    }
+
+
 # ─── Platform detection ───────────────────────────────────────────────
 
 def detect_platform_key() -> str | None:
@@ -276,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="model_bootstrap.py",
         description="SmolLM2-360M + llama.cpp Provisioning (opt-in, kein Auto-Download).")
     p.add_argument("--status", action="store_true", help="Vorhandenes anzeigen.")
+    p.add_argument("--json", action="store_true", help="Status als JSON ausgeben (mit --status).")
     p.add_argument("--model", action="store_true", help="SmolLM2-360M herunterladen.")
     p.add_argument("--llama-cli", action="store_true", help="llama.cpp-Binary bootstrappen.")
     p.add_argument("--force", action="store_true", help="Neu laden (überschreibt).")
@@ -283,6 +309,9 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     if args.status:
+        if args.json:
+            print(json.dumps(status(), ensure_ascii=False))
+            return 0
         model = resolve_model_path()
         print(f"Modell:   {model}")
         if model.exists():
