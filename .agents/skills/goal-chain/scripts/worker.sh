@@ -17,7 +17,7 @@
 #   worker.sh → find next PENDING TID
 #            → bash chain-xxx.sh RUN_ID TID
 #            → AUTONOM: chain script wrote output → complete.sh (full drift check)
-#            → PROMPT:  chain script emitted prompt → tid_done (skip verify-template)
+#            → PROMPT:  chain script emitted prompt → complete.sh + gate
 #            → GATE:    always uses complete.sh for phase routing
 #            → repeat until all TIDs DONE
 # ═══════════════════════════════════════════════════════════════════
@@ -343,9 +343,13 @@ execute_all() {
                 echo "  ✅ AUTONOM: $resolved_output (${output_size} bytes) → DONE"
                 record_decision "$tid" "AUTONOM_OUTPUT" "$resolved_output (${output_size} bytes)" "Chain script wrote output file autonomously" "" "" || true
             fi
-            bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1 || true
-            done_count=$((done_count + 1))
-            auto_count=$((auto_count + 1))
+            if bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1; then
+                done_count=$((done_count + 1))
+                auto_count=$((auto_count + 1))
+            else
+                echo "  ❌ AUTONOM completion blocked by FalsificationGate"
+                fail_count=$((fail_count + 1))
+            fi
 
         elif [[ -f "$tmp_output" && -s "$tmp_output" ]] && grep -q '[^[:space:]]' "$tmp_output" 2>/dev/null; then
             # PROMPT script: captured output becomes the artifact (must have non-whitespace content)
@@ -362,20 +366,30 @@ execute_all() {
             if $is_gate; then
                 # Gate TIDs: use complete.sh for proper phase routing
                 echo "  🔀 GATE PROMPT: $target (${output_size} bytes)"
-                bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1 || true
-                echo "  ✅ → DONE (gate routing applied)"
-            else
-                # Regular PROMPT: skip verify-template (output = captured prompt)
-                if [[ "$output_size" -gt 50 ]]; then
-                    echo "  📋 PROMPT: $target (${output_size} bytes) → DONE"
+                if bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1; then
+                    echo "  ✅ → DONE (gate routing applied)"
+                    done_count=$((done_count + 1))
                 else
-                    echo "  ⚠️  PROMPT: Minimal output (${output_size} bytes) → DONE"
+                    echo "  ❌ GATE PROMPT completion blocked by FalsificationGate"
+                    fail_count=$((fail_count + 1))
                 fi
-                tid_done "$tid"
-                notify_dashboard "TID_DONE" "$tid" "$(progress_summary "$RUN_ID")" || true
-                record_decision "$tid" "PROMPT_CAPTURED" "DONE" "Worker captured chain script output ($output_size bytes)" "" "" || true
+            else
+                # Regular PROMPT: it is still an executable completion path.
+                # Route through complete.sh so the same FalsificationGate is
+                # mandatory; direct tid_done is intentionally not an escape hatch.
+                if [[ "$output_size" -gt 50 ]]; then
+                    echo "  📋 PROMPT: $target (${output_size} bytes) → gate"
+                else
+                    echo "  ⚠️  PROMPT: Minimal output (${output_size} bytes) → gate"
+                fi
+                if bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto"; then
+                    notify_dashboard "TID_DONE" "$tid" "$(progress_summary "$RUN_ID")" || true
+                    record_decision "$tid" "PROMPT_CAPTURED" "DONE" "Worker captured chain script output ($output_size bytes) after gate" "" "" || true
+                else
+                    echo "  ❌ PROMPT completion blocked by FalsificationGate"
+                    fail_count=$((fail_count + 1))
+                fi
             fi
-            done_count=$((done_count + 1))
             prompt_count=$((prompt_count + 1))
 
         else

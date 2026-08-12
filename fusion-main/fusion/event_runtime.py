@@ -194,7 +194,9 @@ async def _handle_shinon_output(
 
     try:
         handoff = payload.get("handoff_to_promtguard", {})
-        processed_input = handoff.get("processed_input", payload.get("reply", ""))
+        # Annotation-only: the handoff always carries processed_input; `reply`
+        # is never a valid fallback (ShinonEngine never generates text).
+        processed_input = handoff.get("processed_input", "")
         claims = promtguard.extract_claims(processed_input, source="shinon")
         promtguard.append_claims(claims)
 

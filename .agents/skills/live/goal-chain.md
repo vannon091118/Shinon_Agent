@@ -1,9 +1,9 @@
 ---
 skill: goal-chain
 state: planning
-last_activation: 2026-08-12T14:16:27Z
-activation_count: 230
-tags: [autorun,TID-DONE]
+last_activation: 2026-08-12T19:47:53Z
+activation_count: 254
+tags: [implement,TID-DONE]
 output_path: ""
 ---
 
@@ -14,7 +14,7 @@ output_path: ""
 > diesen Snapshot, sofern keine erweiterte Funktionalität benötigt wird.
 
 ## Aktueller Status
-TID PZ-R20260812-160253-STACK-autorun fertig · autorun → DONE
+TID RT05-TID fertig · implement → DONE
 
 ## Pfad zum Output
 _kein Output-File_

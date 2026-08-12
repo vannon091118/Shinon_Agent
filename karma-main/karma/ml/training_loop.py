@@ -322,7 +322,7 @@ class TrainingLoop:
         if t == "flag_stale":
             domain = action.params.get("domain", "")
             # Write a staleness marker to the ml domain
-            self.persistence.set_fact(
+            self.persistence.set_internal_fact(
                 self.project, "ml", f"stale_flag:{domain}",
                 {
                     "flagged_at": datetime.now(timezone.utc).isoformat(),
@@ -335,7 +335,7 @@ class TrainingLoop:
         elif t == "record_gap":
             # Append gap to a structured list in ml domain
             gap_key = f"gap:{action.need_id[:8]}"
-            self.persistence.set_fact(
+            self.persistence.set_internal_fact(
                 self.project, "ml", gap_key,
                 {
                     "description": action.description,

@@ -56,7 +56,7 @@
     "properties": {
       "reply": {
         "type": "string",
-        "description": "The character-generated reply to the user (may be displayed or internal)"
+        "description": "Always empty — Shinon only annotates (never generates text). LIMEN generates the reply from handoff_to_promtguard."
       },
       "character_context": {
         "type": "object",

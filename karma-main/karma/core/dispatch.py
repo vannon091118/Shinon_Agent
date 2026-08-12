@@ -446,7 +446,7 @@ class DispatchGate:
                     claim_id = parts[2]
                     field = parts[3]
                     if p.op == "set":
-                        self.persistence.set_fact(project, "claims", f"{claim_id}/{field}", p.value)
+                        self.persistence.set_internal_fact(project, "claims", f"{claim_id}/{field}", p.value)
                     elif p.op == "del":
                         self.persistence.delete_fact(project, "claims", f"{claim_id}/{field}")
                 else:
@@ -456,7 +456,7 @@ class DispatchGate:
                 if len(parts) >= 3:
                     execution_id = parts[2]
                     if p.op == "set":
-                        self.persistence.set_fact(project, "karma_executions", execution_id, p.value)
+                        self.persistence.set_internal_fact(project, "karma_executions", execution_id, p.value)
             elif path.startswith("/shinon_memory/"):
                 # Shinon memory: persist as karma facts in domain "shinon_memory"
                 # Path format: /shinon_memory/{session_id}/{key}
@@ -465,7 +465,7 @@ class DispatchGate:
                     session_id = parts[2]
                     key = parts[3]
                     if p.op == "set":
-                        self.persistence.set_fact(project, "shinon_memory", f"{session_id}/{key}", p.value)
+                        self.persistence.set_internal_fact(project, "shinon_memory", f"{session_id}/{key}", p.value)
                     elif p.op == "del":
                         self.persistence.delete_fact(project, "shinon_memory", f"{session_id}/{key}")
                 else:

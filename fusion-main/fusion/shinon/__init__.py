@@ -1,5 +1,5 @@
 """
-Shinon Engine — Full Character Layer (Python, ported from TypeScript v0.3.0)
+Shinon Engine — Full Character Layer (Python, canonical source of truth)
 
 Components:
   - shinon_patterns.py   — Pattern Engine: regex-based extraction, contradictions, confidence
@@ -8,12 +8,8 @@ Components:
   - shinon_emotional.py  — Emotional State Machine: 6 states, transitions, tone modifiers
   - shinon_engine.py     — Main Engine: wires all components, replaces passthrough stub
 
-Ported from:
-  ShinonLLM-main/character/src/experience/patterns.ts
-  ShinonLLM-main/character/src/experience/twoTierMemory.ts
-  ShinonLLM-main/character/src/attitudes/tracker.ts
-  ShinonLLM-main/character/src/state/emotional.ts
-  ShinonLLM-main/character/src/core/identity.ts
+Canonical source of truth for the Shinon character layer.
+(Historically ported from the removed TypeScript ShinonLLM-main strand, v0.3.0.)
 """
 
 from fusion.shinon.shinon_patterns import (

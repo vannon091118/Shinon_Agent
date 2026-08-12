@@ -5,7 +5,7 @@ Wires: Pattern Engine + Two-Tier Memory + Attitude Tracker + Emotional State
 Position: 0 (user-facing personality layer)
 Asks: "How does it sound?"
 
-Ported from: ShinonLLM-main/character/ v0.3.0
+Canonical: fusion-main/fusion/shinon/ · ex-TypeScript port (ShinonLLM-main strand removed)
 """
 
 from __future__ import annotations
@@ -120,6 +120,15 @@ class ShinonInput:
 
 @dataclass
 class ShinonOutput:
+    """Annotation-only output of the character layer.
+
+    CONTRACT: The character layer NEVER generates text. ``reply`` is
+    always empty (""). The actual reply is produced downstream by LIMEN
+    from ``handoff_to_promtguard`` (which carries the enriched system_prompt,
+    processed_input and character annotations). process() is a pure function
+    over the handoff — it only annotates.
+    """
+
     reply: str
     character_context: CharacterContext
     handoff_to_promtguard: Dict[str, Any]
@@ -147,8 +156,12 @@ class ShinonEngine:
     - Persists facts in Tier 1, patterns in Tier 2 (SQLite)
     - Tracks per-user attitudes across sessions (-10..+10)
     - Manages session emotional state machine (6 states)
-    - Generates character-contextualized output with tone directives
+    - Annotates the turn with character context + tone directives (never generates text)
     - Detects contradictions and enables confrontation mode
+
+    ANNOTATION-ONLY CONTRACT: process() is a pure function over the handoff.
+    It NEVER produces the reply text — ShinonOutput.reply is always empty.
+    LIMEN generates the actual reply from handoff_to_promtguard.
     """
 
     def __init__(
@@ -184,6 +197,11 @@ class ShinonEngine:
         7. Decide: should_confront? + generate tone directives
         8. Generate Shinon personality prompt via Prompt Generator
         9. Build contract-validated HOFF-0002 handoff to Promtguard
+
+        Returns:
+            ShinonOutput — ANNOTATION-ONLY. ``reply`` is always empty ("").
+            The handoff (system_prompt + processed_input + annotations) is
+            the input for LIMEN, which generates the actual reply text.
         """
         session_id = input.session_id
         user_text = input.user_text
@@ -332,7 +350,7 @@ class ShinonEngine:
         self._session_attitudes[session_id] = attitude
 
         return ShinonOutput(
-            reply=user_text,  # Character doesn't modify text — annotations go in context
+            reply="",  # annotation-only: the engine never generates text (LIMEN does)
             character_context=character_context,
             handoff_to_promtguard=handoff,
         )

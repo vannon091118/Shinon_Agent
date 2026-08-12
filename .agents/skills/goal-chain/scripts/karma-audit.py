@@ -28,12 +28,12 @@ from typing import Any, Dict, List, Optional
 
 
 def get_karma_db_path() -> Path:
-    """Find the KARMA middleware.db."""
+    """Find the central Shinon KARMA database."""
     framework_dir = os.environ.get(
         "KARMA_FRAMEWORK_DIR",
-        str(Path.home() / ".karma"),
+        str(Path(os.environ.get("SHINON_HOME", str(Path.home() / ".shinon"))) / "data" / "karma"),
     )
-    return Path(framework_dir) / "middleware.db"
+    return Path(framework_dir) / os.environ.get("KARMA_DB_FILENAME", "karma.db")
 
 
 def get_raw_events(db_path: Path, project: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:

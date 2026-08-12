@@ -54,7 +54,7 @@ def cache_clear() -> None:
     _cache_misses = 0
 
 
-PROJECTS_DIR = Path.home() / ".karma" / "projects"
+PROJECTS_DIR = Path(os.environ.get("SHINON_HOME", str(Path.home() / ".shinon"))) / "data" / "karma" / "projects"
 
 
 def project_dir(project: str) -> Path:

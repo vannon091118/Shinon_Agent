@@ -102,7 +102,7 @@ class PromptVariantStore:
         return [PromptVariant(**v) for v in json.loads(raw)]
 
     def _save_variants(self, skill_name: str, variants: list):
-        self.p.set_fact(
+        self.p.set_internal_fact(
             self.project, "prompt_variants", skill_name,
             json.dumps([v.__dict__ for v in variants])
         )

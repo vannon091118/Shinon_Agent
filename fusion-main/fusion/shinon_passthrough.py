@@ -83,7 +83,11 @@ class ShinonInput:
 
 @dataclass
 class ShinonOutput:
-    """Character-contextualized output ready for Promtguard handoff."""
+    """Character-contextualized output ready for Promtguard handoff.
+
+    ANNOTATION-ONLY: ``reply`` is always empty — the character layer never
+    generates text. LIMEN generates the reply from handoff_to_promtguard.
+    """
 
     reply: str
     character_context: CharacterContext
@@ -148,8 +152,8 @@ class ShinonPassthrough:
             tone_directive="neutral",
         )
 
-        # Passthrough reply (character doesn't modify user text in MVP mode)
-        reply = input.user_text
+        # Annotation-only: the passthrough never generates text either.
+        reply = ""
 
         # Build HOFF-0002 handoff payload
         handoff = {
@@ -157,7 +161,7 @@ class ShinonPassthrough:
             "from": "shinon",
             "to": "promtguard",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "processed_input": reply,
+            "processed_input": input.user_text,
             "character_annotations": {
                 "attitude": attitude.to_dict(),
                 "identity": self.identity,

@@ -161,11 +161,68 @@ tid_start() {
     fi
 }
 
+# A TID may only become DONE after complete.sh has supplied a valid,
+# structured FalsificationGate decision. Direct tid_done calls are deliberately
+# rejected: this is the runtime enforcement for "no valid gate decision →
+# execution impossible", not merely a prompt convention.
+_validate_gate_decision_for_tid() {
+    local tid="$1"
+    local gate_log="${2:-}"
+    [[ -n "$gate_log" && -f "$gate_log" ]] || {
+        echo "ERROR: TID $tid has no valid FalsificationGate decision (log missing)" >&2
+        return 1
+    }
+    python3 - "$gate_log" "$tid" "$(task_field "$tid" "projekt")" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path, tid, project = sys.argv[1:]
+try:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+except Exception as exc:
+    print(f"ERROR: invalid FalsificationGate decision: {exc}", file=sys.stderr)
+    raise SystemExit(1)
+
+required = ("gate", "passed", "execution_exit_code", "results", "tid", "project", "output_file", "artifact_sha256")
+missing = [key for key in required if key not in payload]
+if missing:
+    print(f"ERROR: invalid FalsificationGate decision: missing {', '.join(missing)}", file=sys.stderr)
+    raise SystemExit(1)
+if payload.get("gate") != "FalsificationGate":
+    print("ERROR: invalid FalsificationGate decision: wrong gate", file=sys.stderr)
+    raise SystemExit(1)
+if payload.get("tid") != tid or payload.get("project") != project:
+    print("ERROR: invalid FalsificationGate decision: TID/project mismatch", file=sys.stderr)
+    raise SystemExit(1)
+if payload.get("passed") is not True or payload.get("execution_exit_code") != 0:
+    print("ERROR: FalsificationGate did not pass", file=sys.stderr)
+    raise SystemExit(1)
+if not isinstance(payload.get("results"), list):
+    print("ERROR: invalid FalsificationGate decision: results is not a list", file=sys.stderr)
+    raise SystemExit(1)
+
+output = Path(str(payload.get("output_file") or ""))
+if not output.is_absolute():
+    output = Path.cwd() / output
+if not output.is_file():
+    print("ERROR: invalid FalsificationGate decision: artifact is missing", file=sys.stderr)
+    raise SystemExit(1)
+import hashlib
+actual_hash = hashlib.sha256(output.read_bytes()).hexdigest()
+if payload.get("artifact_sha256") != actual_hash:
+    print("ERROR: invalid FalsificationGate decision: artifact hash mismatch", file=sys.stderr)
+    raise SystemExit(1)
+PY
+}
+
 tid_done() {
     local tid="$1"
+    local gate_log="${2:-}"
+    _validate_gate_decision_for_tid "$tid" "$gate_log" || return 1
     local phase_section; phase_section=$(task_field "$tid" "phase_section")
     db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now'), updated_at=datetime('now') WHERE tid='$tid';"
-    echo "[tid:$tid] STATUS: IN_PROGRESS → DONE"
+    echo "[tid:$tid] STATUS: IN_PROGRESS → DONE (FalsificationGate verified)"
 
     # LIVE-SKILL UPDATER hook
     if [[ -x "$PROJECT_ROOT/.agents/skills/live-snapshot.sh" ]]; then
@@ -195,6 +252,10 @@ tid_fail() {
 tid_root_cause_done() {
     local tid="$1"
     local root_cause="${2:?ROOT CAUSE REQUIRED — skipping without analysis is forbidden}"
+    echo "ERROR: ROOT_CAUSE_DONE cannot be granted directly. A valid FalsificationGate decision is required; no gate → execution impossible." >&2
+    return 1
+    # Internal gate routing updates ROOT_CAUSE_DONE only after complete.sh has
+    # already validated the KARMA gate. This public helper is not an escape hatch.
     db_exec "UPDATE tasks SET status='ROOT_CAUSE_DONE', updated_at=datetime('now'), completed_at=datetime('now') WHERE tid='$tid';"
     record_decision "$tid" "ROOT_CAUSE" "$root_cause" "Gate-verified: no gap to fill" "" ""
     echo "[tid:$tid] STATUS: ROOT_CAUSE_DONE — $root_cause"
@@ -265,6 +326,16 @@ next_pending_tid_after_gate() {
     local gate_phase="$2"
     local gate_result="$3"
     local gate_output_file="${4:-}"
+    local gate_log="${5:-}"
+    local source_tid="${6:-}"
+
+    # Root-cause routing is itself a state transition. It must carry the same
+    # validated gate authorization as DONE; a caller cannot manufacture PASS
+    # and directly mark another phase ROOT_CAUSE_DONE.
+    if [[ -z "$gate_log" || -z "$source_tid" ]] || ! _validate_gate_decision_for_tid "$source_tid" "$gate_log"; then
+        echo "ERROR: gate routing denied — no valid gate decision → execution impossible" >&2
+        return 1
+    fi
 
     if [[ "$gate_result" == "PASS" ]]; then
         local skip_phase=""

@@ -303,7 +303,7 @@ class RewardModel:
         if abs(total - 1.0) > 0.05:
             raise ValueError(f"Weights must sum to 1.0, got {total:.3f}")
         self._weights = {**self.DEFAULT_WEIGHTS, **new_weights}
-        self.persistence.set_fact(self.project, "ml", "reward_weights", self._weights)
+        self.persistence.set_internal_fact(self.project, "ml", "reward_weights", self._weights)
 
     @staticmethod
     def _signal_to_dict(signal: RewardSignal) -> Dict[str, Any]:

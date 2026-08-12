@@ -67,6 +67,10 @@ if [[ "$RESULT" == "DONE" ]]; then
     if [[ -n "$GATE_OUTPUT" && "$GATE_OUTPUT" != /* ]]; then
         GATE_OUTPUT="$REPO_ROOT/$GATE_OUTPUT"
     fi
+    GATE_ARTIFACT_SHA256=""
+    if [[ -n "$GATE_OUTPUT" && -f "$GATE_OUTPUT" ]]; then
+        GATE_ARTIFACT_SHA256=$(sha256sum "$GATE_OUTPUT" | awk '{print $1}')
+    fi
 
     GATE_LOG_DIR="${SHINON_GATE_LOG_DIR:-$REPO_ROOT/.goal/$RUN_ID}"
     mkdir -p "$GATE_LOG_DIR"
@@ -108,13 +112,13 @@ if [[ "$RESULT" == "DONE" ]]; then
     # JSON become an explicit gate_runtime failure, never an implicit pass.
     python3 - "$GATE_STDOUT" "$GATE_STDERR" "$FALSIFICATION_LOG" \
         "$GATE_RC" "$GATE_PROJECT" "$GATE_STEP" "$GATE_SKILL" "$GATE_OUTPUT" \
-        "$GATE_STARTED_AT" <<'PY'
+        "$GATE_ARTIFACT_SHA256" "$GATE_STARTED_AT" "$TID" <<'PY'
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-stdout_path, stderr_path, log_path, rc, project, step, skill, output, started = sys.argv[1:]
+stdout_path, stderr_path, log_path, rc, project, step, skill, output, artifact_sha256, started, tid = sys.argv[1:]
 try:
     raw = Path(stdout_path).read_text(encoding="utf-8")
 except OSError:
@@ -139,9 +143,11 @@ except Exception as exc:
     }
 payload.update({
     "project": payload.get("project", project),
+    "tid": payload.get("tid", tid),
     "step": payload.get("step", step),
     "skill": payload.get("skill", skill),
     "output_file": payload.get("output_file", output),
+    "artifact_sha256": payload.get("artifact_sha256", artifact_sha256),
     "execution_exit_code": int(rc),
     "started_at": started,
     "finished_at": datetime.now(timezone.utc).isoformat(),
@@ -176,7 +182,7 @@ fi
 # 3. Only now transition to DONE. The following self-improvement hook is
 # explicitly simulation-only; completion.sh never invokes `ml train`.
 if [[ "$RESULT" == "DONE" ]]; then
-    tid_done "$TID"
+    tid_done "$TID" "$FALSIFICATION_LOG"
 
     LEARNINGS_DIR="${SHINON_LEARNINGS_DIR:-$REPO_ROOT/.learnings}"
     if [[ -d "$LEARNINGS_DIR" ]]; then
@@ -213,7 +219,8 @@ PY
     fi
 elif [[ "$RESULT" == "ROOT_CAUSE" ]]; then
     rc_reason="${4:-Gate verified: no gap to fill}"
-    tid_root_cause_done "$TID" "$rc_reason"
+    echo "❌ ROOT_CAUSE completion is not an execution authorization. Run the FalsificationGate first; no valid gate decision → execution impossible." >&2
+    exit 1
 elif [[ "$RESULT" == "FAIL" ]]; then
     FAIL_REASON="${4:-Agent reported failure}"
     tid_fail "$TID" "$FAIL_REASON"
@@ -235,7 +242,7 @@ fi
 # Gate routing occurs after completion state is valid and before user checkpoint.
 TID_PHASE=$(task_field "$TID" "phase")
 if [[ "$TID_PHASE" == G* && -n "$GATE_RESULT" ]]; then
-    _GATE_NEXT=$(next_pending_tid_after_gate "$RUN_ID" "$TID_PHASE" "$GATE_RESULT" "$OUTPUT_FILE")
+    _GATE_NEXT=$(next_pending_tid_after_gate "$RUN_ID" "$TID_PHASE" "$GATE_RESULT" "$OUTPUT_FILE" "$FALSIFICATION_LOG" "$TID")
     echo "  🔀 Gate-Routing: ${GATE_RESULT} → next=${_GATE_NEXT:-NONE}"
 fi
 

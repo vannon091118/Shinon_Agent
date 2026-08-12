@@ -4,7 +4,7 @@ Pattern Engine — Regex-basierte Pattern-Erkennung (ported from patterns.ts)
 Detects preference, relationship, commitment, and contradiction patterns
 from personal facts extracted from user input.
 
-Scope: 0.3.0  |  Source: ShinonLLM-main/character/src/experience/patterns.ts
+Scope: 0.3.0  |  Canonical: fusion-main/fusion/shinon/ (ex-TypeScript port)
 """
 
 from __future__ import annotations

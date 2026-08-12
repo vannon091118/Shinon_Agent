@@ -15,7 +15,7 @@ import json
 import hashlib
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from karma.core.persistence import PersistenceLayer, create_project_persistence
 
@@ -74,10 +74,50 @@ class KnowledgeGraph:
 
     def add_relation(
         self, source_type: str, source_id: str, relation_type: str,
-        target_type: str, target_id: str, metadata: Optional[Dict[str, Any]] = None,
+        target_type: str, target_id: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        evidence_ids: Optional[Sequence[str]] = None,
     ) -> None:
+        """Add an edge with explicit provenance references.
+
+        ``evidence_ids`` is stored inside the existing JSON metadata so this
+        remains compatible with the current SQLite schema. Evidence-bearing
+        relations (SUPPORTS/REFUTES) fail closed when no provenance is given;
+        structural edges may remain evidence-free. IDs are normalized to a
+        deterministic sorted unique list.
+        """
+        edge_metadata = dict(metadata or {})
+        declared_ids = evidence_ids
+        if declared_ids is None:
+            declared_ids = edge_metadata.get("evidence_ids", [])
+        if isinstance(declared_ids, str) or not isinstance(declared_ids, Sequence):
+            raise ValueError("evidence_ids must be a sequence of non-empty strings")
+        raw_ids = list(declared_ids)
+        if any(not isinstance(evidence_id, str) or not evidence_id.strip()
+               for evidence_id in raw_ids):
+            raise ValueError("evidence_ids must contain only non-empty strings")
+        # Duplicate references are harmless; normalize them deterministically.
+        normalized_ids = sorted({evidence_id.strip() for evidence_id in raw_ids})
+        if relation_type in (RelationTypes.SUPPORTS, RelationTypes.REFUTES) and not normalized_ids:
+            raise ValueError(
+                f"{relation_type} relations require at least one evidence_id"
+            )
+        # Existence check: a provenance reference must point at a real,
+        # persisted evidence row — syntactic validity alone lets fabricated
+        # provenance slip through ("digital priest"). Structural edges with no
+        # evidence_ids are unaffected.
+        if normalized_ids:
+            from karma.core.evidence import EvidenceStore
+            missing = EvidenceStore(self.persistence).missing_evidence_ids(normalized_ids)
+            if missing:
+                raise ValueError(
+                    "evidence_ids reference non-existent evidence: "
+                    f"{sorted(missing)}"
+                )
+        edge_metadata["evidence_ids"] = normalized_ids
         self.persistence.add_relation(
-            self.project, source_type, source_id, relation_type, target_type, target_id, metadata
+            self.project, source_type, source_id, relation_type, target_type, target_id,
+            edge_metadata,
         )
 
     def delete_relation(
@@ -134,17 +174,29 @@ class KnowledgeGraph:
 
     # ── 4.3: Evidence Graph ───────────────────────────────────────
 
-    def link_claim_to_fact(self, claim_id: str, fact_id: str) -> None:
-        """Link a claim to a supporting fact (DERIVED_FROM)."""
-        self.add_relation(NodeTypes.CLAIM, claim_id, RelationTypes.DERIVED_FROM,
-                          NodeTypes.FACT, fact_id)
+    def link_claim_to_fact(
+        self,
+        claim_id: str,
+        fact_id: str,
+        evidence_ids: Optional[Sequence[str]] = None,
+    ) -> None:
+        """Link a claim to a fact, optionally retaining proof IDs.
+
+        ``fact_id`` identifies the derived fact; it is not silently treated as
+        an Evidence ID. Callers that have proof references must pass them
+        explicitly via ``evidence_ids``.
+        """
+        self.add_relation(
+            NodeTypes.CLAIM, claim_id, RelationTypes.DERIVED_FROM,
+            NodeTypes.FACT, fact_id, evidence_ids=evidence_ids,
+        )
 
     def link_evidence_to_claim(self, evidence_id: str, claim_id: str,
                                 supports: bool = True) -> None:
         """Link evidence to a claim (SUPPORTS or REFUTES)."""
         rel = RelationTypes.SUPPORTS if supports else RelationTypes.REFUTES
         self.add_relation(NodeTypes.EVIDENCE, evidence_id, rel,
-                          NodeTypes.CLAIM, claim_id)
+                          NodeTypes.CLAIM, claim_id, evidence_ids=[evidence_id])
 
     def cross_reference_claims(self, claim_a: str, claim_b: str) -> None:
         """Cross-reference two related claims."""

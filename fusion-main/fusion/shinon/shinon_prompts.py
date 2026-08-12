@@ -4,7 +4,7 @@ Shinon Prompt Generator — Template-basierte Prompt-Assembly (ported from gener
 Generates "Shinons Gedanken"-prompts for the LLM by rendering a template
 with current attitude, patterns, facts, and emotional state context.
 
-Scope: 0.3.0  |  Source: ShinonLLM-main/character/src/prompts/generator.ts
+Scope: 0.3.0  |  Canonical: fusion-main/fusion/shinon/ (ex-TypeScript port)
 """
 
 from __future__ import annotations

@@ -391,7 +391,7 @@ class FalsificationGate:
         
         last_hash = self.persistence.get_fact(self.project, "idempotency", fact_key)
         if last_hash is None:
-            self.persistence.set_fact(self.project, "idempotency", fact_key, current_hash)
+            self.persistence.set_internal_fact(self.project, "idempotency", fact_key, current_hash)
             return FalsificationResult(
                 "idempotency", True,
                 "First execution: output hash registered for future idempotency checks.",

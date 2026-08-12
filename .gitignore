@@ -93,9 +93,6 @@ config/*.local.*
 config/*.bak.*
 # Runtime install marker (JSON timestamp written by install.py). Don't commit.
 config/.install-done
-# Stray npm artifact from a one-off install experiment on the backend (backend is
-# intentionally excluded by install.py — the unified shinon-server.mjs is the source of truth).
-ShinonLLM-main/backend/package-lock.json
 # Backward-compat: legacy `.ctl/` runtime directory (deprecated — now ./data/{logs,pids}/)
 .ctl/
 .venv/
@@ -104,6 +101,12 @@ ShinonLLM-main/backend/package-lock.json
 /goal-chain-test-*.db
 .test_*
 test_*.py
+!karma-main/karma/tests/test_fact_validation.py
+!karma-main/karma/tests/test_evidence_entailment.py
+!karma-main/karma/tests/test_knowledge_graph_evidence.py
+!tests/test_shinon_engine_annotation_only.py
+!redteam/attacks/rt05_gate_skipping.py
+!.agents/skills/goal-chain/scripts/test-rt05-gate-skipping.sh
 test_*.json
 
 # ─── Shinon UI / Server ───────────────────────────────────────

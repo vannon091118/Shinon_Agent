@@ -6,7 +6,7 @@ Die EvidenceStore Klasse kümmert sich um die Persistenz in der SQLite Datenbank
 """
 
 from enum import Enum
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Sequence, Union
 from dataclasses import dataclass, field, asdict
 import datetime
 import json
@@ -485,4 +485,35 @@ class EvidenceStore:
             if claim:
                 claims.append(claim)
         return claims
+
+    def has_evidence(self, evidence_id: str) -> bool:
+        """Return whether an evidence row exists with the given ID.
+
+        Single-ID existence probe for the knowledge graph's provenance
+        contract: an ``evidence_id`` reference must point at a real,
+        persisted evidence row, never at a fabricated string.
+        """
+        return not self.missing_evidence_ids([evidence_id])
+
+    def missing_evidence_ids(self, evidence_ids: Sequence[str]) -> List[str]:
+        """Return the subset of ``evidence_ids`` with no persisted row.
+
+        One IN query (not N); order-preserving and deduplicated. An empty
+        result means every reference is backed by a real evidence row.
+
+        Note: ``evidences`` has no project column (project lives on
+        ``claims``), so this checks existence globally. That is intentional —
+        ``evidence_id`` is a UUID, so a reference is either real or fabricated
+        regardless of project.
+        """
+        ids = list(dict.fromkeys(evidence_ids))
+        if not ids:
+            return []
+        placeholders = ",".join("?" * len(ids))
+        rows = self.persistence.fetchall(
+            f"SELECT evidence_id FROM evidences WHERE evidence_id IN ({placeholders})",
+            tuple(ids),
+        )
+        existing = {r["evidence_id"] for r in rows}
+        return [eid for eid in ids if eid not in existing]
 

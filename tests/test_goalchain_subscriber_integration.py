@@ -194,7 +194,7 @@ class MockShinonEngine:
         from fusion.shinon.shinon_emotional import EmotionalState
 
         return ShinonOutput(
-            reply=input.user_text,
+            reply="",
             character_context=CharacterContext(
                 attitudes={"warmth": 2, "respect": 3, "patience": 5, "trust": 1},
                 emotional_state="curious",
@@ -395,8 +395,8 @@ async def main():
     shinon_output = shinon.process(shinon_input)
 
     check("Shinon processes input", shinon_output is not None)
-    check("Shinon output has reply", bool(shinon_output.reply),
-          "reply present", f"'{shinon_output.reply[:50]}'")
+    check("Shinon output is annotation-only (reply empty)", shinon_output.reply == "",
+          "reply empty", f"'{shinon_output.reply[:50]}'")
     check("Shinon HOFF-0002 handoff", 
           shinon_output.handoff_to_promtguard.get("handoff_id") == "HOFF-0002",
           "HOFF-0002", shinon_output.handoff_to_promtguard.get("handoff_id"))

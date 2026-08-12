@@ -1,7 +1,7 @@
 """
 Emotional State Machine — 6 states, transitions, tone modifiers (ported from emotional.ts)
 
-Scope: 0.3.0  |  Source: ShinonLLM-main/character/src/state/emotional.ts
+Scope: 0.3.0  |  Canonical: fusion-main/fusion/shinon/ (ex-TypeScript port)
 """
 
 from __future__ import annotations

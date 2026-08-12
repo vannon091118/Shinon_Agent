@@ -1,15 +1,10 @@
 """
-Shinon Contract Gates — Fail-closed input/output/action validation (ported from TS)
-
-Ported from ShinonLLM-main/orchestrator/src/contracts/:
-  - inputSchema.ts
-  - outputSchema.ts
-  - actionSchema.ts
+Shinon Contract Gates — Fail-closed input/output/action validation
 
 Every gate fails CLOSED: invalid input → ValueError, not silent pass-through.
 stableSerialize ensures deterministic validation (sorted keys, no circular refs).
 
-Scope: 0.3.0  |  Source: ShinonLLM-main/orchestrator/src/contracts/
+Scope: 0.3.0  |  Canonical: fusion-main/fusion/shinon/ (ex-TypeScript port)
 """
 
 from __future__ import annotations

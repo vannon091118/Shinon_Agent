@@ -2,7 +2,7 @@
 Attitude Tracker — Dynamic per-user attitudes with SQLite persistence (ported from tracker.ts)
 v2: + WAL mode, normalized history table, attitude drift, cross-session persistence
 
-Scope: 0.3.0  |  Source: ShinonLLM-main/character/src/attitudes/tracker.ts
+Scope: 0.3.0  |  Canonical: fusion-main/fusion/shinon/ (ex-TypeScript port)
 """
 
 from __future__ import annotations

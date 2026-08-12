@@ -64,7 +64,9 @@ Jedes Modul in diesem Repository ist ein eigenständiges Meisterwerk mit einer k
 ### 1. 🦇 Shinon — *The Persona & Attitude Layer*
 > **Philosophie:** *„Kein ungeprüfter Gedanke verlässt diesen Raum ohne Haltung.“*
 
-Shinon ist Position 0 im System. Sie ist das Gesicht, die Haltung und die kritische Stimme der Control Plane. 
+Shinon ist Position 0 im System. Sie ist das Gesicht, die Haltung und die kritische Stimme der Control Plane.
+
+> **Code-Quelle:** `fusion-main/fusion/shinon/` ist die **einzige** Quelle des Character Layers (Pattern Engine, Two-Tier Memory, Attitude Tracker, Emotional State Machine, Contract Gates, Prompt Generator). Der frühere TypeScript-Strang (`ShinonLLM-main/character`, `orchestrator`, `backend`) wurde entfernt.
 
 * **Persönlichkeit & Stimmung:** Mit ihrem dynamischen 2.5D Mood-Ring (`IDLE` cyan, `THINKING` lila, `SPEAKING` teal, `VALIDATING` gelb, `ERROR` rot) zeigt Shinon ihren Zustand transparent an.
 * **Erste Hürde:** Shinon nimmt deine Eingabe nicht einfach hin. Sie prüft Ambiguitäten, stellt Gegenfragen und kontextualisiert deinen Wunsch, bevor überhaupt ein Token an ein LLM verschwendet wird.

@@ -150,8 +150,8 @@ tids = [
 ]
 for tid, rid, phase, section, seq, status in tids:
     conn.execute(
-        "INSERT INTO tasks (tid, run_id, phase, phase_section, phase_seq, status, goal, skill_name, script_path, output_artifact, template_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        (tid, rid, phase, section, seq, status, 'test', 'test-skill', 'test.sh', '/tmp/test-out/' + tid + '.txt', 'gate-result-v1')
+        "INSERT INTO tasks (tid, projekt, run_id, phase, phase_section, phase_seq, status, goal, skill_name, script_path, output_artifact, template_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        (tid, 'PZ', rid, phase, section, seq, status, 'test', 'test-skill', 'test.sh', '/tmp/test-out/' + tid + '.txt', 'gate-result-v1')
     )
 
 deps = [
@@ -165,6 +165,24 @@ for tid, pre in deps:
 conn.commit()
 conn.close()
 PYEOF
+}
+
+write_gate_authorization() {
+    local source_tid="$1"
+    local artifact="$2"
+    local log="/tmp/test-out/falsification-${source_tid}.json"
+    python3 - "$source_tid" "$artifact" "$log" <<'PY'
+import hashlib, json, sys
+source_tid, artifact, log = sys.argv[1:]
+with open(artifact, 'rb') as handle:
+    digest = hashlib.sha256(handle.read()).hexdigest()
+json.dump({
+    'gate': 'FalsificationGate', 'passed': True, 'execution_exit_code': 0,
+    'results': [], 'tid': source_tid, 'project': '',
+    'output_file': artifact, 'artifact_sha256': digest,
+}, open(log, 'w'))
+print(log)
+PY
 }
 
 # ─── Test 1: G1-2 PASS ────────────────────────────────────────────
@@ -181,7 +199,8 @@ echo "# Gate 1→2 Result" >> /tmp/test-out/G001.txt
 
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid='G001';"
 
-NEXT=$(next_pending_tid_after_gate "G1PASS" "G1-2" "PASS")
+GATE_LOG=$(write_gate_authorization "G001" "/tmp/test-out/G001.txt")
+NEXT=$(next_pending_tid_after_gate "G1PASS" "G1-2" "PASS" "/tmp/test-out/G001.txt" "$GATE_LOG" "G001")
 
 # After G1-2 PASS: P2 ROOT_CAUSE_DONE → next is G2-3 gate
 assert_eq "G1-2 PASS → next TID" "G002" "$NEXT"
@@ -209,7 +228,8 @@ echo "# Gate 1→2 Failed" >> /tmp/test-out/G001.txt
 
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid='G001';"
 
-NEXT=$(next_pending_tid_after_gate "G1FAIL" "G1-2" "FAIL")
+GATE_LOG=$(write_gate_authorization "G001" "/tmp/test-out/G001.txt")
+NEXT=$(next_pending_tid_after_gate "G1FAIL" "G1-2" "FAIL" "/tmp/test-out/G001.txt" "$GATE_LOG" "G001")
 
 assert_eq "G1-2 FAIL → next TID" "T004" "$NEXT"
 assert_status "T004" "PENDING"
@@ -230,12 +250,13 @@ echo "# Gate 2→3 Result" >> /tmp/test-out/G002.txt
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid='G001';"
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid IN ('T004','T005');"
 
-NEXT=$(next_pending_tid_after_gate "G2PASS" "G2-3" "PASS")
+GATE_LOG=$(write_gate_authorization "G002" "/tmp/test-out/G002.txt")
+NEXT=$(next_pending_tid_after_gate "G2PASS" "G2-3" "PASS" "/tmp/test-out/G002.txt" "$GATE_LOG" "G002")
 
 # After G2-3 PASS: P2 DONE, G2-3 DONE → next is P3
 # But G002 is still PENDING when we check; mark it DONE first
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid='G002';"
-NEXT2=$(next_pending_tid_after_gate "G2PASS" "G2-3" "PASS")
+NEXT2=$(next_pending_tid_after_gate "G2PASS" "G2-3" "PASS" "/tmp/test-out/G002.txt" "$GATE_LOG" "G002")
 
 assert_eq "G2-3 PASS → next TID" "T006" "$NEXT2"
 assert_status "T004" "DONE"
@@ -260,7 +281,8 @@ echo "# Gate 2→3 Failed — gaps found" >> /tmp/test-out/G002.txt
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid='G001';"
 db_exec "UPDATE tasks SET status='DONE', completed_at=datetime('now') WHERE tid IN ('T004','T005');"
 
-NEXT=$(next_pending_tid_after_gate "G2FAIL" "G2-3" "FAIL" "/tmp/test-out/G002.txt")
+GATE_LOG=$(write_gate_authorization "G002" "/tmp/test-out/G002.txt")
+NEXT=$(next_pending_tid_after_gate "G2FAIL" "G2-3" "FAIL" "/tmp/test-out/G002.txt" "$GATE_LOG" "G002")
 
 assert_eq "G2-3 FAIL → next TID" "T004" "$NEXT"
 assert_status "T004" "PENDING"

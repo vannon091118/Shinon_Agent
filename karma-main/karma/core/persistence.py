@@ -439,6 +439,17 @@ class PersistenceLayer:
         validate_persisted_value(domain, value)
         self._write_fact(project, domain, key, value)
 
+    def import_legacy_fact(self, project: str, domain: str, key: str, value: Any) -> None:
+        """Trusted one-time import for pre-contract JSON data (migration only).
+
+        Legacy ``memory.json`` files predate the strict fact-provenance contract
+        and may store arbitrary JSON values (ints, strings, plain dicts). This
+        write bypasses ``validate_persisted_value`` on purpose: only
+        ``migrate_from_json`` may call it, and it is never reachable from
+        public MemoryBus writes.
+        """
+        self._write_fact(project, domain, key, value)
+
     def set_internal_fact(self, project: str, domain: str, key: str, value: Any) -> None:
         """Persist allow-listed runtime state, never user knowledge.
 
@@ -1010,7 +1021,10 @@ def migrate_from_json(persistence: PersistenceLayer, json_projects_dir: Path) ->
                         if key.startswith("_"):
                             continue
                         from karma.core.fact_validation import is_system_domain
-                        writer = persistence.set_internal_fact if is_system_domain(domain) else persistence.set_fact
+                        # System-Domains: interner Namespace-Bypass. User-Domains:
+                        # Trusted-Legacy-Import (vorkontraktliche JSON-Werte, die
+                        # keinem Fakt-Schema folgen müssen).
+                        writer = persistence.set_internal_fact if is_system_domain(domain) else persistence.import_legacy_fact
                         writer(project, domain, key, value)
             except (json.JSONDecodeError, OSError):
                 pass

@@ -2,7 +2,7 @@
 Two-Tier Memory — SQLite-backed facts (T1) + patterns (T2) (ported from twoTierMemory.ts)
 v2: + Hot→Mid→Cold zone migration, pattern reinforcement, cross-tier queries, WAL mode
 
-Scope: 0.3.0  |  Source: ShinonLLM-main/character/src/experience/twoTierMemory.ts
+Scope: 0.3.0  |  Canonical: fusion-main/fusion/shinon/ (ex-TypeScript port)
 """
 
 from __future__ import annotations
