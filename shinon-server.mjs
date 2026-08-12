@@ -100,9 +100,15 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(HTML);
   }
-  if (req.method === 'GET' && pathname === '/stats') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(HTML);
+  // Static Assets
+  if (req.method === 'GET' && pathname.startsWith('/assets/')) {
+    const assetPath = path.join(PROJECT_ROOT, pathname);
+    if (fs.existsSync(assetPath)) {
+      const ext = path.extname(assetPath).toLowerCase();
+      const contentType = (ext === '.jpg' || ext === '.jpeg') ? 'image/jpeg' : (ext === '.svg' ? 'image/svg+xml' : 'application/octet-stream');
+      res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=86400' });
+      return fs.createReadStream(assetPath).pipe(res);
+    }
   }
 
   // API: Ping

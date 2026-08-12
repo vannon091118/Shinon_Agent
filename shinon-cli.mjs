@@ -37,9 +37,9 @@ function printBanner() {
   const m = MOODS[currentMood];
   console.clear();
   console.log(`${C.bold}${C.purple}╔══════════════════════════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`${C.bold}${C.purple}║  🦇 SHINON · Terminal Agent CLI v2.0                                 ║${C.reset}`);
-  console.log(`${C.purple}║  Kritisch. Skeptisch. Präzise.                                       ║${C.reset}`);
-  console.log(`${C.purple}║  Mood: ${m.color}${m.symbol} [${m.name}]${C.reset}${C.purple}  |  Pipeline: Live Terminal Render      ║${C.reset}`);
+  console.log(`${C.bold}${C.purple}║  🦇 SHINON · Cyberdeck Terminal Agent CLI v2.5                       ║${C.reset}`);
+  console.log(`${C.purple}║  Sie ist Shinon — Kritisch. Skeptisch. Präzise.                      ║${C.reset}`);
+  console.log(`${C.purple}║  Mood: ${m.color}${m.symbol} [${m.name}]${C.reset}${C.purple}  |  Cyberdeck Pipeline: Active          ║${C.reset}`);
   console.log(`${C.bold}${C.purple}╚══════════════════════════════════════════════════════════════════════╝${C.reset}
 `);
   console.log(`${C.dim}Tippe eine Frage oder einen Befehl (/chat, /status, /setup, /doc, /help, /exit)${C.reset}
