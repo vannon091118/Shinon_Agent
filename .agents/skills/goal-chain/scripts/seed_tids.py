@@ -1,18 +1,158 @@
 #!/usr/bin/env python3
-"""Seed TIDs v2 — with templates, alternative paths, user checkpoints."""
+"""Seed TIDs v3 — with templates, alternative paths, user checkpoints, --skills-only mode.
+
+Full mode:
+  python3 seed_tids.py PZ "Build OAuth2 login"
+  → Seeds all 63 TIDs (P1-P4 phases + STACK tools) into a new run.
+
+Skills-only mode (used by GoalChainSubscriber for KARMA-triggered TIDs):
+  python3 seed_tids.py PZ "KARMA refuted auth claim" --skills-only --skills security-scan,validation
+  → Seeds only the specified STACK TIDs within the ACTIVE run (no new run created).
+"""
 import sqlite3, sys, os, re
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'db', 'tid-state.db')
 
 if len(sys.argv) < 3:
-    print("Usage: seed_tids.py PROJEKT GOAL")
+    print("Usage: seed_tids.py PROJEKT GOAL [--skills-only --skills sk1,sk2,...]")
     sys.exit(1)
 
 PROJEKT = sys.argv[1]
 GOAL = sys.argv[2]
+
+# ─── Parse flags ──────────────────────────────────────────────────────
+SKILLS_ONLY = False
+TARGET_SKILLS = []
+
+args = sys.argv[3:]
+i = 0
+while i < len(args):
+    if args[i] == "--skills-only":
+        SKILLS_ONLY = True
+        i += 1
+    elif args[i] == "--skills" and i + 1 < len(args):
+        TARGET_SKILLS = [s.strip() for s in args[i + 1].split(",") if s.strip()]
+        i += 2
+    else:
+        i += 1
+
+if SKILLS_ONLY and not TARGET_SKILLS:
+    print("Error: --skills-only requires --skills", file=sys.stderr)
+    sys.exit(1)
+
+# ─── Skill Lookup Table (section → (skill_name, chain_script, output_artifact, template_id)) ──
+# Used by skills-only mode. Must match the STACK entries in the `tids` list below.
+S = '.agents/skills/goal-chain/scripts'
+SKILL_LOOKUP = {
+    # Row 21-36
+    "autorun":                ("agents/autorun",                             f"{S}/chain-autorun.sh",                  "autorun-decision.md",            "decision-log-v1"),
+    "guide-architekt":        ("agents/guide-architekt",                     f"{S}/chain-guide-architekt.sh",           "architekt-guide.md",             "decision-log-v1"),
+    "executing-plans":        ("web-dev/superpowers/executing-plans",        f"{S}/chain-executing-plans.sh",           "execution-log.md",               "execution-log-v1"),
+    "multi-agent-orchestr":   ("agents/multi-agent-orchestrator",            f"{S}/chain-multi-agent-orchestrator.sh",  "orchestration-plan.md",          "orchestration-plan-v1"),
+    "security-scan":          ("security/codex-security/security-scan",      f"{S}/chain-security-scan.sh",             "security-report.md",             "security-report-v1"),
+    "track-findings":         ("security/codex-security/track-findings",     f"{S}/chain-track-findings.sh",            "findings-tracker.md",            "findings-tracker-v1"),
+    "web-design-guidelines":  ("design/web-design-guidelines",               f"{S}/chain-web-design-guidelines.sh",     "design-guidelines-check.md",     "guidelines-check-v1"),
+    "validation":             ("security/codex-security/validation",         f"{S}/chain-validation.sh",               "validation-report.md",           "validation-report-v1"),
+    "python-testing-patte":   ("development/python-testing-patterns",        f"{S}/chain-python-testing-patterns.sh",   "test-strategy.md",               "test-strategy-v1"),
+    "playwright-expert":      ("testing/playwright-expert",                  f"{S}/chain-playwright-expert.sh",        "playwright-tests.md",            "playwright-tests-v1"),
+    "community-deep-resea":   ("research/community-deep-research",           f"{S}/chain-community-deep-research.sh",  "deep-research.md",               "research-report-v1"),
+    "frontend-design":        ("design/frontend-design",                     f"{S}/chain-frontend-design.sh",          "frontend-design.md",             "decision-log-v1"),
+    "canvas-design":          ("design/canvas-design",                       f"{S}/chain-canvas-design.sh",            "canvas-design.md",               "decision-log-v1"),
+    "media-generation":       ("media/media-generation",                     f"{S}/chain-media-generation.sh",         "media-assets.md",                "decision-log-v1"),
+    "consolidate-memory":     ("claude-tools/consolidate-memory",            f"{S}/chain-consolidate-memory.sh",       "memory-consolidation.md",        "consolidation-v1"),
+    "receiving-code-review":  ("development/receiving-code-review",          f"{S}/chain-receiving-code-review.sh",     "code-review-processing.md",      "review-processing-v1"),
+    # Row 37-63
+    "clerk-webhooks":         ("agents/clerk-webhooks",                       f"{S}/chain-clerk-webhooks.sh",            "clerk-webhooks.md",              "decision-log-v1"),
+    "delivery-tracking":      ("agents/delivery-tracking",                   f"{S}/chain-delivery-tracking.sh",         "delivery-tracking.md",           "decision-log-v1"),
+    "sub-agent-prompts":      ("agents/sub-agent-prompts",                   f"{S}/chain-sub-agent-prompts.sh",         "sub-agent-prompts.md",           "decision-log-v1"),
+    "docx":                   ("claude-tools/docx",                          f"{S}/chain-docx.sh",                      "docx-output.md",                 "decision-log-v1"),
+    "pdf":                    ("claude-tools/pdf",                           f"{S}/chain-pdf.sh",                       "pdf-output.md",                  "decision-log-v1"),
+    "pptx":                   ("claude-tools/pptx",                          f"{S}/chain-pptx.sh",                      "pptx-output.md",                 "decision-log-v1"),
+    "xlsx":                   ("claude-tools/xlsx",                          f"{S}/chain-xlsx.sh",                      "xlsx-output.md",                 "decision-log-v1"),
+    "schedule":               ("claude-tools/schedule",                      f"{S}/chain-schedule.sh",                  "schedule.md",                    "decision-log-v1"),
+    "morning":                ("claude-tools/morning",                       f"{S}/chain-morning.sh",                   "morning-plan.md",                "decision-log-v1"),
+    "explain-usage":          ("claude-tools/explain-usage",                 f"{S}/chain-explain-usage.sh",             "explain-usage.md",               "decision-log-v1"),
+    "setup-cowork":           ("claude-tools/setup-cowork",                  f"{S}/chain-setup-cowork.sh",              "setup-cowork.md",                "decision-log-v1"),
+    "document-tools":         ("documents/document-tools",                   f"{S}/chain-document-tools.sh",            "document-tools.md",              "decision-log-v1"),
+    "pdf-tools":              ("documents/pdf-tools",                        f"{S}/chain-pdf-tools.sh",                 "pdf-tools.md",                   "decision-log-v1"),
+    "presentation-tools":     ("documents/presentation-tools",               f"{S}/chain-presentation-tools.sh",        "presentation-tools.md",          "decision-log-v1"),
+    "spreadsheet-tools":      ("documents/spreadsheet-tools",                f"{S}/chain-spreadsheet-tools.sh",         "spreadsheet-tools.md",           "decision-log-v1"),
+    "canvas":                 ("design/canvas",                              f"{S}/chain-canvas.sh",                    "canvas-rendering.md",            "decision-log-v1"),
+    "performance":            ("design/performance",                         f"{S}/chain-performance.sh",               "perf-optimization.md",           "decision-log-v1"),
+    "tailwind-design-system": ("design/tailwind-design-system",              f"{S}/chain-tailwind-design-system.sh",     "tailwind-system.md",             "decision-log-v1"),
+    "python-perf":            ("development/python-performance-optimization",f"{S}/chain-python-performance-optimization.sh","python-perf.md",          "decision-log-v1"),
+    "typescript-expert":      ("development/typescript-expert",              f"{S}/chain-typescript-expert.sh",         "typescript-quality.md",          "decision-log-v1"),
+    "upgrade-react-native":   ("development/upgrade-react-native",           f"{S}/chain-upgrade-react-native.sh",      "rn-upgrade-plan.md",             "decision-log-v1"),
+    "audio-transcription":    ("media/audio-transcription",                  f"{S}/chain-audio-transcription.sh",       "audio-transcript.md",            "decision-log-v1"),
+    "desktop-automation":     ("media/desktop-automation",                   f"{S}/chain-desktop-automation.sh",        "desktop-automation.md",          "decision-log-v1"),
+    "screenshot-tools":       ("media/screenshot-tools",                     f"{S}/chain-screenshot-tools.sh",          "screenshot-tools.md",            "decision-log-v1"),
+    "lua-game-systems":       ("games/lua-game-systems",                     f"{S}/chain-lua-game-systems.sh",          "lua-game-systems.md",            "decision-log-v1"),
+    "playcanvas-engine":      ("games/playcanvas-engine",                    f"{S}/chain-playcanvas-engine.sh",         "playcanvas-engine.md",           "decision-log-v1"),
+    "evil-twin-protocol":     ("evil-twin-protocol",                          f"{S}/chain-evil-twin-protocol.sh",        "evil-twin-standalone.md",        "evil-twin-v1"),
+}
+
 TS = datetime.now().strftime('%Y%m%d-%H%M%S')
 RUN_ID = f'R{TS}'
+
+conn = sqlite3.connect(DB_PATH)
+cur = conn.cursor()
+
+# ─── Skills-only mode: append to active run ───────────────────────────
+if SKILLS_ONLY:
+    active = cur.execute(
+        "SELECT run_id FROM tasks WHERE status='PENDING' AND phase='STACK' ORDER BY updated_at DESC LIMIT 1"
+    ).fetchone()
+    
+    if not active:
+        active = cur.execute(
+            "SELECT run_id FROM tasks ORDER BY updated_at DESC LIMIT 1"
+        ).fetchone()
+    
+    if not active:
+        print("Error: No active run found — cannot seed skills-only", file=sys.stderr)
+        conn.close()
+        sys.exit(1)
+    
+    RUN_ID = active[0]
+    print(f"[seed_tids] skills-only mode: appending to active run {RUN_ID}")
+    print(f"[seed_tids] target skills: {TARGET_SKILLS}")
+    
+    max_seq = cur.execute(
+        "SELECT MAX(phase_seq) FROM tasks WHERE run_id=?", (RUN_ID,)
+    ).fetchone()[0] or 63
+    
+    seeded_count = 0
+    for skill_name in TARGET_SKILLS:
+        if skill_name not in SKILL_LOOKUP:
+            print(f"[seed_tids] WARNING: unknown skill '{skill_name}' — skipping")
+            continue
+        
+        skill_path, script, output, template_id = SKILL_LOOKUP[skill_name]
+        max_seq += 1
+        tid = f"{PROJEKT}-{RUN_ID}-STACK-{skill_name}"
+        
+        cur.execute("""INSERT OR REPLACE INTO tasks
+            (tid, projekt, run_id, task, goal, phase, phase_section, phase_seq,
+             skill_name, script_path, input_artifacts, output_artifact, template_id, requires_approval)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (tid, PROJEKT, RUN_ID, skill_name, GOAL, "STACK", skill_name, max_seq,
+             skill_path, script, "", output, template_id, 0))
+        
+        seeded_count += 1
+        print(f"[seed_tids]   ✅ {tid}")
+    
+    conn.commit()
+    count = cur.execute("SELECT COUNT(*) FROM tasks WHERE run_id=?", (RUN_ID,)).fetchone()[0]
+    print(f"[seed_tids] seeded {seeded_count} skill TIDs → run {RUN_ID} (total: {count} TIDs)")
+    print(f"RUN_ID={RUN_ID}")
+    print(f"TID_COUNT={seeded_count}")
+    print(f"TEMPLATE_MARKERS=0")
+    print(f"ALT_PATHS=0")
+    conn.close()
+    sys.exit(0)
+
+# ─── Full mode: create new run ────────────────────────────────────────
 
 slug = re.sub(r'[^a-z0-9]', '-', GOAL.lower())
 slug = re.sub(r'--+', '-', slug).strip('-')[:40]
@@ -22,9 +162,6 @@ RUN_DIR = f'.goal/{RUN_ID}-{slug}'
 os.makedirs(f'{RUN_DIR}/docs', exist_ok=True)
 os.makedirs(f'{RUN_DIR}/wiki', exist_ok=True)
 os.makedirs(f'{RUN_DIR}/learnings', exist_ok=True)
-
-conn = sqlite3.connect(DB_PATH)
-cur = conn.cursor()
 
 # ─── All TIDs with (tid, phase, section, seq, skill, script, output, input, template_id, requires_approval) ───
 tids = [

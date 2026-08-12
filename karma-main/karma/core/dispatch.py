@@ -14,7 +14,7 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from karma.core.persistence import PersistenceLayer
 
@@ -356,8 +356,14 @@ class DispatchGate:
         self._state_version = 0
         self._rng = DeterministicRng()
 
-    def dispatch(self, action: Action) -> Dict:
-        """THE single write entry. All state changes go through here."""
+    def dispatch(self, action: Action) -> Tuple[Dict, List[Patch]]:
+        """THE single write entry. All state changes go through here.
+
+        Returns:
+            (next_state, patches) — the resulting state and the patches
+            that were applied. This allows recorders/wrappers to capture
+            patches without re-computing them via the reducer.
+        """
         # Validate action
         if not isinstance(action, Action):
             raise TypeError("Action must be an Action object")
@@ -409,7 +415,7 @@ class DispatchGate:
         self._state_version += 1
         self._notify()
 
-        return next_state
+        return next_state, patches
 
     def _persist_patches(self, project: str, patches: List[Patch]) -> None:
         """Route each patch to the correct persistence target.

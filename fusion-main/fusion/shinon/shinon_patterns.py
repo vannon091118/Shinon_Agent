@@ -212,3 +212,93 @@ def _extract_person_name(content: str) -> Optional[str]:
 def _extract_name_from_anchor(anchor: str) -> Optional[str]:
     match = re.search(r'user-beziehung-(.+)', anchor)
     return match.group(1).lower() if match else None
+
+
+# ─── Batch Extraction: Input Text → Patterns ──────────────────────────
+
+
+def extract_patterns_from_input(
+    user_text: str,
+    session_id: str = "default",
+) -> List[Pattern]:
+    """Extract ALL patterns from raw user input in one call.
+
+    Splits input into sentences, creates PersonalFacts with category
+    classification, then runs extract_pattern() on each fact.
+    Returns only non-None patterns, sorted by confidence descending.
+
+    This is the combined entry point that replaces the two-step:
+      1. _extract_facts(text) → List[PersonalFact]
+      2. extract_pattern(fact) → Optional[Pattern]
+
+    Args:
+        user_text: Raw user input text
+        session_id: Session identifier for fact ownership
+
+    Returns:
+        List of extracted patterns, sorted by confidence (highest first)
+    """
+    facts = _extract_facts_from_text(user_text, session_id)
+    patterns = []
+    for fact in facts:
+        pattern = extract_pattern(fact)
+        if pattern:
+            scored = score_confidence(pattern)
+            pattern.confidence = scored
+            patterns.append(pattern)
+    return sorted(patterns, key=lambda p: p.confidence, reverse=True)
+
+
+def extract_facts_from_input(
+    user_text: str,
+    session_id: str = "default",
+) -> List[PersonalFact]:
+    """Extract PersonalFacts from raw user input.
+
+    Sentence-level extraction with keyword-based category classification.
+    Returns all facts, not just those with extractable patterns.
+
+    Args:
+        user_text: Raw user input text
+        session_id: Session identifier for fact ownership
+
+    Returns:
+        List of PersonalFacts
+    """
+    return _extract_facts_from_text(user_text, session_id)
+
+
+def _extract_facts_from_text(user_text: str, session_id: str) -> List[PersonalFact]:
+    """Internal: sentence-level fact extraction with category classification."""
+    import uuid
+    facts = []
+    sentences = re.split(r'[.!?]+', user_text)
+    for sentence in sentences:
+        stripped = sentence.strip()
+        if len(stripped) < 5:
+            continue
+
+        lowered = stripped.lower()
+
+        # Category classification (Ported from TypeScript keyword sets)
+        if any(w in lowered for w in ("mag", "liebe", "hasse", "bevorzuge", "mögen",
+                                       "liebst", "hasst", "magst")):
+            category = "preference"
+        elif any(w in lowered for w in ("freund", "freundin", "partner", "partnerin",
+                                          "beziehung", "date", "meine", "mein", "trifft",
+                                          "treffen")):
+            category = "relationship"
+        elif any(w in lowered for w in ("versprechen", "versprochen", "werde", "mache",
+                                          "muss", "soll", "garantiere", "schwöre")):
+            category = "commitment"
+        else:
+            category = "event"
+
+        facts.append(PersonalFact(
+            id=f"fact_{uuid.uuid4().hex[:12]}",
+            content=stripped[:200],
+            category=category,
+            session_id=session_id,
+        ))
+
+    return facts

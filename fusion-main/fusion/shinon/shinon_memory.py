@@ -473,3 +473,73 @@ class TwoTierMemory:
             "total_patterns": sum(r["cnt"] for r in patterns),
             "total_links": links[0]["cnt"] if links else 0,
         }
+
+    # ── Combined Query: Character Memory ──────────────────────────
+
+    def query_character_memory(
+        self,
+        session_id: Optional[str] = None,
+        min_confidence: float = 0.3,
+        tier1_limit: int = 10,
+        tier2_limit: int = 10,
+    ) -> Dict[str, Any]:
+        """Combined Tier1 + Tier2 query for character context assembly.
+
+        Fetches relevant facts AND patterns in one call, with cross-tier
+        linking resolved. This is the primary query used by ShinonEngine
+        to assemble PromptContext for the prompt generator.
+
+        Returns a dict with:
+          - facts: List[PersonalFact] — recent Tier1 facts
+          - patterns: List[Pattern] — high-confidence Tier2 patterns
+          - linked: List[{pattern, facts}] — cross-tier linked pairs
+          - stats: summary stats
+
+        Args:
+            session_id: Optional session filter for facts
+            min_confidence: Minimum pattern confidence (default 0.3)
+            tier1_limit: Max facts to return
+            tier2_limit: Max patterns to return
+
+        Returns:
+            Dict with facts, patterns, linked, stats
+        """
+        # Fetch Tier 1 facts
+        facts = self.query_tier1(
+            session_id=session_id,
+            zone="hot",
+            limit=tier1_limit,
+        )
+        if len(facts) < tier1_limit:
+            mid_facts = self.query_tier1(
+                session_id=session_id,
+                zone="mid",
+                limit=tier1_limit - len(facts),
+            )
+            facts.extend(mid_facts)
+
+        # Fetch Tier 2 patterns
+        patterns = self.query_tier2(
+            min_confidence=min_confidence,
+            limit=tier2_limit,
+        )
+
+        # Cross-tier linking
+        linked = []
+        if self.config.enable_cross_tier_queries and patterns:
+            for pattern in patterns[:5]:  # Link top 5 patterns
+                linked_facts = self.query_facts_by_pattern(pattern.id, limit=5)
+                if linked_facts:
+                    linked.append({
+                        "pattern": pattern,
+                        "facts": linked_facts,
+                    })
+
+        stats = self.get_stats()
+
+        return {
+            "facts": facts,
+            "patterns": patterns,
+            "linked": linked,
+            "stats": stats,
+        }

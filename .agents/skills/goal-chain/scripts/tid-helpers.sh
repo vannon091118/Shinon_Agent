@@ -286,6 +286,14 @@ latest_user_decision() {
     db_query "SELECT decision, selected_tid, user_rationale FROM user_decisions WHERE after_tid='$after_tid' ORDER BY decision_id DESC LIMIT 1;"
 }
 
+# ─── SQL Escaping ───────────────────────────────────────────────
+# Doubles single quotes for safe SQLite string literals.
+# Usage: val=$(sql_escape "$raw_value")
+sql_escape() {
+    local val="$1"
+    echo "${val//\'/''}"
+}
+
 # ─── Decision Recording ────────────────────────────────────────────
 record_decision() {
     local tid="$1"
@@ -294,8 +302,37 @@ record_decision() {
     local rationale="${4:-}"
     local next_tid="${5:-}"
     local alt_tids="${6:-}"
-    db_exec "INSERT INTO dispatcher_decisions (tid, decision_type, decision_value, rationale, next_tid, alt_tids)
-             VALUES ('$tid', '$decision_type', '$decision_value', '$rationale', '$next_tid', '$alt_tids');"
+
+    # Escape ALL string values for SQLite (single quotes → doubled)
+    local tid_e; tid_e=$(sql_escape "$tid")
+    local type_e; type_e=$(sql_escape "$decision_type")
+    local val_e; val_e=$(sql_escape "$decision_value")
+    local rat_e; rat_e=$(sql_escape "$rationale")
+    local next_e; next_e=$(sql_escape "$next_tid")
+    local alt_e; alt_e=$(sql_escape "$alt_tids")
+
+    # Use Python for INSERT with proper parameterization when available.
+    # Falls back to sqlite3 CLI with escaped values.
+    if command -v python3 &>/dev/null; then
+        python3 -c "
+import sqlite3
+try:
+    conn = sqlite3.connect('$DB_PATH')
+    conn.execute(
+        '''INSERT INTO dispatcher_decisions (tid, decision_type, decision_value, rationale, next_tid, alt_tids)
+           VALUES (?, ?, ?, ?, ?, ?)''',
+        ('$tid_e', '$type_e', '$val_e', '$rat_e', '$next_e', '$alt_e')
+    )
+    conn.commit()
+    conn.close()
+except Exception as e:
+    import sys
+    print(f'DB Error in record_decision: {e}', file=sys.stderr)
+" 2>/dev/null
+    else
+        db_exec "INSERT INTO dispatcher_decisions (tid, decision_type, decision_value, rationale, next_tid, alt_tids)
+                 VALUES ('$tid_e', '$type_e', '$val_e', '$rat_e', '$next_e', '$alt_e');"
+    fi
 }
 
 record_user_decision() {

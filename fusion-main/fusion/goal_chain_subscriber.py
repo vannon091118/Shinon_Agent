@@ -56,10 +56,11 @@ EVENT_GOAL_CHAIN_REWORK = "goal_chain.rework"
 
 # ─── Claim → Skill-Chain Mapping ──────────────────────────────────────
 
+# Hardcoded fallback — when the external JSON file is missing or unreadable.
 # Maps claim keywords/patterns to goal-chain skill sections.
 # When KARMA refutes a claim matching a pattern, the corresponding
 # skill-chain TIDs are triggered for gap-filling.
-CLAIM_TO_SKILL_MAP: Dict[str, List[str]] = {
+_DEFAULT_CLAIM_TO_SKILL_MAP: Dict[str, List[str]] = {
     # Security claims → security-scan, validation
     "security": ["security-scan", "validation"],
     "auth": ["security-scan", "validation"],
@@ -128,13 +129,70 @@ CLAIM_TO_SKILL_MAP: Dict[str, List[str]] = {
     "should": ["track-findings"],
 }
 
-# Reverse map: skill → which domains trigger it
-SKILL_TO_CLAIM_DOMAINS: Dict[str, Set[str]] = {}
-for domain, skills in CLAIM_TO_SKILL_MAP.items():
-    for skill in skills:
-        if skill not in SKILL_TO_CLAIM_DOMAINS:
-            SKILL_TO_CLAIM_DOMAINS[skill] = set()
-        SKILL_TO_CLAIM_DOMAINS[skill].add(domain)
+# Backward-compatible alias for external consumers
+CLAIM_TO_SKILL_MAP = _DEFAULT_CLAIM_TO_SKILL_MAP
+
+
+def _build_reverse_map(mapping: Dict[str, List[str]]) -> Dict[str, Set[str]]:
+    """Build reverse map: skill → set of domains that trigger it."""
+    reverse: Dict[str, Set[str]] = {}
+    for domain, skills in mapping.items():
+        for skill in skills:
+            if skill not in reverse:
+                reverse[skill] = set()
+            reverse[skill].add(domain)
+    return reverse
+
+
+def _load_claim_skill_map(project_root: Optional[Path] = None) -> Dict[str, List[str]]:
+    """Load CLAIM_TO_SKILL_MAP from external JSON file.
+
+    Tries in order:
+      1. fusion-main/fusion/claim-to-skill-map.json (relative to project_root)
+      2. Hardcoded _DEFAULT_CLAIM_TO_SKILL_MAP fallback
+
+    The JSON format:
+      { "version": "1.0.0", "mappings": { "keyword": ["skill-1", "skill-2"], ... } }
+
+    Returns a dict suitable for _map_claim_to_skills().
+    """
+    root = Path(project_root) if project_root else Path.cwd()
+    json_paths = [
+        root / "fusion-main" / "fusion" / "claim-to-skill-map.json",
+        root / "claim-to-skill-map.json",
+    ]
+
+    for path in json_paths:
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            mappings = data.get("mappings", {})
+            if mappings and isinstance(mappings, dict):
+                # Validate: all values must be non-empty lists of strings
+                validated: Dict[str, List[str]] = {}
+                for kw, skills in mappings.items():
+                    if isinstance(skills, list) and skills and all(isinstance(s, str) for s in skills):
+                        validated[kw] = skills
+                if validated:
+                    logger.info(
+                        "GoalChain: loaded %d claim→skill mappings from %s (version %s)",
+                        len(validated), path, data.get("version", "?"),
+                    )
+                    return validated
+                else:
+                    logger.warning("GoalChain: claim-to-skill-map.json has no valid mappings — using fallback")
+        except (json.JSONDecodeError, OSError, KeyError, TypeError) as exc:
+            logger.warning("GoalChain: failed to load %s: %s — using fallback", path, exc)
+
+    logger.debug("GoalChain: using hardcoded CLAIM_TO_SKILL_MAP (%d keywords)", len(_DEFAULT_CLAIM_TO_SKILL_MAP))
+    return dict(_DEFAULT_CLAIM_TO_SKILL_MAP)
+
+
+# Module-level reverse map for external consumers.
+# NOTE: Built from the hardcoded default — does NOT reflect JSON file overrides.
+# The GoalChainSubscriber instance uses self._claim_skill_map for internal lookups.
+SKILL_TO_CLAIM_DOMAINS = _build_reverse_map(_DEFAULT_CLAIM_TO_SKILL_MAP)
 
 
 # ─── Data Classes ─────────────────────────────────────────────────────
@@ -240,13 +298,17 @@ class GoalChainSubscriber:
         project_root: Optional[Path] = None,
         *,
         dispatch_mode: str = "seed",
-        min_confidence: float = 0.3,
+        max_investigation_confidence: float = 0.7,
         max_skills_per_trigger: int = 5,
     ):
         self.bus = bus
         self._project_root = Path(project_root) if project_root else Path.cwd()
         self._dispatch_mode = dispatch_mode
-        self._min_confidence = min_confidence
+        # INVERTED threshold: we investigate claims with confidence BELOW this value.
+        # Low confidence = KARMA is uncertain → needs MORE investigation.
+        # High confidence (>0.7) = KARMA is certain → no investigation needed.
+        # Refuted claims are ALWAYS actionable regardless of confidence.
+        self._max_investigation_confidence = max_investigation_confidence
         self._max_skills_per_trigger = max_skills_per_trigger
 
         # Stats
@@ -254,6 +316,9 @@ class GoalChainSubscriber:
         self._skills_triggered_total = 0
         self._rework_count = 0
         self._rework_skills_total = 0
+
+        # Load claim→skill mapping (JSON file with hardcoded fallback)
+        self._claim_skill_map = _load_claim_skill_map(self._project_root)
 
         # Paths
         self._goal_chain_dir = self._project_root / ".agents" / "skills" / "goal-chain"
@@ -290,11 +355,21 @@ class GoalChainSubscriber:
         results = payload.get("results", [])
         cid = event.correlation_id
 
-        actionable = [
+        # Separate claims by type:
+        # - refuted: ALWAYS actionable (KARMA found hard evidence against it)
+        # - unverified/conflicted: actionable only when confidence is LOW
+        #   (low confidence = KARMA uncertain → needs investigation)
+        # - high-confidence unverified: KARMA is sure it's fine → skip
+        refuted = [
             r for r in results
-            if r.get("result") in self.ACTIONABLE_RESULTS
-            and r.get("confidence", 0) >= self._min_confidence
+            if r.get("result") == "refuted"
         ]
+        uncertain = [
+            r for r in results
+            if r.get("result") in ("unverified", "conflicted")
+            and r.get("confidence", 0.5) < self._max_investigation_confidence
+        ]
+        actionable = refuted + uncertain
 
         if not actionable:
             logger.debug("GoalChain: no actionable claims in run %s", cid)
@@ -470,7 +545,7 @@ class GoalChainSubscriber:
         text_lower = claim_text.lower()
         matched_skills: Dict[str, int] = {}  # skill → match score
 
-        for keyword, skills in CLAIM_TO_SKILL_MAP.items():
+        for keyword, skills in self._claim_skill_map.items():
             if keyword in text_lower:
                 for skill in skills:
                     matched_skills[skill] = matched_skills.get(skill, 0) + 1
@@ -603,6 +678,94 @@ class GoalChainSubscriber:
         except Exception as exc:
             logger.exception("GoalChain: dispatch failed: %s", exc)
 
+    # ── LIMEN Rate-Limit → TID FAIL ──────────────────────────────────
+
+    def _fail_active_tids_for_provider(
+        self,
+        *,
+        provider: str,
+        deployment: str,
+        reason: str,
+        limit_type: str = "unknown",
+        cooldown_seconds: float = 0.0,
+        correlation_id: str = "",
+    ) -> int:
+        """Set all IN_PROGRESS TIDs to FAILED when LIMEN reports rate limit / key exhaustion.
+
+        Writes a dispatcher_decision entry with rate-limit details so the
+        dashboard can show WHY the TID failed. This enforces REGEL 1:
+        TIDs whose execution was interrupted by infrastructure failure
+        are explicitly marked, not left dangling.
+
+        Returns the number of TIDs that were set to FAILED.
+        """
+        import sqlite3 as _sqlite
+        from datetime import datetime as _dt, timezone as _tz
+
+        goal_db = self._goal_chain_dir / "db" / "tid-state.db"
+        if not goal_db.exists():
+            logger.warning("GoalChain: tid-state.db not found — cannot fail TIDs")
+            return 0
+
+        try:
+            conn = _sqlite.connect(str(goal_db))
+            conn.row_factory = _sqlite.Row
+            now = _dt.now(_tz.utc).isoformat()
+
+            # Find all IN_PROGRESS TIDs across all runs
+            inprog = conn.execute(
+                "SELECT tid, run_id, phase, phase_section, skill_name FROM tasks WHERE status='IN_PROGRESS'"
+            ).fetchall()
+
+            if not inprog:
+                logger.info("GoalChain: no IN_PROGRESS TIDs to fail for %s/%s", provider, deployment)
+                conn.close()
+                return 0
+
+            failed_count = 0
+            for row in inprog:
+                tid = row["tid"]
+                run_id = row["run_id"]
+
+                # Set TID to FAILED
+                conn.execute(
+                    "UPDATE tasks SET status='FAILED', updated_at=?, completed_at=? WHERE tid=?",
+                    (now, now, tid),
+                )
+
+                # Write dispatcher_decision with rate-limit context
+                decision_value = (
+                    f"LIMEN_{limit_type.upper()}: {provider}/{deployment} "
+                    f"cooldown={cooldown_seconds:.0f}s reason={reason[:200]}"
+                )
+                conn.execute(
+                    """INSERT INTO dispatcher_decisions
+                       (tid, decision_type, decision_value, rationale, timestamp)
+                       VALUES (?, 'LIMEN_RATE_LIMITED', ?, ?, ?)""",
+                    (tid, decision_value, reason[:500], now),
+                )
+
+                failed_count += 1
+                logger.warning(
+                    "GoalChain: FAILED TID %s due to LIMEN %s: %s/%s",
+                    tid, limit_type.upper(), provider, deployment,
+                )
+
+            conn.commit()
+            conn.close()
+
+            if failed_count > 0:
+                logger.warning(
+                    "GoalChain: FAILED %d IN_PROGRESS TIDs due to LIMEN %s on %s/%s",
+                    failed_count, limit_type.upper(), provider, deployment,
+                )
+
+            return failed_count
+
+        except Exception as exc:
+            logger.exception("GoalChain: failed to set TIDs to FAILED: %s", exc)
+            return 0
+
     async def _publish_skill_chain(
         self, skills: List[str], correlation_id: str, goal: str
     ) -> None:
@@ -631,12 +794,14 @@ class GoalChainSubscriber:
     }
 
     async def on_limen_rate_limited(self, event: Event) -> None:
-        """Handle ``limen.rate_limited`` — trigger mitigation TIDs.
+        """Handle ``limen.rate_limited`` — FAIL active TIDs + trigger mitigation.
 
         When LIMEN hits a 429, goal-chain:
-        1. Classifies the rate limit type (TPM/RPD/RPM/MONTHLY/CONCURRENT)
-        2. Maps to relevant skill-chains for investigation
-        3. Seeds targeted TIDs for rate-limit analysis
+        1. FAILs all IN_PROGRESS TIDs for the affected provider/deployment
+        2. Writes dispatcher_decisions with rate-limit details
+        3. Classifies the rate limit type (TPM/RPD/RPM/MONTHLY/CONCURRENT)
+        4. Maps to relevant skill-chains for investigation
+        5. Seeds targeted TIDs for rate-limit analysis
         """
         payload = event.payload
         limit_type = payload.get("limit_type", "unknown")
@@ -644,6 +809,16 @@ class GoalChainSubscriber:
         provider = payload.get("provider", "unknown")
         cooldown = payload.get("cooldown_seconds", 60)
         strategy = payload.get("strategy", "")
+
+        # ── FAIL active TIDs that were using this provider ──
+        self._fail_active_tids_for_provider(
+            provider=provider,
+            deployment=deployment,
+            reason=f"LIMEN 429 {limit_type.upper()}: {provider}/{deployment} cooldown={cooldown:.0f}s",
+            limit_type=limit_type,
+            cooldown_seconds=cooldown,
+            correlation_id=event.correlation_id,
+        )
 
         logger.info(
             "GoalChain: LIMEN rate_limited — type=%s deployment=%s/%s cooldown=%.1fs",
@@ -734,10 +909,11 @@ class GoalChainSubscriber:
         ))
 
     async def on_limen_key_exhausted(self, event: Event) -> None:
-        """Handle ``limen.key_exhausted`` — CRITICAL: trigger emergency provision.
+        """Handle ``limen.key_exhausted`` — CRITICAL: FAIL ALL + emergency provision.
 
         When all keys for a deployment are exhausted (dead/cooldown),
-        goal-chain triggers EMERGENCY TIDs for key rotation/provisioning.
+        goal-chain FAILs ALL active TIDs for that provider and triggers
+        EMERGENCY TIDs for key rotation/provisioning.
         This is the highest-priority LIMEN event.
         """
         payload = event.payload
@@ -752,6 +928,16 @@ class GoalChainSubscriber:
         logger.critical(
             "GoalChain: LIMEN key_exhausted — %s/%s active=%d cooldown=%d dead=%d: %s",
             provider, deployment, active, cooldown, dead, message,
+        )
+
+        # ── FAIL ALL active TIDs — no keys available to execute them ──
+        self._fail_active_tids_for_provider(
+            provider=provider,
+            deployment=deployment,
+            reason=f"LIMEN KEY_EXHAUSTED: {provider}/{deployment} active={active} cooldown={cooldown} dead={dead}",
+            limit_type="exhausted",
+            cooldown_seconds=0,
+            correlation_id=event.correlation_id,
         )
 
         # Emergency skills: autorun (quick assessment) + delivery-tracking (key rot)

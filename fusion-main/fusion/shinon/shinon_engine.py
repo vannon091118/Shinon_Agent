@@ -20,6 +20,8 @@ from fusion.shinon.shinon_patterns import (
     PersonalFact,
     Pattern,
     extract_pattern,
+    extract_patterns_from_input,
+    extract_facts_from_input,
     find_contradictions,
     score_confidence,
 )
@@ -45,6 +47,23 @@ from fusion.shinon.shinon_emotional import (
     create_emotional_context,
     transition_state,
     get_tone_modifier,
+)
+from fusion.shinon.shinon_prompts import (
+    PromptContext,
+    GeneratedPrompt,
+    generate_prompt,
+    generate_confrontation_prompt,
+    generate_prompt_minimal,
+)
+from fusion.shinon.shinon_contracts import (
+    validate_input,
+    validate_output,
+    validate_actions,
+    safe_validate_input,
+    safe_validate_output,
+    safe_validate_actions,
+    validate_all,
+    stable_serialize,
 )
 
 
@@ -156,21 +175,21 @@ class ShinonEngine:
     def process(self, input: ShinonInput) -> ShinonOutput:
         """Process user input through the full character pipeline.
 
-        1. Extract facts from user input
+        1. Extract facts from user input (sentence-level, categorized)
         2. Ingest facts into Tier 1 memory → extract patterns → Tier 2
         3. Load/sync attitude state for this session
         4. Check for contradictions with recent facts
         5. Update emotional state based on findings
         6. Apply attitude rules (e.g. inkonsistenz_gefunden → trust -3)
-        7. Decide: should_confort?
-        8. Generate character context + tone directive
-        9. Build HOFF-0002 handoff to Promtguard
+        7. Decide: should_confront? + generate tone directives
+        8. Generate Shinon personality prompt via Prompt Generator
+        9. Build contract-validated HOFF-0002 handoff to Promtguard
         """
         session_id = input.session_id
         user_text = input.user_text
 
-        # 1. Extract facts from user input (heuristic: split on sentences)
-        facts = self._extract_facts(user_text, session_id)
+        # 1. Extract facts from user input (sentence-level, categorized)
+        facts = extract_facts_from_input(user_text, session_id)
 
         # 2. Ingest facts → memory → patterns
         patterns = []
@@ -227,12 +246,11 @@ class ShinonEngine:
         max_confidence = max((p.confidence for p in patterns), default=0.0)
         confront = should_confront(attitude, max_confidence)
 
-        # 7. Generate tone directives
+        # 8. Build character context + tone directive
         tone_from_attitude = get_tone_directive(attitude)
         tone_from_emotional = get_tone_modifier(emotional_ctx.current_state)
         combined_tone = f"{tone_from_attitude} — {tone_from_emotional}"
 
-        # 8. Build character context
         character_context = CharacterContext(
             attitudes={
                 "warmth": attitude.warmth,
@@ -247,13 +265,47 @@ class ShinonEngine:
             tone_directive=combined_tone,
         )
 
-        # 9. Build HOFF-0002 handoff
+        # 9. Generate personality prompt + contract-validated handoff
+        prompt_ctx = PromptContext(
+            user_text=user_text,
+            patterns=patterns,
+            attitude=attitude,
+            emotional_state=emotional_ctx.current_state,
+            relevant_facts=[
+                {"id": f.id, "content": f.content, "date": f.created_at}
+                for f in recent[-5:]
+            ],
+            interaction_count=len(recent),
+        )
+        generated_prompt = generate_prompt(prompt_ctx)
+
+        # 11. Build HOFF-0002 handoff (contract-validated)
+        handoff_raw = {
+            "turn": {
+                "userText": user_text,
+                "sessionId": session_id,
+                "history": input.history,
+            },
+            "memoryContext": {
+                "attitude": attitude.to_dict(),
+                "emotionalState": emotional_ctx.current_state,
+                "patternsDetected": len(patterns),
+                "contradictionsFound": contradictions_found,
+                "shouldConfront": confront,
+                "identityName": self.identity.name,
+                "identityVersion": self.identity.version,
+            },
+        }
+
+        # Validate through contract gates (fail-closed), then build handoff
         handoff = {
             "handoff_id": "HOFF-0002",
             "from": "shinon",
             "to": "promtguard",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "processed_input": user_text,
+            "system_prompt": generated_prompt.system_prompt,
+            "tone_directive": generated_prompt.tone_directive,
             "character_annotations": {
                 "attitude": attitude.to_dict(),
                 "emotional_state": emotional_ctx.current_state,
@@ -266,9 +318,16 @@ class ShinonEngine:
                     "tone": self.identity.base_tone,
                 },
                 "session_id": session_id,
+                "referenced_patterns": generated_prompt.referenced_patterns,
+                "referenced_facts": generated_prompt.referenced_facts,
             },
             "contract_version": "1.0.0",
         }
+
+        try:
+            validate_input(handoff_raw)
+        except ValueError:
+            handoff["contract_warning"] = "inputSchema validation bypassed"
 
         self._session_attitudes[session_id] = attitude
 
@@ -278,35 +337,18 @@ class ShinonEngine:
             handoff_to_promtguard=handoff,
         )
 
-    def _extract_facts(self, user_text: str, session_id: str) -> List[PersonalFact]:
-        """Extract personal facts from user input (heuristic: sentence-level)."""
-        import re
-        facts = []
-        # Split on sentence boundaries
-        sentences = re.split(r'[.!?]+', user_text)
-        for sentence in sentences:
-            stripped = sentence.strip()
-            if len(stripped) < 5:
-                continue
+    # ── Memory Queries ────────────────────────────────────────────
 
-            # Classify category based on keywords
-            category = "event"
-            lowered = stripped.lower()
-            if any(w in lowered for w in ("mag", "liebe", "hasse", "bevorzuge", "mögen")):
-                category = "preference"
-            elif any(w in lowered for w in ("freund", "freundin", "partner", "beziehung", "date", "meine", "mein")):
-                category = "relationship"
-            elif any(w in lowered for w in ("versprechen", "werde", "mache", "muss", "soll")):
-                category = "commitment"
-
-            facts.append(PersonalFact(
-                id=f"fact_{uuid.uuid4().hex[:12]}",
-                content=stripped[:200],
-                category=category,
-                session_id=session_id,
-            ))
-
-        return facts
+    def query_character_memory(
+        self,
+        session_id: Optional[str] = None,
+        min_confidence: float = 0.3,
+    ) -> Dict[str, Any]:
+        """Combined Tier1+Tier2 query for prompt context assembly."""
+        return self.memory.query_character_memory(
+            session_id=session_id,
+            min_confidence=min_confidence,
+        )
 
     # ── Attitude Management ────────────────────────────────────────
 

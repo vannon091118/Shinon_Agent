@@ -21,6 +21,8 @@ from fusion.shinon.shinon_patterns import (
     PersonalFact,
     PatternType,
     extract_pattern,
+    extract_patterns_from_input,
+    extract_facts_from_input,
     find_contradictions,
     score_confidence,
 )
@@ -51,6 +53,23 @@ from fusion.shinon.shinon_emotional import (
     transition_state,
     get_tone_modifier,
 )
+from fusion.shinon.shinon_prompts import (
+    PromptContext,
+    GeneratedPrompt,
+    generate_prompt,
+    generate_confrontation_prompt,
+    generate_prompt_minimal,
+)
+from fusion.shinon.shinon_contracts import (
+    validate_input,
+    validate_output,
+    validate_actions,
+    safe_validate_input,
+    safe_validate_output,
+    safe_validate_actions,
+    validate_all,
+    stable_serialize,
+)
 from fusion.shinon.shinon_engine import (
     ShinonEngine,
     ShinonInput,
@@ -63,7 +82,8 @@ from fusion.shinon.shinon_engine import (
 __all__ = [
     # Patterns
     "Pattern", "PersonalFact", "PatternType",
-    "extract_pattern", "find_contradictions", "score_confidence",
+    "extract_pattern", "extract_patterns_from_input", "extract_facts_from_input",
+    "find_contradictions", "score_confidence",
     # Memory
     "TwoTierMemory", "TwoTierMemoryConfig", "MemoryAdapter", "SqliteMemoryAdapter",
     # Attitudes
@@ -74,6 +94,13 @@ __all__ = [
     # Emotional
     "EmotionalState", "SessionEmotionalContext",
     "create_emotional_context", "transition_state", "get_tone_modifier",
+    # Prompts
+    "PromptContext", "GeneratedPrompt",
+    "generate_prompt", "generate_confrontation_prompt", "generate_prompt_minimal",
+    # Contracts
+    "validate_input", "validate_output", "validate_actions",
+    "safe_validate_input", "safe_validate_output", "safe_validate_actions",
+    "validate_all", "stable_serialize",
     # Engine
     "ShinonEngine", "ShinonInput", "ShinonOutput", "CharacterContext",
     "ShinonIdentity", "DEFAULT_IDENTITY",

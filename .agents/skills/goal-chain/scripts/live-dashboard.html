@@ -81,7 +81,7 @@
       display: flex; align-items: center; justify-content: flex-end;
       padding-right: 8px; color: #fff; font-weight: 700; font-size: 10px;
     }
-    .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
     .stat {
       background: var(--bg-card-light); border-radius: 5px;
       padding: 8px 10px; text-align: center;
@@ -139,6 +139,7 @@
     .skill-tile[data-state="error"]    { border-left-color: #ef4444; }
     .skill-tile[data-state="planning"] { border-left-color: #f59e0b; }
     .skill-tile[data-state="idle"]     { border-left-color: #6b7280; }
+    .skill-tile[data-state="unverified"] { border-left-color: #6b7280; opacity: .75; }
     .dual-role-badge {
       position: absolute; top: 6px; right: 6px; font-size: 8px;
       background: linear-gradient(135deg, var(--accent), var(--success));
@@ -248,6 +249,76 @@
     .key-health-fill { height: 100%; border-radius: 3px; transition: width .5s ease, background .5s ease; }
     .keys-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
 
+    /* ── Health Banner ── */
+    .health-banner {
+      display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+      border-radius: 10px; margin-bottom: 12px;
+      transition: all .4s ease;
+    }
+    .health-banner.healthy { background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(16,185,129,.05)); border: 1px solid rgba(16,185,129,.4); }
+    .health-banner.degraded { background: linear-gradient(135deg, rgba(245,158,11,.15), rgba(245,158,11,.05)); border: 1px solid rgba(245,158,11,.4); }
+    .health-banner.critical { background: linear-gradient(135deg, rgba(239,68,68,.2), rgba(239,68,68,.08)); border: 1px solid rgba(239,68,68,.5); }
+    .health-ring {
+      width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
+      background: conic-gradient(var(--hc) calc(var(--hp) * 1%), var(--bg-card-light) 0);
+      box-shadow: 0 0 16px rgba(var(--hc-rgb, 16,185,129), .25);
+    }
+    .health-ring::after {
+      content: ''; width: 42px; height: 42px; border-radius: 50%;
+      background: var(--bg-card); position: absolute;
+    }
+    .health-ring-value {
+      z-index: 1; font-size: 15px; font-weight: 800; color: var(--fg);
+    }
+    .health-banner-meta { flex: 1; }
+    .health-banner-label { font-weight: 700; font-size: 13px; }
+    .health-banner-stats { display: flex; gap: 14px; margin-top: 4px; font-size: 10px; color: var(--fg-dim); flex-wrap: wrap; }
+
+    /* ── Health Metric Bars ── */
+    .metric-row {
+      display: flex; align-items: center; gap: 8px; margin: 3px 0;
+    }
+    .metric-label { font-size: 9px; color: var(--fg-dim); width: 55px; text-align: right; flex-shrink: 0; }
+    .metric-bar-wrap {
+      flex: 1; height: 10px; background: var(--bg-card-light);
+      border-radius: 5px; overflow: hidden;
+    }
+    .metric-bar {
+      height: 100%; border-radius: 5px; transition: width .4s ease;
+    }
+    .metric-value { font-size: 9px; color: var(--fg-dim); width: 48px; text-align: left; flex-shrink: 0; }
+
+    /* ── Deployment Group Card ── */
+    .dep-group {
+      background: var(--bg-card-light); border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 8px;
+      border-left: 4px solid var(--accent);
+    }
+    .dep-group-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-weight: 700; margin-bottom: 6px;
+    }
+    .dep-group-health { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+    .dep-group-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 6px;
+    }
+    .key-card {
+      background: var(--bg); border-radius: 6px; padding: 8px 10px;
+      border: 1px solid var(--border); transition: border-color .3s ease;
+    }
+    .key-card:hover { border-color: var(--accent); }
+    .key-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+    .key-card-status {
+      font-size: 8px; font-weight: 800; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 8px;
+    }
+
     /* --- Root Cause Expandable Detail --- */
     .tid-row.rc-clickable { cursor: pointer; transition: background .15s ease; }
     .tid-row.rc-clickable:hover { background: rgba(167,139,250,.12); }
@@ -285,7 +356,299 @@
     }
     .cooldown-label { font-size: 9px; color: #f59e0b; text-transform: uppercase; font-weight: 600; }
     @keyframes countPulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
-</style>
+
+    /* ── Key Alert Banner ── */
+    .key-alert {
+      display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+      border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: 600;
+      animation: alertSlideIn .4s ease;
+    }
+    .key-alert.critical {
+      background: linear-gradient(135deg, rgba(239,68,68,.25), rgba(239,68,68,.1));
+      border: 1px solid rgba(239,68,68,.6); color: #f87171;
+      box-shadow: 0 0 20px rgba(239,68,68,.2);
+    }
+    .key-alert.danger {
+      background: linear-gradient(135deg, rgba(249,115,22,.25), rgba(249,115,22,.1));
+      border: 1px solid rgba(249,115,22,.5); color: #fb923c;
+      box-shadow: 0 0 16px rgba(249,115,22,.15);
+    }
+    .key-alert.warning {
+      background: linear-gradient(135deg, rgba(245,158,11,.2), rgba(245,158,11,.08));
+      border: 1px solid rgba(245,158,11,.45); color: #fbbf24;
+    }
+    :root[data-theme="light"] .key-alert.critical {
+      background: linear-gradient(135deg, rgba(239,68,68,.15), rgba(239,68,68,.05));
+      border-color: rgba(239,68,68,.4); color: #b91c1c;
+    }
+    :root[data-theme="light"] .key-alert.danger {
+      background: linear-gradient(135deg, rgba(249,115,22,.12), rgba(249,115,22,.04));
+      border-color: rgba(249,115,22,.35); color: #c2410c;
+    }
+    :root[data-theme="light"] .key-alert.warning {
+      background: linear-gradient(135deg, rgba(245,158,11,.1), rgba(245,158,11,.03));
+      border-color: rgba(245,158,11,.3); color: #b45309;
+    }
+    .key-alert-icon { font-size: 20px; flex-shrink: 0; }
+    .key-alert-body { flex: 1; }
+    .key-alert-deployment {
+      background: rgba(0,0,0,.25); padding: 2px 8px; border-radius: 4px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: inherit;
+    }
+    .key-alert-message { margin-top: 3px; color: inherit; }
+    .key-alert-details { font-size: 10px; font-weight: 400; opacity: .8; margin-top: 2px; }
+    .key-alert-pulse { animation: alertPulse 3s ease-in-out infinite; }
+    @keyframes alertPulse { 0%,100% { box-shadow: 0 0 12px rgba(239,68,68,.15); } 50% { box-shadow: 0 0 28px rgba(239,68,68,.35); } }
+    @keyframes alertSlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Triggered Skills Card ── */
+    .triggers-section { border-color: rgba(167,139,250,.5) !important; }
+    .triggers-summary { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .trigger-run {
+      background: var(--bg-card-light); border-radius: 6px; padding: 10px 14px;
+      margin-bottom: 8px; border-left: 3px solid #a78bfa;
+      transition: background .2s ease; animation: triggerSlideIn .3s ease;
+    }
+    .trigger-run[data-source="karma.falsified"] { border-left-color: #a78bfa; }
+    .trigger-run[data-source="karma.refuted"] { border-left-color: #ef4444; }
+    .trigger-run[data-source="limen.rate_limited"] { border-left-color: #f59e0b; }
+    .trigger-run[data-source="limen.key_exhausted"] { border-left-color: #ef4444; }
+    .trigger-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    }
+    .trigger-source-badge {
+      font-size: 9px; padding: 2px 8px; border-radius: 10px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+    }
+    .trigger-source-badge.karma { background: rgba(167,139,250,.25); color: #a78bfa; }
+    .trigger-source-badge.karma-refuted { background: rgba(239,68,68,.25); color: #f87171; }
+    .trigger-source-badge.limen { background: rgba(245,158,11,.25); color: #fbbf24; }
+    .trigger-source-badge.limen-exhausted { background: rgba(239,68,68,.25); color: #f87171; }
+    .trigger-run-id { font-size: 9px; color: var(--fg-dim); font-family: "SF Mono",Menlo,monospace; }
+    .trigger-cid { font-size: 8px; color: var(--muted); font-family: "SF Mono",Menlo,monospace; }
+    .trigger-skills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .trigger-skill-tag {
+      background: rgba(167,139,250,.15); color: #c4b5fd; padding: 2px 8px;
+      border-radius: 4px; font-size: 9px; font-weight: 600;
+    }
+    .trigger-skill-tag.done { background: rgba(16,185,129,.2); color: #34d399; }
+    .trigger-progress {
+      display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 9px; color: var(--fg-dim);
+    }
+    .trigger-progress-bar {
+      flex: 1; height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden;
+    }
+    .trigger-progress-fill {
+      height: 100%; border-radius: 2px; transition: width .5s ease;
+    }
+    .trigger-time { font-size: 8px; color: var(--muted); white-space: nowrap; }
+    .triggers-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
+    @keyframes triggerSlideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* ── Replay Report Card ── */
+    .replay-section { border-color: rgba(16,185,129,.5) !important; }
+    .replay-summary { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .replay-stat-pill {
+      padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px; min-width: 110px;
+      transition: transform .15s ease;
+    }
+    .replay-stat-pill:hover { transform: scale(1.05); }
+    .replay-stat-pill.identical { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.4); }
+    .replay-stat-pill.diverged { background: rgba(239,68,68,.2); color: #f87171; border: 1px solid rgba(239,68,68,.4); }
+    .replay-stat-pill.errors { background: rgba(245,158,11,.2); color: #fbbf24; border: 1px solid rgba(245,158,11,.4); }
+    .replay-stat-pill.deterministic { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.4); }
+    .replay-stat-pill.non-deterministic { background: rgba(239,68,68,.2); color: #f87171; border: 1px solid rgba(239,68,68,.4); }
+    .replay-stat-pill .badge-num { font-size: 28px; line-height: 1; }
+    .replay-stat-pill .badge-label { font-size: 9px; text-transform: uppercase; letter-spacing: .5px; opacity: .8; }
+    .replay-meta { font-size: 10px; color: var(--fg-dim); margin: 8px 0; display: flex; gap: 20px; }
+    .replay-details { margin-top: 10px; }
+    .replay-detail-row {
+      display: grid; grid-template-columns: 50px 1fr 130px 180px;
+      gap: 8px; align-items: center; padding: 4px 8px;
+      border-bottom: 1px solid var(--border); font-size: 10px;
+    }
+    .replay-detail-row.diverged { background: rgba(239,68,68,.08); }
+    .replay-detail-row.error { background: rgba(245,158,11,.08); }
+    .replay-fp { font-family: "SF Mono",Menlo,monospace; font-size: 8px; color: var(--muted); }
+    .replay-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
+    .replay-badge {
+      display: inline-block; font-size: 9px; padding: 2px 8px; border-radius: 8px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .3px;
+    }
+    .replay-badge.pass { background: rgba(16,185,129,.2); color: #34d399; }
+    .replay-badge.fail { background: rgba(239,68,68,.2); color: #f87171; }
+    .replay-badge.error { background: rgba(245,158,11,.2); color: #fbbf24; }
+    :root[data-theme="light"] .replay-stat-pill.identical { color: #059669; }
+    :root[data-theme="light"] .replay-stat-pill.diverged { color: #dc2626; }
+    :root[data-theme="light"] .replay-stat-pill.errors { color: #d97706; }
+    :root[data-theme="light"] .replay-stat-pill.deterministic { color: #059669; }
+    :root[data-theme="light"] .replay-stat-pill.non-deterministic { color: #dc2626; }
+
+    /* ── Event Diff Viewer (side-by-side JSON diff) ── */
+    .diff-container {
+      max-height: 0; overflow: hidden;
+      transition: max-height .4s ease, padding .3s ease;
+      padding: 0; margin: 0;
+    }
+    .diff-container.open { max-height: 1200px; padding: 10px 0; }
+    .diff-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .diff-panel {
+      background: var(--bg); border-radius: 6px;
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .diff-panel-header {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      padding: 5px 10px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .diff-panel-header.original { background: rgba(239,68,68,.1); color: #f87171; }
+    .diff-panel-header.replayed { background: rgba(16,185,129,.1); color: #34d399; }
+    .diff-panel-body {
+      padding: 6px 10px; font-size: 10px; font-family: "SF Mono",Menlo,monospace;
+      max-height: 500px; overflow-y: auto; line-height: 1.6;
+    }
+    .diff-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      padding: 3px 8px; border-bottom: 1px solid var(--border);
+      font-size: 10px; font-family: "SF Mono",Menlo,monospace;
+    }
+    .diff-row.added { background: rgba(16,185,129,.08); }
+    .diff-row.removed { background: rgba(239,68,68,.08); }
+    .diff-row.changed { background: rgba(245,158,11,.08); }
+    .diff-key {
+      grid-column: 1 / -1; font-size: 9px; font-weight: 700;
+      color: var(--accent); padding: 4px 0 1px;
+    }
+    .diff-val {
+      padding: 2px 6px; border-radius: 3px; white-space: pre-wrap;
+      word-break: break-all; font-size: 9px;
+    }
+    .diff-val.original {
+      background: rgba(239,68,68,.12); color: #fca5a5;
+      border-left: 3px solid rgba(239,68,68,.5);
+    }
+    .diff-val.replayed {
+      background: rgba(16,185,129,.12); color: #6ee7b7;
+      border-left: 3px solid rgba(16,185,129,.5);
+    }
+    .diff-val.added {
+      background: rgba(16,185,129,.15); color: #6ee7b7;
+      border-left: 3px solid #10b981;
+    }
+    .diff-val.removed {
+      background: rgba(239,68,68,.15); color: #fca5a5;
+      border-left: 3px solid #ef4444;
+    }
+    .diff-badge {
+      display: inline-block; font-size: 8px; padding: 1px 5px; border-radius: 4px;
+      font-weight: 700; text-transform: uppercase;
+    }
+    .diff-badge.changed { background: rgba(245,158,11,.2); color: #fbbf24; }
+    .diff-badge.added { background: rgba(16,185,129,.2); color: #34d399; }
+    .diff-badge.removed { background: rgba(239,68,68,.2); color: #f87171; }
+    .diff-badge.identical { background: rgba(107,114,128,.2); color: #9ca3af; }
+    .diff-header-info { font-size: 9px; color: var(--fg-dim); padding: 4px 0; }
+    .diff-loading { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
+    .diff-expand-btn {
+      background: none; border: none; color: var(--accent); cursor: pointer;
+      font-size: 9px; font-family: inherit; padding: 0; text-decoration: underline;
+    }
+    .diff-expand-btn:hover { color: var(--fg); }
+    :root[data-theme="light"] .diff-val.original { color: #b91c1c; }
+    :root[data-theme="light"] .diff-val.replayed { color: #047857; }
+    :root[data-theme="light"] .diff-val.added { color: #047857; }
+    :root[data-theme="light"] .diff-val.removed { color: #b91c1c; }
+    /* ── Event Stream Card ── */
+    .events-section { border-color: rgba(59,130,246,.5) !important; }
+    .events-toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+    .events-filter-btn {
+      padding: 4px 12px; border-radius: 14px; border: 1px solid var(--border);
+      background: var(--bg-card-light); color: var(--fg-dim); cursor: pointer;
+      font-size: 10px; font-family: inherit; transition: all .2s ease;
+    }
+    .events-filter-btn:hover { border-color: var(--accent); color: var(--fg); }
+    .events-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .events-count { font-size: 10px; color: var(--fg-dim); margin-left: auto; }
+    .events-auto-scroll-btn {
+      padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-card-light); color: var(--fg-dim); cursor: pointer;
+      font-size: 10px; font-family: inherit; font-weight: 600;
+    }
+    .events-auto-scroll-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .event-stream {
+      max-height: 500px; overflow-y: auto; font-family: "SF Mono",Menlo,monospace;
+      font-size: 10px; line-height: 1.5;
+      background: var(--bg); border-radius: 6px; padding: 8px;
+      scroll-behavior: smooth;
+    }
+    .event-row {
+      display: grid; grid-template-columns: 65px 150px 95px 1fr;
+      gap: 6px; padding: 3px 6px; border-bottom: 1px solid var(--border);
+      align-items: center; animation: eventSlideIn .2s ease;
+    }
+    .event-row:hover { background: var(--bg-card-light); }
+    .event-row .ev-ts { color: var(--muted); font-size: 9px; }
+    .event-row .ev-type { font-weight: 700; font-size: 10px; }
+    .event-row .ev-source { color: var(--fg-dim); font-size: 9px; }
+    .event-row .ev-payload { color: var(--fg-dim); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-row .ev-cid { font-size: 8px; color: var(--muted); margin-left: 4px; }
+    .events-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 20px; }
+    @keyframes eventSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .ev-color-Input { color: #60a5fa; } .ev-color-Shinon { color: #a78bfa; }
+    .ev-color-Promtguard { color: #34d399; } .ev-color-KARMA { color: #f87171; }
+    .ev-color-GoalChain { color: #c4b5fd; } .ev-color-Rework { color: #fbbf24; }
+    .ev-color-Completed { color: #34d399; } .ev-color-Error { color: #ef4444; }
+    .ev-color-RateLimit { color: #f59e0b; }
+    :root[data-theme="light"] .ev-color-KARMA { color: #dc2626; }
+    :root[data-theme="light"] .ev-color-Error { color: #dc2626; }
+
+    /* ── Audit Trail Card ── */
+    .audit-section { border-color: rgba(16,185,129,.5) !important; }
+    .audit-status {
+      display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+      border-radius: 8px; margin-bottom: 12px; font-weight: 700; font-size: 13px;
+    }
+    .audit-status.intact { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.5); color: #34d399; }
+    .audit-status.tampered { background: rgba(239,68,68,.2); border: 1px solid rgba(239,68,68,.6); color: #f87171; box-shadow: 0 0 20px rgba(239,68,68,.3); animation: tamperPulse 2s ease-in-out infinite; }
+    .audit-status.gaps { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.5); color: #fbbf24; }
+    .audit-status.empty, .audit-status.no_db, .audit-status.pre_v5 { background: rgba(107,114,128,.1); border: 1px solid rgba(107,114,128,.3); color: #9ca3af; }
+    .audit-status-icon { font-size: 24px; }
+    .audit-chain-viz {
+      display: flex; align-items: center; gap: 0; overflow-x: auto;
+      padding: 8px 0; font-family: "SF Mono",Menlo,monospace; font-size: 9px;
+    }
+    .chain-link {
+      display: flex; flex-direction: column; align-items: center;
+      min-width: 40px; margin: 0 2px;
+    }
+    .chain-hash {
+      padding: 3px 6px; border-radius: 4px; font-weight: 700; font-size: 9px;
+      cursor: help; transition: transform .15s ease;
+    }
+    .chain-hash:hover { transform: scale(1.15); z-index: 2; }
+    .chain-connector {
+      width: 8px; height: 2px; min-width: 8px; margin: 0 2px;
+      border-radius: 1px;
+    }
+    .chain-arrow { font-size: 7px; color: var(--muted); margin: 0 1px; min-width: 6px; }
+    .chain-event-type {
+      font-size: 7px; color: var(--fg-dim); text-align: center;
+      max-width: 50px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; margin-top: 2px;
+    }
+    .chain-scroll-hint {
+      text-align: center; font-size: 8px; color: var(--muted);
+      padding: 4px; cursor: pointer;
+    }
+    .audit-meta { display: flex; gap: 20px; margin-top: 8px; font-size: 10px; color: var(--fg-dim); flex-wrap: wrap; }
+    .audit-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
+    @keyframes tamperPulse { 0%,100% { box-shadow: 0 0 15px rgba(239,68,68,.25); } 50% { box-shadow: 0 0 35px rgba(239,68,68,.5); } }
+    :root[data-theme="light"] .audit-status.intact { color: #059669; }
+    :root[data-theme="light"] .audit-status.tampered { color: #b91c1c; }
+    :root[data-theme="light"] .audit-status.gaps { color: #b45309; }
+  </style>
 </head>
 <body>
 <div class="container">
@@ -360,6 +723,8 @@
       <div class="stat"><div class="stat-num" style="color:var(--danger);" id="stat-failed"></div><div class="stat-label">FAILED</div></div>
       <div class="stat"><div class="stat-num" style="color:var(--muted);" id="stat-skipped"></div><div class="stat-label">SKIPPED</div></div>
       <div class="stat"><div class="stat-num" style="color:#a78bfa;" id="stat-rootcause"></div><div class="stat-label">ROOT CAUSE</div></div>
+      <div class="stat"><div class="stat-num" style="color:#10b981;" id="stat-verified"></div><div class="stat-label">✅ VERIFIED</div></div>
+      <div class="stat"><div class="stat-num" style="color:#f59e0b;" id="stat-seeded"></div><div class="stat-label">⚠️ SEEDED</div></div>
     </div>
   </div>
 
@@ -371,16 +736,72 @@
     </div>
   </div>
 
-  <!-- LIMEN API Key Status -->
+  <!-- 💓 LIMEN Health Dashboard -->
   <div class="card keys-section">
     <div class="section-title" style="color:var(--accent);display:flex;justify-content:space-between;align-items:center;">
-      <span>🔑 LIMEN API Key Status</span>
+      <span>💓 LIMEN Health Dashboard</span>
       <span style="font-size:9px;color:var(--fg-dim);" id="keys-updated"></span>
     </div>
+    <div id="health-banner"></div>
     <div class="keys-summary" id="keys-summary"></div>
+    <div id="keys-alerts"></div>
     <div id="keys-list"></div>
     <div class="keys-empty" id="keys-empty" style="display:none;">
-      ⚠️ LIMEN DB nicht gefunden. Starte LIMEN mit <code>python -m limen</code> um die providers-Tabelle zu initialisieren.
+      🛑 LIMEN NICHT GESTARTET — keine API-Keys verfügbar. <code>python -m limen</code>
+    </div>
+  </div>
+
+  <!-- Event Replay Report -->
+  <div class="card replay-section">
+    <div class="section-title" style="color:var(--success);display:flex;justify-content:space-between;align-items:center;">
+      <span>🔄 Event Replay — Determinism Audit</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="replay-updated"></span>
+    </div>
+    <div class="replay-summary" id="replay-summary"></div>
+    <div class="replay-meta" id="replay-meta"></div>
+    <div class="replay-details" id="replay-details"></div>
+    <div class="replay-empty" id="replay-empty" style="display:none;">
+      ⏳ No replay audit has been run. Run <code>test-gates.sh</code> or <code>ReplayBus.replay()</code>. NOTE: existing reports may be from CI test runs, not production.
+    </div>
+  </div>
+
+
+  <!-- KARMA Audit Trail -->
+  <div class="card audit-section">
+    <div class="section-title" style="color:var(--success);display:flex;justify-content:space-between;align-items:center;">
+      <span>🔐 Audit Trail — KARMA Hash Chain Verification</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="audit-updated"></span>
+    </div>
+    <div id="audit-status"></div>
+    <div class="audit-chain-viz" id="audit-chain"></div>
+    <div class="chain-scroll-hint" id="audit-scroll-hint" style="display:none;">↔ Scroll to see full chain</div>
+    <div class="audit-meta" id="audit-meta"></div>
+    <div class="audit-empty" id="audit-empty" style="display:none;">
+      ⏳ No audit trail data. Run <code>PYTHONPATH=karma-main python3 .agents/skills/goal-chain/scripts/karma-audit.py</code> to generate.
+    </div>
+  </div>
+
+  <!-- Event Stream -->
+  <div class="card events-section">
+    <div class="section-title" style="color:var(--accent);display:flex;justify-content:space-between;align-items:center;">
+      <span>📡 Event Stream — Live EventBus Log</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="events-updated"></span>
+    </div>
+    <div class="events-toolbar" id="events-toolbar"></div>
+    <div class="event-stream" id="event-stream">
+      <div class="events-empty">⏳ No events yet. Run a pipeline to see live events.</div>
+    </div>
+  </div>
+  <!-- Triggered Skills (KARMA → goal-chain) -->
+  <div class="card triggers-section">
+    <div class="section-title" style="color:#a78bfa;display:flex;justify-content:space-between;align-items:center;">
+      <span>⚡ Triggered Skills — KARMA Falsifikation → goal-chain</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="triggers-updated"></span>
+    </div>
+    <div class="triggers-summary" id="triggers-summary"></div>
+    <div id="triggers-list"></div>
+    <div class="triggers-empty" id="triggers-empty" style="display:none;">
+      ⏳ No triggers yet. Run <code>ControlPlaneRuntime.process()</code> to see KARMA → goal-chain skill triggers appear here.
     </div>
   </div>
 
@@ -400,25 +821,25 @@
     </div>
   </div>
 
-  <!-- Live Skill Registry — single instance -->
+  <!-- 🎯 Active TID Skills — nur Skills die tatsächlich für TIDs genutzt werden -->
   <div class="card skills-section" style="margin-top:14px;">
     <div class="section-title" style="color:var(--success);display:flex;justify-content:space-between;align-items:center;">
-      <span>🔌 Live Skill Registry — Jeder Skill = UPDATER + Token-Artefakt</span>
-      <span style="font-size:9px;color:var(--fg-dim);">Live-Updates via SSE · Refresh: 500ms</span>
+      <span>🎯 Active TID Skills — <span id="tid-skills-count">0</span> im Run</span>
+      <a href="/glossary" style="font-size:10px;color:var(--accent);text-decoration:none;font-weight:600;">📚 Full Glossary →</a>
     </div>
     <div class="skills-grid" id="skills-grid"></div>
-    <div style="margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:4px;font-size:9px;color:var(--fg-dim);font-style:italic;">
-      🔋 Tokenersparnis: Re-Aktivierung liest nur diesen ~25-Zeilen-Snapshot statt voller SKILL.md (~300 Zeilen).
-      Verzeichnis: <code>.agents/skills/live/</code> · API: <code>/api/skills</code>, <code>/api/skill/&lt;name&gt;</code>
+    <div style="margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:4px;font-size:9px;color:var(--fg-dim);">
+      ✅ REGEL 1: Nur Skills mit TID-Zuordnung im aktiven Run.
+      <a href="/glossary" style="color:var(--accent);">📚 Alle registrierten Skills im Glossary</a>
     </div>
     <div class="registry-tail" id="registry-tail"></div>
   </div>
 
   <div class="footer">
     <span class="conn-dot conn-dot-live" id="conn-dot"></span>
-    <span id="conn-status">🔌 Connected · Live SSE</span> ·
+    <span id="conn-status">📡 Polling · fetch() every 500ms</span> ·
     DB: <code>.agents/skills/goal-chain/db/tid-state.db</code> ·
-    Poll: 500ms
+    ⚠️ Status reflects DB state only — verify outputs independently
   </div>
 </div>
 
@@ -517,10 +938,14 @@ function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;
 
 const STATUS_ICONS = {DONE:'✅',IN_PROGRESS:'🔄',FAILED:'❌',SKIPPED:'⏭️',ROOT_CAUSE_DONE:'🎯',PENDING:'⏳'};
 const STATUS_COLORS = {DONE:'var(--success)',IN_PROGRESS:'var(--accent)',FAILED:'var(--danger)',SKIPPED:'var(--muted)',ROOT_CAUSE_DONE:'#a78bfa',PENDING:'var(--muted)'};
+// REGEL 1: Verification levels — nur anzeigen was nachweislich funktioniert
+const VERIFY_ICONS = {'verified':'✅','seeded':'⚠️','in-progress':'🔄','root_cause':'🎯','failed':'❌','skipped':'⏭️','pending':'⏳'};
+const VERIFY_COLORS = {'verified':'#10b981','seeded':'#f59e0b','in-progress':'#3b82f6','root_cause':'#a78bfa','failed':'#ef4444','skipped':'#6b7280','pending':'#6b7280'};
+const VERIFY_LABELS = {'verified':'VERIFIED','seeded':'SEEDED ⚠️','in-progress':'ACTIVE','root_cause':'ROOT CAUSE','failed':'FAILED','skipped':'SKIPPED','pending':'PENDING'};
 const PHASE_ICONS = {P1:'🧠',P2:'🔧',P3:'⚙️',P4:'📝','G1-2':'🚪','G2-3':'🚪',STACK:'🔧'};
 
-const SKILL_STATE_COLOR = {connected:'#10b981',active:'#3b82f6',done:'#10b981',error:'#ef4444',planning:'#f59e0b',idle:'#6b7280',pending:'#9ca3af'};
-const SKILL_STATE_ICON  = {connected:'🔌',active:'🔄',done:'✅',error:'❌',planning:'🧠',idle:'⏸️',pending:'⏳'};
+const SKILL_STATE_COLOR = {connected:'#10b981',active:'#3b82f6',done:'#10b981',error:'#ef4444',planning:'#f59e0b',idle:'#6b7280',pending:'#9ca3af',unverified:'#6b7280'};
+const SKILL_STATE_ICON  = {connected:'🔌',active:'🔄',done:'✅',error:'❌',planning:'🧠',idle:'⏸️',pending:'⏳',unverified:'❓'};
 
 const evtSource = new EventSource("/events");
 let lastUpdate = 0;
@@ -544,29 +969,35 @@ evtSource.onopen = function() {
 };
 
 function renderSkills(skills) {
+  document.getElementById('tid-skills-count').textContent = skills ? skills.length : 0;
   if (!skills || !skills.length) {
-    document.getElementById('skills-grid').innerHTML = '<div style="color:var(--muted);font-size:10px;padding:6px;">⚠️ Keine Skill-Snapshots. Run: <code>bash .agents/skills/goal-chain/scripts/activate-all-skills.sh</code></div>';
+    document.getElementById('skills-grid').innerHTML = '<div style="color:var(--muted);font-size:10px;padding:6px;">✅ Keine TID-Skills — alle Skills sind im <a href="/glossary" style="color:var(--accent);">📚 Glossary</a></div>';
     return;
   }
-  let html = '';
-  for (const s of skills) {
-    // Show "connected" for existing snapshots instead of "idle"
-    const displayState = (s.state === 'idle' || s.state === 'pending') ? 'connected' : (s.state || 'connected');
-    const icon = SKILL_STATE_ICON[displayState] || '🔌';
-    const color = SKILL_STATE_COLOR[displayState] || '#10b981';
-    const last = (s.last_activation || '').substring(11, 19) || '—';
-    const tags = (s.tags || []).map(t => '<span class="tile-tag">'+t+'</span>').join('');
-    const sizeKb = s.size_bytes ? Math.round(s.size_bytes/1024*10)/10 : 0;
-    const cnt = (typeof s.activation_count === 'number') ? s.activation_count : (parseInt(s.activation_count) || 0);
-    html += '<div class="skill-tile" data-state="'+displayState+'" title="'+s.skill+' · '+cnt+' activations">'+
-            '<div class="dual-role-badge">⚡ UPDATER</div>'+
-            '<div class="tile-header">'+
-              '<div class="tile-name">'+icon+' '+s.skill+'</div>'+
-              '<div class="tile-state" style="color:'+color+';font-weight:700;">'+displayState.toUpperCase()+'</div>'+
-            '</div>'+
-            '<div class="tile-summary">'+(s.summary || '(no summary)')+'</div>'+
-            '<div class="tile-tags">'+tags+'</div>'+
-            '<div class="tile-meta"><span>catalog</span><span>count='+cnt+'</span><span>'+last+'</span><span>'+sizeKb+' KB</span></div>'+
+  var html = '';
+  var statusIcons = {done: '✅', active: '🔄', pending: '⏳', failed: '❌', idle: '💤'};
+  var statusColors = {done: '#10b981', active: '#3b82f6', pending: '#f59e0b', failed: '#ef4444', idle: '#6b7280'};
+  for (var i = 0; i < skills.length; i++) {
+    var s = skills[i];
+    var icon = statusIcons[s.status] || '🔌';
+    var color = statusColors[s.status] || '#6b7280';
+    var total = s.tid_count || 0;
+    var done = s.done || 0;
+    var pending = s.pending || 0;
+    var active = s.active || 0;
+    var failed = s.failed || 0;
+    html += '<div class="skill-tile" data-state="' + s.status + '">' +
+            '<div class="tile-header">' +
+              '<div class="tile-name">' + icon + ' ' + s.skill + '</div>' +
+              '<div class="tile-state" style="color:' + color + ';font-weight:700;">' + s.status.toUpperCase() + '</div>' +
+            '</div>' +
+            '<div class="tile-summary">' + (s.full_name || s.skill) + ' · Phase: ' + (s.phase || '—') + '</div>' +
+            '<div class="tile-meta" style="font-size:10px;color:var(--fg-dim);">' +
+              '<span style="color:#10b981;">' + done + ' done</span> ' +
+              '<span style="color:#f59e0b;">' + pending + ' pending</span> ' +
+              '<span style="color:#ef4444;">' + failed + ' failed</span> ' +
+              '<span style="color:var(--muted);">(' + total + ' TIDs)</span>' +
+            '</div>' +
             '</div>';
   }
   document.getElementById('skills-grid').innerHTML = html;
@@ -601,7 +1032,12 @@ function render(s) {
   document.getElementById('stat-failed').textContent = '❌ ' + (s.failed||0);
   document.getElementById('stat-skipped').textContent = '⏭ ' + (s.skipped||0);
   var rcStat = document.getElementById('stat-rootcause');
-  if (rcStat) rcStat.textContent = '🎯 ' + ((s.root_cause_done||0)+(s.skipped||0)); // show legacy + new together
+  if (rcStat) rcStat.textContent = '🎯 ' + ((s.root_cause_done||0)+(s.skipped||0));
+  // REGEL 1: verified vs seeded breakdown
+  const verifiedEl = document.getElementById('stat-verified');
+  if (verifiedEl) verifiedEl.textContent = '✅ ' + (s.verified||0);
+  const seededEl = document.getElementById('stat-seeded');
+  if (seededEl) seededEl.textContent = '⚠️ ' + (s.seeded||0);
 
   // Evil twins
   let ethtml = '';
@@ -666,16 +1102,28 @@ function render(s) {
     tidhtml += '<div class="phase-body'+openClass+'">';
 
     for (const t of tids) {
-      const icon = STATUS_ICONS[t.status] || '?';
-      const color = STATUS_COLORS[t.status] || 'gray';
-      const cls = t.status === 'IN_PROGRESS' ? 'tid-row tid-active' : 'tid-row';
+      // REGEL 1: Use verification level for honest status display
+      const v = t.verification || 'pending';
+      const vicon = VERIFY_ICONS[v] || '?';
+      const vcolor = VERIFY_COLORS[v] || 'gray';
+      const vlabel = VERIFY_LABELS[v] || v.toUpperCase();
+      const vcls = (v === 'in-progress') ? 'tid-row tid-active' : 'tid-row';
       const etBadge = (t.section||'').includes('evil-twin') ? ' <span class="badge-et">🦇 EVIL TWIN</span>' : '';
       const cpBadge = t.checkpoint ? ' <span class="badge-cp">🛑 CP</span>' : '';
-      const isRc = t.status === 'ROOT_CAUSE_DONE';
+      const isRc = v === 'root_cause';
       const rcClass = isRc ? ' rc-clickable' : '';
       const rcAttr = isRc ? ' data-rc-tid="'+t.tid+'"' : '';
       const rcChevron = isRc ? '<span class="rc-chevron">▶</span>' : '';
-      tidhtml += '<div class="'+cls+rcClass+'"'+rcAttr+'><span>'+icon+rcChevron+'</span><span></span><span style="color:'+color+';font-weight:700;font-size:9px;">'+t.status+'</span><span>'+((t.section||'').substring(0,28))+etBadge+cpBadge+'</span><span style="color:var(--fg-dim);font-size:9px;">'+((t.skill||'').substring(0,20))+'</span><span style="background:var(--bg-card-light);padding:1px 4px;border-radius:3px;font-size:8px;">'+((t.template||'—').substring(0,14))+'</span></div>';
+      // Show raw DB status dimmed after verification level
+      const statusHint = (v === 'seeded' || v === 'verified') ? ' <span style="color:var(--muted);font-size:8px;opacity:.6;">(DB: '+t.status+')</span>' : '';
+      tidhtml += '<div class="'+vcls+rcClass+'"'+rcAttr+'>'+
+        '<span>'+vicon+rcChevron+'</span>'+
+        '<span></span>'+
+        '<span style="color:'+vcolor+';font-weight:700;font-size:9px;">'+vlabel+statusHint+'</span>'+
+        '<span>'+((t.section||'').substring(0,28))+etBadge+cpBadge+'</span>'+
+        '<span style="color:var(--fg-dim);font-size:9px;">'+((t.skill||'').substring(0,20))+'</span>'+
+        '<span style="background:var(--bg-card-light);padding:1px 4px;border-radius:3px;font-size:8px;">'+((t.template||'—').substring(0,14))+'</span>'+
+        '</div>';
       if (isRc) {
         tidhtml += '<div class="rc-detail" data-rc-tid="'+t.tid+'">';
         const entries = (s.root_causes||{})[t.tid] || [];
@@ -734,7 +1182,7 @@ function render(s) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// API KEY STATUS — fetch from /api/keys every 2s
+// 💓 LIMEN HEALTH DASHBOARD — fetch from /api/keys every 2s
 // ═══════════════════════════════════════════════════════════════
 function fetchKeyStatus() {
   fetch('/api/keys')
@@ -746,82 +1194,190 @@ function fetchKeyStatus() {
     });
 }
 
-// Store last key data for cooldown counting
 var lastKeyData = null;
 
 function renderKeys(data) {
-  lastKeyData = data; // Save for cooldown timer
+  lastKeyData = data;
   var summary = data.summary || {};
   var keys = data.keys || [];
+  var hs = data.health_summary || {};
 
-  // Update timestamp
   var now = new Date();
   document.getElementById('keys-updated').textContent = 'updated ' + now.toLocaleTimeString();
 
-  // Summary pills
-  var sumHtml = '';
-  if (data.available) {
-    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#10b981;"></span> ' + (summary.active||0) + ' active</div>';
-    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#f59e0b;"></span> ' + (summary.cooldown||0) + ' cooldown</div>';
-    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#ef4444;"></span> ' + (summary.dead||0) + ' dead</div>';
-    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#6b7280;"></span> ' + (summary.total||0) + ' total</div>';
-  }
-  document.getElementById('keys-summary').innerHTML = sumHtml || '<span style="color:var(--muted);font-size:10px;">No keys configured</span>';
-
-  // Key rows
-  if (!keys.length) {
+  if (!data.available || !keys.length) {
     document.getElementById('keys-empty').style.display = 'block';
     document.getElementById('keys-list').innerHTML = '';
+    document.getElementById('health-banner').innerHTML = '';
+    document.getElementById('keys-summary').innerHTML = '';
+    document.getElementById('keys-alerts').innerHTML = '';
     return;
   }
   document.getElementById('keys-empty').style.display = 'none';
 
-  var listHtml = '<div style="margin-top:8px;">';
-  listHtml += '<div class="key-row" style="color:var(--fg-dim);font-size:9px;border-bottom:2px solid var(--border);">' +
-    '<span>PROVIDER</span><span>STATUS</span><span>HEALTH</span><span>TOKENS / REQUESTS</span><span>COOLDOWN</span></div>';
-
-  for (var i = 0; i < keys.length; i++) {
-    var k = keys[i];
-    var statusColors = {active:'#10b981', cooldown:'#f59e0b', dead:'#ef4444'};
-    var sc = statusColors[k.status] || '#6b7280';
-
-    // Health bar
-    var hc = k.health_color || '#10b981';
-    var hp = k.health_pct || 100;
-
-    // Token gauge
-    var tp = k.token_pct || 0;
-    var tcolor = tp > 90 ? '#ef4444' : tp > 70 ? '#f59e0b' : '#10b981';
-
-    // Request gauge
-    var rp = k.request_pct || 0;
-    var rcolor = rp > 90 ? '#ef4444' : rp > 70 ? '#f59e0b' : '#10b981';
-
-    // Cooldown column: live countdown if in cooldown
-    var cooldownHtml = '<span style="color:var(--muted);">—</span>';
-    if (k.status === 'cooldown' && k.cooldown_until) {
-      cooldownHtml =
-        '<div class="cooldown-timer" data-key-id="' + (k.id||i) + '" data-cooldown-until="' + (k.cooldown_until||'') + '">' +
-        '<span class="cooldown-count" id="cd-count-' + i + '">--</span>' +
-        '<div class="cooldown-bar-wrap"><div class="cooldown-bar" id="cd-bar-' + i + '" style="width:100%;"></div></div>' +
-        '</div>';
-    }
-
-    listHtml += '<div class="key-row">' +
-      '<div><span style="font-weight:700;">' + (k.provider||'?') + '</span><br><span class="key-id">' + (k.id||'?') + '</span></div>' +
-      '<div class="key-status" style="color:' + sc + ';">' + k.status.toUpperCase() + '</div>' +
-      '<div><div class="key-health-bar"><div class="key-health-fill" style="width:' + hp + '%;background:' + hc + ';"></div></div><span style="font-size:8px;color:var(--fg-dim);">' + hp + '%</span></div>' +
-      '<div>' +
-        '<div class="key-gauge-label">Tokens: ' + (k.tokens_used||0).toLocaleString() + ' / ' + (k.tokens_max||0).toLocaleString() + ' (' + tp + '%)</div>' +
-        '<div class="key-gauge"><div class="key-gauge-fill" style="width:' + tp + '%;background:' + tcolor + ';"></div></div>' +
-        '<div class="key-gauge-label" style="margin-top:4px;">Requests: ' + (k.requests_used||0) + ' / ' + (k.requests_max||0) + ' (' + rp + '%)</div>' +
-        '<div class="key-gauge"><div class="key-gauge-fill" style="width:' + rp + '%;background:' + rcolor + ';"></div></div>' +
+  // ── Health Banner ──
+  var hLabel = hs.label || 'Unknown';
+  var hClass = hLabel.toLowerCase();
+  var hScore = hs.score || 0;
+  var hColor = hs.color || '#10b981';
+  var hcRgb = hColor === '#10b981' ? '16,185,129' : hColor === '#f59e0b' ? '245,158,11' : '239,68,68';
+  var hIcon = hLabel === 'Healthy' ? '✅' : hLabel === 'Degraded' ? '⚠️' : '🚨';
+  var bannerHtml =
+    '<div class="health-banner ' + hClass + '" style="--hc:' + hColor + ';--hp:' + hScore + ';--hc-rgb:' + hcRgb + ';">' +
+    '<div class="health-ring"><span class="health-ring-value">' + hScore + '%</span></div>' +
+    '<div class="health-banner-meta">' +
+      '<div class="health-banner-label">' + hIcon + ' System Health: <span style="color:' + hColor + ';">' + hLabel.toUpperCase() + '</span></div>' +
+      '<div class="health-banner-stats">' +
+        '<span>' + (hs.active_keys||0) + ' active</span>' +
+        '<span>' + (hs.cooldown_keys||0) + ' cooldown</span>' +
+        '<span>' + (hs.dead_keys||0) + ' dead</span>' +
+        '<span>·</span>' +
+        '<span>' + (hs.total_requests||0).toLocaleString() + ' requests</span>' +
+        '<span>' + (hs.avg_latency_ms||0) + 'ms avg</span>' +
+        '<span>' + (hs.deployments||0) + ' deployments</span>' +
       '</div>' +
-      '<div>' + cooldownHtml + '</div>' +
+    '</div></div>';
+  document.getElementById('health-banner').innerHTML = bannerHtml;
+
+  // ── Deployment-Group Alerts ──
+  var alertHtml = '';
+  var alerts = data.alerts || [];
+  var alertIcons = {critical: '🚨', danger: '🔥', warning: '⚠️'};
+  for (var a = 0; a < alerts.length; a++) {
+    var al = alerts[a];
+    alertHtml += '<div class="key-alert ' + (al.level||'warning') + '">' +
+      '<span class="key-alert-icon">' + (alertIcons[al.level]||'⚠️') + '</span>' +
+      '<span>' + escapeHtml(al.deployment||'default') + ': ' + escapeHtml(al.message||'') + '</span>' +
       '</div>';
   }
-  listHtml += '</div>';
+  document.getElementById('keys-alerts').innerHTML = alertHtml;
+
+  // ── Key Cards grouped by deployment ──
+  var groups = {};
+  for (var i = 0; i < keys.length; i++) {
+    var dep = keys[i].deployment || 'default';
+    if (!groups[dep]) groups[dep] = [];
+    groups[dep].push(keys[i]);
+  }
+
+  var depNames = Object.keys(groups).sort();
+  var listHtml = '';
+
+  for (var d = 0; d < depNames.length; d++) {
+    var dep = depNames[d];
+    var groupKeys = groups[dep];
+    var activeC = groupKeys.filter(function(k){return k.status==='active';}).length;
+    var cooldownC = groupKeys.filter(function(k){return k.status==='cooldown';}).length;
+    var deadC = groupKeys.filter(function(k){return k.status==='dead';}).length;
+    var avgHealth = activeC > 0
+      ? Math.round(groupKeys.filter(function(k){return k.status==='active';}).reduce(function(s,k){return s+k.health_pct;},0)/activeC)
+      : 0;
+    var depColor = deadC===groupKeys.length?'#ef4444':cooldownC===groupKeys.length?'#f59e0b':activeC>0?'#10b981':'#6b7280';
+    var depHealthLabel = deadC===groupKeys.length?'DEAD':cooldownC===groupKeys.length?'COOLDOWN':activeC>0?'ACTIVE':'IDLE';
+
+    listHtml += '<div class="dep-group" style="border-left-color:' + depColor + ';">' +
+      '<div class="dep-group-header">' +
+      '<span>' + escapeHtml(dep) + ' <span style="font-size:9px;color:var(--fg-dim);">(' + groupKeys.length + ' keys)</span></span>' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<span style="font-size:9px;color:#10b981;">' + activeC + ' active</span>' +
+      '<span style="font-size:9px;color:#f59e0b;">' + cooldownC + ' cooldown</span>' +
+      '<span style="font-size:9px;color:#ef4444;">' + deadC + ' dead</span>' +
+      '<span class="dep-group-health" style="background:' + depColor + '22;color:' + depColor + ';">' + depHealthLabel + '</span>' +
+      '</div></div>';
+
+    for (var j = 0; j < groupKeys.length; j++) {
+      var k = groupKeys[j];
+      var statusColors = {active:'#10b981', cooldown:'#f59e0b', dead:'#ef4444'};
+      var sc = statusColors[k.status] || '#6b7280';
+      var hc = k.health_color || '#10b981';
+      var hp = k.health_pct || 100;
+
+      // Health bar color segments
+      var hBarColor = hp >= 70 ? '#10b981' : hp >= 40 ? '#f59e0b' : '#ef4444';
+
+      // Token color
+      var tp = k.token_pct || 0;
+      var tcolor = tp > 90 ? '#ef4444' : tp > 70 ? '#f59e0b' : '#10b981';
+      var rp = k.request_pct || 0;
+      var rcolor = rp > 90 ? '#ef4444' : rp > 70 ? '#f59e0b' : '#10b981';
+
+      // Error rate color
+      var er = k.error_rate || 0;
+      var erColor = er > 15 ? '#ef4444' : er > 5 ? '#f59e0b' : '#10b981';
+
+      // Latency color
+      var lat = k.avg_latency_ms || 0;
+      var latColor = lat > 800 ? '#ef4444' : lat > 400 ? '#f59e0b' : '#10b981';
+
+      // Cooldown
+      var cooldownHtml = '<span style="color:var(--muted);font-size:9px;">—</span>';
+      if (k.status === 'cooldown' && k.cooldown_until) {
+        cooldownHtml =
+          '<div class="cooldown-timer" data-key-id="' + (k.id||j) + '" data-cooldown-until="' + (k.cooldown_until||'') + '" style="margin-top:4px;">' +
+          '<span class="cooldown-count" id="cd-count-' + j + '">--</span>' +
+          '<div class="cooldown-bar-wrap"><div class="cooldown-bar" id="cd-bar-' + j + '" style="width:100%;"></div></div>' +
+          '</div>';
+      }
+
+      listHtml += '<div class="key-card" style="border-left: 3px solid ' + sc + ';">' +
+        '<div class="key-card-header">' +
+        '<span style="font-weight:700;font-size:10px;">' + (k.provider||'?') + ' <span style="color:var(--fg-dim);font-weight:400;">' + (k.id||'?') + '</span></span>' +
+        '<span class="key-card-status" style="background:' + sc + '22;color:' + sc + ';">' + k.status.toUpperCase() + '</span>' +
+        '</div>' +
+
+        // Health score row
+        '<div class="metric-row">' +
+        '<span class="metric-label">Health</span>' +
+        '<div class="metric-bar-wrap"><div class="metric-bar" style="width:' + hp + '%;background:' + hBarColor + ';min-width:2px;"></div></div>' +
+        '<span class="metric-value" style="font-weight:700;color:' + hBarColor + ';">' + hp + '%</span>' +
+        '</div>' +
+
+        // Error rate row
+        '<div class="metric-row">' +
+        '<span class="metric-label">Errors</span>' +
+        '<div class="metric-bar-wrap"><div class="metric-bar" style="width:' + Math.min(er*3,100) + '%;background:' + erColor + ';min-width:2px;"></div></div>' +
+        '<span class="metric-value" style="color:' + erColor + ';">' + er.toFixed(1) + '% <span style="font-size:8px;">(' + (k.error_count||0) + '/' + (k.total_requests||0) + ')</span></span>' +
+        '</div>' +
+
+        // Latency row
+        '<div class="metric-row">' +
+        '<span class="metric-label">Latency</span>' +
+        '<div class="metric-bar-wrap"><div class="metric-bar" style="width:' + Math.min(lat/10,100) + '%;background:' + latColor + ';min-width:2px;"></div></div>' +
+        '<span class="metric-value" style="color:' + latColor + ';">' + lat + 'ms</span>' +
+        '</div>' +
+
+        // Token budget row
+        '<div class="metric-row">' +
+        '<span class="metric-label">Tokens</span>' +
+        '<div class="metric-bar-wrap"><div class="metric-bar" style="width:' + tp + '%;background:' + tcolor + ';min-width:2px;"></div></div>' +
+        '<span class="metric-value" style="color:' + tcolor + ';">' + (k.tokens_used||0).toLocaleString() + '/' + (k.tokens_max||0).toLocaleString() + ' (' + tp.toFixed(0) + '%)</span>' +
+        '</div>' +
+
+        // Request budget row
+        '<div class="metric-row">' +
+        '<span class="metric-label">Requests</span>' +
+        '<div class="metric-bar-wrap"><div class="metric-bar" style="width:' + rp + '%;background:' + rcolor + ';min-width:2px;"></div></div>' +
+        '<span class="metric-value" style="color:' + rcolor + ';">' + (k.requests_used||0) + '/' + (k.requests_max||0) + ' (' + rp.toFixed(0) + '%)</span>' +
+        '</div>' +
+
+        // Cooldown timer
+        cooldownHtml +
+
+        '</div>';  // key-card
+    }
+
+    listHtml += '</div>'; // dep-group
+  }
+
   document.getElementById('keys-list').innerHTML = listHtml;
+
+  // Summary pills
+  var sumHtml = '';
+  sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#10b981;"></span> ' + (summary.active||0) + ' active</div>';
+  sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#f59e0b;"></span> ' + (summary.cooldown||0) + ' cooldown</div>';
+  sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#ef4444;"></span> ' + (summary.dead||0) + ' dead</div>';
+  sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#6b7280;"></span> ' + (summary.total||0) + ' total</div>';
+  document.getElementById('keys-summary').innerHTML = sumHtml;
 }
 
 // ─── Live Cooldown Countdown (updates every second) ──────────
@@ -887,6 +1443,518 @@ setInterval(function() {
 // Poll key status every 2 seconds
 setInterval(fetchKeyStatus, 2000);
 fetchKeyStatus();
+
+// ═══════════════════════════════════════════════════════════════
+// TRIGGERED SKILLS — fetch from /api/triggers every 2s
+// ═══════════════════════════════════════════════════════════════
+function fetchTriggers() {
+  fetch('/api/triggers')
+    .then(r => r.json())
+    .then(data => renderTriggers(data))
+    .catch(() => {
+      document.getElementById('triggers-empty').style.display = 'block';
+    });
+}
+
+function renderTriggers(data) {
+  var triggers = data.triggers || [];
+  var summary = data.summary || {};
+
+  // Update timestamp
+  var now = new Date();
+  document.getElementById('triggers-updated').textContent = 'updated ' + now.toLocaleTimeString();
+
+  // Summary pills
+  var sumHtml = '';
+  if (data.available !== false) {
+    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#a78bfa;"></span> ' + (summary.total_runs||0) + ' runs triggered</div>';
+    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#c4b5fd;"></span> ' + (summary.total_skills||0) + ' unique skills</div>';
+  }
+  document.getElementById('triggers-summary').innerHTML = sumHtml || '';
+
+  // Trigger runs
+  if (!triggers.length) {
+    document.getElementById('triggers-empty').style.display = 'block';
+    document.getElementById('triggers-list').innerHTML = '';
+    return;
+  }
+  document.getElementById('triggers-empty').style.display = 'none';
+
+  var sourceLabels = {
+    'karma.falsified': { label: 'KARMA FALSIFIED', cls: 'karma', icon: '🔍' },
+    'karma.refuted': { label: 'KARMA REFUTED', cls: 'karma-refuted', icon: '🛑' },
+    'limen.rate_limited': { label: 'LIMEN 429', cls: 'limen', icon: '⏱️' },
+    'limen.key_exhausted': { label: 'LIMEN EXHAUSTED', cls: 'limen-exhausted', icon: '🚨' },
+  };
+
+  var listHtml = '';
+  for (var i = 0; i < triggers.length; i++) {
+    var t = triggers[i];
+    var source = sourceLabels[t.source] || { label: (t.source||'unknown').toUpperCase(), cls: 'karma', icon: '⚡' };
+    var cids = (t.correlation_ids||[]).slice(0, 3).join(', ') || '—';
+    var pct = t.tids_seeded > 0 ? Math.floor(t.tids_done * 100 / t.tids_seeded) : 0;
+    var pctColor = pct >= 100 ? '#34d399' : pct > 0 ? '#f59e0b' : '#6b7280';
+    var timeAgo = timeSince(t.started_at);
+
+    // Skill tags
+    var skillTags = '';
+    var skills = t.skills || [];
+    for (var s = 0; s < Math.min(skills.length, 8); s++) {
+      skillTags += '<span class="trigger-skill-tag">' + escapeHtml(skills[s]) + '</span>';
+    }
+    if (skills.length > 8) skillTags += '<span class="trigger-skill-tag" style="opacity:.5;">+' + (skills.length - 8) + ' more</span>';
+
+    listHtml += '<div class="trigger-run" data-source="' + t.source + '">' +
+      '<div class="trigger-header">' +
+        '<span class="trigger-source-badge ' + source.cls + '">' + source.icon + ' ' + source.label + '</span>' +
+        '<span class="trigger-run-id">' + escapeHtml(t.run_id||'?') + '</span>' +
+        '<span class="trigger-cid">cid: ' + cids + '</span>' +
+        '<span class="trigger-time">' + timeAgo + '</span>' +
+      '</div>' +
+      '<div class="trigger-skills">' + skillTags + '</div>' +
+      '<div class="trigger-progress">' +
+        '<span>' + t.tids_done + '/' + t.tids_seeded + ' TIDs · ' + pct + '%</span>' +
+        '<div class="trigger-progress-bar"><div class="trigger-progress-fill" style="width:' + pct + '%;background:' + pctColor + ';"></div></div>' +
+      '</div>' +
+      '</div>';
+  }
+  document.getElementById('triggers-list').innerHTML = listHtml;
+}
+
+function timeSince(isoStr) {
+  if (!isoStr) return '—';
+  try {
+    var diff = Date.now() - new Date(isoStr).getTime();
+    if (diff < 60000) return Math.floor(diff/1000) + 's ago';
+    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+    return Math.floor(diff/86400000) + 'd ago';
+  } catch(e) { return '—'; }
+}
+
+// Poll triggers every 2 seconds
+setInterval(fetchTriggers, 2000);
+fetchTriggers();
+
+// ═══════════════════════════════════════════════════════════════
+// REPLAY REPORT — fetch from /api/replay every 5s
+// ═══════════════════════════════════════════════════════════════
+function fetchReplay() {
+  fetch('/api/replay')
+    .then(r => r.json())
+    .then(data => renderReplay(data))
+    .catch(() => {
+      document.getElementById('replay-empty').style.display = 'block';
+    });
+}
+
+function renderReplay(data) {
+  var now = new Date();
+  document.getElementById('replay-updated').textContent = 'updated ' + now.toLocaleTimeString();
+
+  if (!data.available || !data.report) {
+    document.getElementById('replay-empty').style.display = 'block';
+    document.getElementById('replay-summary').innerHTML = '';
+    document.getElementById('replay-meta').innerHTML = '';
+    document.getElementById('replay-details').innerHTML = '';
+    if (data.events_available) {
+      document.getElementById('replay-empty').innerHTML =
+        '⏳ No replay yet. ' + data.events_available + ' events available in event log. ' +
+        'Run <code>ReplayBus.replay()</code> to audit event determinism.';
+    }
+    return;
+  }
+  document.getElementById('replay-empty').style.display = 'none';
+
+  var r = data.report;
+
+  // Summary badges
+  var sumHtml = '';
+  sumHtml += '<div class="replay-stat-pill identical"><span class="badge-num">' + (r.identical||0) + '</span><span class="badge-label">identical</span></div>';
+  sumHtml += '<div class="replay-stat-pill diverged"><span class="badge-num">' + (r.diverged||0) + '</span><span class="badge-label">diverged</span></div>';
+  sumHtml += '<div class="replay-stat-pill errors"><span class="badge-num">' + (r.errors||0) + '</span><span class="badge-label">errors</span></div>';
+  var detClass = (r.deterministic !== false) ? 'deterministic' : 'non-deterministic';
+  var detLabel = (r.deterministic !== false) ? '✓ DETERMINISTIC' : '✗ NON-DETERMINISTIC';
+  sumHtml += '<div class="replay-stat-pill ' + detClass + '"><span class="badge-num" style="font-size:18px;">' + detLabel + '</span></div>';
+  document.getElementById('replay-summary').innerHTML = sumHtml;
+
+  // Meta
+  var metaHtml = '';
+  metaHtml += '<span>' + (r.replayed||0) + '/' + (r.total_events||0) + ' events replayed</span>';
+  metaHtml += '<span>' + (r.elapsed_ms||0).toFixed(1) + 'ms</span>';
+  if (r.new_events) metaHtml += '<span style="color:#a78bfa;">+' + r.new_events + ' new events</span>';
+  if (r.saved_at) metaHtml += '<span style="color:var(--muted);">saved: ' + (r.saved_at||'').substring(11,19) + '</span>';
+  document.getElementById('replay-meta').innerHTML = metaHtml;
+
+  // Detail rows (diverged + errors)
+  var detailHtml = '';
+  var diverged = r.diverged_details || [];
+  var errors = r.error_details || [];
+
+  if (diverged.length || errors.length) {
+    detailHtml += '<div style="font-size:10px;font-weight:700;color:var(--fg-dim);margin-bottom:4px;">Details:</div>';
+  }
+
+  for (var d = 0; d < diverged.length; d++) {
+    var dd = diverged[d];
+    var idx = dd.index !== undefined ? dd.index : d;
+    var diffId = 'diff-' + idx;
+    detailHtml += '<div class="replay-detail-row diverged" style="cursor:pointer;" onclick="toggleDiff(' + idx + ',\'' + diffId + '\')" title="Click to view JSON diff">' +
+      '<span class="replay-badge fail">🔍 DIVERGED</span>' +
+      '<span>' + escapeHtml(dd.event_type||'?') + ' <span class="replay-fp">cid:' + (dd.correlation_id||'?') + '</span></span>' +
+      '<span class="replay-fp">orig:' + (dd.original_fp||'?').substring(0,8) + ' replay:' + (dd.replayed_fp||'?').substring(0,8) + '</span>' +
+      '<span style="color:var(--fg-dim);">' + escapeHtml((dd.reason||'fingerprint mismatch').substring(0,60)) + ' <span class="diff-expand-btn" id="diff-btn-' + idx + '">▶ View Diff</span></span>' +
+      '</div>' +
+      '<div class="diff-container" id="' + diffId + '"><div class="diff-loading"></div></div>';
+  }
+
+  for (var e = 0; e < errors.length; e++) {
+    var ed = errors[e];
+    detailHtml += '<div class="replay-detail-row error">' +
+      '<span class="replay-badge error">ERROR</span>' +
+      '<span>' + escapeHtml(ed.event_type||'?') + ' <span class="replay-fp">cid:' + (ed.correlation_id||'?') + '</span></span>' +
+      '<span></span>' +
+      '<span style="color:var(--warn);">' + escapeHtml((ed.error||'').substring(0, 80)) + '</span>' +
+      '</div>';
+  }
+
+  document.getElementById('replay-details').innerHTML = detailHtml;
+}
+
+// Poll replay every 5 seconds (replay data changes rarely)
+setInterval(fetchReplay, 5000);
+fetchReplay();
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT DIFF VIEWER — side-by-side JSON diff for diverged events
+// ═══════════════════════════════════════════════════════════════
+var diffCache = {}; // Cache fetched diffs to avoid re-fetching
+
+async function toggleDiff(index, containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Toggle close if already open
+  if (container.classList.contains('open')) {
+    container.classList.remove('open');
+    var btn = document.getElementById('diff-btn-' + index);
+    if (btn) btn.textContent = '▶ View Diff';
+    return;
+  }
+
+  // Show loading
+  container.innerHTML = '<div class="diff-loading">⏳ Loading diff...</div>';
+  container.classList.add('open');
+  var btn = document.getElementById('diff-btn-' + index);
+  if (btn) btn.textContent = '▼ Hide Diff';
+
+  // Use cache or fetch
+  var diff;
+  if (diffCache[index]) {
+    diff = diffCache[index];
+  } else {
+    try {
+      var res = await fetch('/api/replay-diff?index=' + index);
+      diff = await res.json();
+      diffCache[index] = diff;
+    } catch (e) {
+      container.innerHTML = '<div class="diff-loading" style="color:var(--danger);">❌ Failed to load diff: ' + e.message + '</div>';
+      return;
+    }
+  }
+
+  if (!diff.available) {
+    container.innerHTML = '<div class="diff-loading" style="color:var(--warn);">⚠️ ' + escapeHtml(diff.error||'Diff not available') + '</div>';
+    return;
+  }
+
+  renderDiff(container, diff);
+}
+
+function renderDiff(container, diff) {
+  var html = '';
+
+  // Header info
+  html += '<div class="diff-header-info">' +
+    '<strong>' + escapeHtml(diff.event_type||'?') + '</strong> · cid:' + (diff.correlation_id||'?') +
+    ' · <span class="diff-badge changed">' + (diff.changed_count||0) + ' changed</span>' +
+    ' · <span class="diff-badge identical">' + ((diff.total_keys||0) - (diff.changed_count||0)) + ' identical</span>' +
+    '</div>';
+
+  if (!diff.diffs || !diff.diffs.length) {
+    html += '<div class="diff-loading">No keys to diff</div>';
+    container.innerHTML = html;
+    return;
+  }
+
+  // Render each key diff
+  for (var i = 0; i < diff.diffs.length; i++) {
+    var d = diff.diffs[i];
+    if (d.status === 'identical') continue; // Skip identical keys for clarity
+
+    var rowClass = 'diff-row ' + d.status;
+    var badgeHtml = '<span class="diff-badge ' + d.status + '">' + d.status.toUpperCase() + '</span>';
+
+    html += '<div class="' + rowClass + '">';
+    html += '<div class="diff-key">' + badgeHtml + ' ' + escapeHtml(d.key) + '</div>';
+
+    // Original (left side)
+    if (d.status === 'added') {
+      html += '<div class="diff-val added" style="grid-column:1/-1;">+ ' + escapeHtml(d.replayed||'N/A') + '</div>';
+    } else if (d.status === 'removed') {
+      html += '<div class="diff-val removed" style="grid-column:1/-1;">− ' + escapeHtml(d.original||'N/A') + '</div>';
+    } else {
+      // Side-by-side for changed
+      html += '<div class="diff-val original">' + escapeHtml(d.original||'undefined') + '</div>';
+      html += '<div class="diff-val replayed">' + escapeHtml(d.replayed||'undefined') + '</div>';
+    }
+
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Event Stream — live EventBus event log
+// ═══════════════════════════════════════════════════════════════
+let eventFilter = "all";
+let eventAutoScroll = true;
+let eventSeq = 0;
+let eventPollTimer = null;
+
+const EVENT_COLORS = {
+  "runtime.input": "ev-color-Input",
+  "shinon.output": "ev-color-Shinon",
+  "promtguard.claims": "ev-color-Promtguard",
+  "karma.falsified": "ev-color-KARMA",
+  "karma.experience": "ev-color-KARMA",
+  "goal_chain.triggered": "ev-color-GoalChain",
+  "goal_chain.rework": "ev-color-Rework",
+  "goal_chain.skill_chain": "ev-color-GoalChain",
+  "runtime.completed": "ev-color-Completed",
+  "runtime.error": "ev-color-Error",
+  "limen.rate_limited": "ev-color-RateLimit",
+};
+
+const EVENT_SHORT = {
+  "runtime.input": "Input",
+  "shinon.output": "Shinon",
+  "promtguard.claims": "Promtguard",
+  "promtguard.handoff": "Handoff",
+  "karma.falsified": "KARMA",
+  "karma.experience": "Experience",
+  "goal_chain.triggered": "GoalChain",
+  "goal_chain.rework": "Rework",
+  "goal_chain.skill_chain": "SkillChain",
+  "runtime.completed": "Completed",
+  "runtime.error": "Error",
+  "dispatch.executed": "Dispatch",
+  "limen.rate_limited": "RateLimit",
+  "limen.key_cooldown": "KeyCooldown",
+  "limen.key_exhausted": "KeyExhaust",
+  "limen.budget_warning": "BudgetWarn",
+};
+
+async function buildEventToolbar() {
+  try {
+    const res = await fetch("/api/event-types");
+    const types = await res.json();
+    let html = "";
+    for (const t of types) {
+      const cls = (eventFilter === t.value) ? "events-filter-btn active" : "events-filter-btn";
+      html += '<button class="' + cls + '" onclick="setEventFilter(\'' + t.value + '\')">' + t.label + '</button>';
+    }
+    html += '<span class="events-count" id="events-count"></span>';
+    html += '<button class="events-auto-scroll-btn on" id="events-auto-scroll-btn" onclick="toggleAutoScroll()">⏬ Auto-Scroll</button>';
+    document.getElementById("events-toolbar").innerHTML = html;
+  } catch (e) {}
+}
+
+function setEventFilter(filter) {
+  eventFilter = filter;
+  eventSeq = 0;
+  document.getElementById("event-stream").innerHTML =
+    '<div class="events-empty">Filter: ' + filter + " — loading...</div>";
+  buildEventToolbar();
+  pollEvents();
+}
+
+function toggleAutoScroll() {
+  eventAutoScroll = !eventAutoScroll;
+  const btn = document.getElementById("events-auto-scroll-btn");
+  if (btn) {
+    btn.className = eventAutoScroll ? "events-auto-scroll-btn on" : "events-auto-scroll-btn";
+    btn.textContent = eventAutoScroll ? "⏬ Auto-Scroll" : "⏸ Auto-Scroll OFF";
+  }
+}
+
+async function pollEvents() {
+  try {
+    const url = "/api/events?limit=100&since=" + eventSeq +
+      (eventFilter !== "all" ? "&type=" + encodeURIComponent(eventFilter) : "");
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.available || !data.events.length) return;
+
+    const stream = document.getElementById("event-stream");
+    const wasAtBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 40;
+
+    let html = "";
+    // Only clear on first poll (eventSeq === 0)
+    if (eventSeq === 0 && stream.querySelector(".events-empty")) {
+      stream.innerHTML = "";
+    }
+
+    for (const e of data.events) {
+      const short = EVENT_SHORT[e.type] || e.type.split(".").pop() || "?";
+      const colorClass = EVENT_COLORS[e.type] || "";
+      const ts = (e.ts || "").slice(11, 19) || "--:--:--";
+      const cid = e.correlation_id ? '<span class="ev-cid">' + e.correlation_id.slice(0, 8) + "</span>" : "";
+      const payload = (e.payload_snippet || "").slice(0, 120);
+      html +=
+        '<div class="event-row">' +
+        '<span class="ev-ts">' + ts + "</span>" +
+        '<span class="ev-type ' + colorClass + '">' + short + cid + "</span>" +
+        '<span class="ev-source">' + (e.source || "") + "</span>" +
+        '<span class="ev-payload" title="' + escapeHtml(payload) + '">' + escapeHtml(payload) + "</span>" +
+        "</div>";
+    }
+
+    stream.insertAdjacentHTML("beforeend", html);
+    eventSeq = data.seq || (eventSeq + data.events.length);
+
+    // Auto-scroll to bottom
+    if (eventAutoScroll && wasAtBottom) {
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    // Update timestamp + count
+    document.getElementById("events-updated").textContent =
+      new Date().toTimeString().slice(0, 8);
+    const countEl = document.getElementById("events-count");
+    if (countEl) countEl.textContent = data.total_events + " events";
+
+    // Remove empty placeholder if we have events
+    const empty = stream.querySelector(".events-empty");
+    if (empty && data.events.length > 0) empty.remove();
+
+  } catch (e) {
+    console.error("pollEvents:", e);
+  }
+}
+
+// Start event polling
+buildEventToolbar();
+pollEvents();
+eventPollTimer = setInterval(pollEvents, settings.refreshRate || 500);
+
+// ── Audit Trail ──
+let lastAuditPoll = 0;
+
+async function fetchAudit() {
+  try {
+    const res = await fetch('/api/audit');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    renderAudit(data);
+    lastAuditPoll = Date.now();
+  } catch (e) {
+    console.error('fetchAudit:', e);
+  }
+}
+
+function renderAudit(data) {
+  document.getElementById('audit-updated').textContent = new Date().toTimeString().slice(0, 8);
+
+  const statusEl = document.getElementById('audit-status');
+  const chainEl = document.getElementById('audit-chain');
+  const metaEl = document.getElementById('audit-meta');
+  const emptyEl = document.getElementById('audit-empty');
+  const hintEl = document.getElementById('audit-scroll-hint');
+
+  if (!data.available) {
+    emptyEl.style.display = 'block';
+    statusEl.innerHTML = '';
+    chainEl.innerHTML = '';
+    metaEl.innerHTML = '';
+    hintEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // Status banner
+  const icons = { intact: '🔐', tampered: '🚨', gaps: '⚠️', empty: '⏳', no_db: '🗄️', pre_v5: '📦' };
+  const icon = icons[data.tamper_status] || '❓';
+  statusEl.innerHTML = '<div class="audit-status ' + data.tamper_status + '">' +
+    '<span class="audit-status-icon">' + icon + '</span>' +
+    '<span>' + (data.tamper_message || 'Unknown') + '</span>' +
+    '</div>';
+
+  // Chain visualization
+  const links = data.chain_links || [];
+  if (links.length > 0) {
+    let chainHtml = '';
+    // Scroll hint if > 8 links
+    if (links.length > 8) hintEl.style.display = 'block';
+    else hintEl.style.display = 'none';
+
+    // Show first 3, ..., last 2 if > 8
+    let displayLinks = links;
+    if (links.length > 8) {
+      displayLinks = [...links.slice(0, 4),
+        { id: '...', event_type: '...', hash_prefix: '...', status: 'ellipsis', color: '#6b7280' },
+        ...links.slice(-3)];
+    }
+
+    for (let i = 0; i < displayLinks.length; i++) {
+      const l = displayLinks[i];
+      if (l.status === 'ellipsis') {
+        chainHtml += '<span style="font-weight:700;color:var(--muted);margin:0 4px;">··· ' + (links.length - 7) + ' more ···</span>';
+        continue;
+      }
+
+      // Chain link
+      chainHtml += '<div class="chain-link" title="#' + l.id + ' ' + l.event_type + '\nHash: ' + l.hash_prefix + '\nPrev: ' + l.prev_hash_prefix + '\nStatus: ' + l.status + '">';
+      chainHtml += '<div class="chain-hash" style="background:' + l.color + '20;color:' + l.color + ';border:1px solid ' + l.color + '40;">' + l.hash_prefix + '</div>';
+      chainHtml += '<div class="chain-event-type">' + (l.event_type || '').slice(0, 12) + '</div>';
+      chainHtml += '</div>';
+
+      // Connector arrow
+      if (i < displayLinks.length - 1 && displayLinks[i + 1].status !== 'ellipsis') {
+        const next = displayLinks[i + 1];
+        const connColor = (l.status === 'broken' || next.status === 'broken') ? '#ef4444'
+          : (l.status === 'gap' || next.status === 'gap') ? '#f59e0b' : '#10b981';
+        chainHtml += '<span class="chain-arrow" style="color:' + connColor + ';">→</span>';
+      }
+    }
+
+    chainEl.innerHTML = '<div style="display:flex;align-items:center;">' + chainHtml + '</div>';
+  } else {
+    chainEl.innerHTML = '<div style="color:var(--muted);font-size:10px;padding:6px;">No hash chain data</div>';
+  }
+
+  // Meta info
+  let metaHtml = '';
+  if (data.chain_start) metaHtml += '<span>🔗 Start: <code>' + data.chain_start + '</code></span>';
+  if (data.chain_end) metaHtml += '<span>→ End: <code>' + data.chain_end + '</code></span>';
+  metaHtml += '<span>📊 ' + data.total_events + ' events</span>';
+  if (data.has_hash_chain) metaHtml += '<span>🔏 Hash-Chain: v5</span>';
+  if (data.verification) {
+    metaHtml += '<span>✅ Verified: ' + data.verification.verified_events + '/' + data.total_events + '</span>';
+    if (data.verification.tampered_events > 0) metaHtml += '<span style="color:#ef4444;">🚨 Tampered: ' + data.verification.tampered_events + '</span>';
+    if (data.verification.gap_events > 0) metaHtml += '<span style="color:#f59e0b;">⚠️ Gaps: ' + data.verification.gap_events + '</span>';
+  }
+  if (data.db_path) metaHtml += '<span style="font-size:8px;color:var(--muted);">DB: <code>' + data.db_path.split('/').slice(-2).join('/') + '</code></span>';
+  metaEl.innerHTML = metaHtml;
+}
+
+// Initial fetch + periodic polling
+fetchAudit();
+// Audit trail changes slowly — poll every 10s
+setInterval(fetchAudit, 10000);
+
 </script>
 
 </body>

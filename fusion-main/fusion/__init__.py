@@ -83,6 +83,17 @@ from fusion.event_runtime import (
     RuntimeResult,
     run_pipeline,
 )
+from fusion.component_registry import (
+    ComponentRegistry,
+    ResultAggregator,
+    PipelineStage,
+    default_pipeline_stages,
+)
+from fusion.replay_bridge import (
+    ReplayBridge,
+    CombinedAuditReport,
+    run_combined_audit,
+)
 
 __all__ = [
     # Shinon Engine (NEW)
@@ -113,4 +124,8 @@ __all__ = [
     "EVENT_GOAL_CHAIN_TRIGGERED", "EVENT_GOAL_CHAIN_SKILL_CHAIN", "EVENT_GOAL_CHAIN_REWORK",
     # Runtime
     "ControlPlaneRuntime", "RuntimeResult", "run_pipeline",
+    # Component Registry (v2 — true decoupling)
+    "ComponentRegistry", "ResultAggregator", "PipelineStage", "default_pipeline_stages",
+    # Replay Bridge (Event + State + Hash Chain combined audit)
+    "ReplayBridge", "CombinedAuditReport", "run_combined_audit",
 ]

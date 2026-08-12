@@ -281,32 +281,26 @@ class DispatchGateRecorder:
     def dispatch(self, action: Action) -> Dict:
         """Dispatch an action and record it in the journal.
 
-        Captures state before and after the dispatch for deterministic
-        replay verification.
+        Uses the (next_state, patches) returned by DispatchGate.dispatch()
+        directly — no separate reducer call needed.
         """
         # Capture state BEFORE
         project = self.gate.persistence.get_active_project()
         state_before = self.gate.persistence.get_all_memory(project)
 
-        # Execute through the real gate
-        result = self.gate.dispatch(action)
+        # Execute through the real gate — returns (next_state, patches)
+        next_state, patches = self.gate.dispatch(action)
 
         if self.auto_record:
-            # Capture state AFTER
-            state_after = self.gate.persistence.get_all_memory(project)
-
-            # Get the patches from a re-computation (we don't have them directly from gate)
-            patches: List[Patch] = _default_reducer(state_before, action, self.gate._rng)
-
             self.journal.record(
                 action=action,
                 state_before=state_before,
-                state_after=state_after,
+                state_after=next_state,
                 patches=patches,
                 rng=self.gate._rng,
             )
 
-        return result
+        return next_state
 
     @property
     def version(self) -> int:

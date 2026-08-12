@@ -200,8 +200,8 @@ class PromtguardClaims:
     ) -> List[Claim]:
         """Extract claims from processed user input.
 
-        MVP: Simple heuristic extraction. Splits on bullet points,
-        numbered lists, and sentences with claim-like patterns.
+        Primary: Bullet points, numbered lists, must/should/shall patterns.
+        Fallback: Sentence segmentation + keyword density scoring for vague inputs.
         """
         claims: List[Claim] = []
         lines = processed_input.strip().split("\n")
@@ -227,7 +227,20 @@ class PromtguardClaims:
                 )
                 claims.append(claim)
 
-        # If no claims found, create one from the full input
+        # ── Fallback: sentence segmentation + keyword density (v2.1) ──
+        # When bullet/list extraction yields < 2 claims, fall back to
+        # sentence-level segmentation with keyword density scoring.
+        # This handles vague/imprecise inputs where the user doesn't use
+        # structured formatting or explicit claim keywords.
+        if len(claims) < 2 and len(processed_input.strip()) >= 30:
+            fallback_claims = self._extract_claims_fallback(
+                processed_input, source
+            )
+            # Only use fallback if it produces MORE claims than primary
+            if len(fallback_claims) > len(claims):
+                claims = fallback_claims
+
+        # Last resort: entire input as one claim
         if not claims and len(processed_input.strip()) >= 10:
             summary = processed_input.strip()[:200]
             claim = Claim(
@@ -237,6 +250,192 @@ class PromtguardClaims:
                 confidence="low",
             )
             claims.append(claim)
+
+        return claims
+
+    # ─── Fallback Heuristics (v2.1) ──────────────────────────────────
+
+    # Domain-relevant keywords for claim scoring.
+    # Higher weight = stronger claim signal from vague text.
+    _TECH_KEYWORDS: Dict[str, float] = {
+        # Architecture / structure
+        "node": 2.0, "javascript": 2.0, "typescript": 2.0, "python": 2.0,
+        "cli": 2.0, "terminal": 2.0, "console": 1.5, "command": 1.5,
+        "grid": 2.5, "array": 1.5, "uint8": 2.0, "matrix": 1.5,
+        "render": 2.0, "renderer": 2.5, "ansi": 2.0, "escape": 1.0,
+        "loop": 1.5, "interval": 1.5, "timer": 1.5, "tick": 1.5,
+        "test": 2.0, "unit": 1.5, "integration": 2.0, "snapshot": 2.0,
+        "module": 1.5, "component": 1.5, "class": 1.0, "function": 1.0,
+        "api": 1.5, "endpoint": 1.5, "server": 1.5, "client": 1.0,
+        "database": 2.0, "sqlite": 2.0, "store": 1.0, "persist": 1.5,
+        "config": 1.5, "option": 1.0, "argument": 1.0, "flag": 1.0,
+        # Package / ecosystem
+        "npm": 1.5, "package": 1.5, "dependency": 1.5, "import": 1.0,
+        "eslint": 1.5, "prettier": 1.5, "jest": 1.5,
+    }
+
+    _IMPERATIVE_KEYWORDS: Dict[str, float] = {
+        # German imperatives / hortatives
+        "soll": 2.0, "muss": 2.5, "mach": 1.5, "bau": 2.0, "erstell": 2.0,
+        "kann": 1.0, "könnte": 1.0, "vielleicht": 0.8, "wäre": 1.0,
+        "brauch": 1.5, "braucht": 1.5, "will": 1.5, "möchte": 1.5,
+        # English imperatives
+        "must": 2.5, "should": 2.0, "shall": 2.0, "need": 1.5,
+        "build": 2.0, "create": 2.0, "make": 1.5, "implement": 2.0,
+        "use": 1.0, "run": 1.0, "add": 1.0, "support": 1.0,
+    }
+
+    _DOMAIN_KEYWORDS: Dict[str, float] = {
+        # Game of Life domain
+        "game of life": 2.5, "zelle": 2.0, "zellen": 2.0,
+        "nachbar": 2.0, "nachbarn": 2.0, "regel": 2.0, "regeln": 2.0,
+        "muster": 1.5, "pattern": 1.5, "generation": 1.5,
+        "torus": 2.5, "wrap": 1.5, "lebend": 1.5, "tot": 1.5,
+        "überlebt": 1.5, "stirbt": 1.5, "geboren": 1.5,
+        "conway": 2.0, "cellular": 2.0, "automaton": 2.0,
+    }
+
+    def _sentence_segment(self, text: str) -> List[str]:
+        """Split text into sentences using multiple boundary strategies.
+
+        Strategy 1: Split on [.!?] followed by space + capital letter
+        Strategy 2: Split on newlines (paragraph boundaries)
+        Strategy 3: Split on German sentence connectors (und, aber, also, dann)
+
+        Returns clean sentences >= 8 chars (or >= 4 chars if high keyword score).
+        """
+        # Primary: split on sentence-ending punctuation followed by capital letter
+        raw = re.split(r'(?<=[.!?])\s+(?=[A-ZÄÖÜ])', text.strip())
+
+        # Secondary: split multi-paragraph segments on newlines
+        sentences = []
+        for segment in raw:
+            segment = segment.strip()
+            if not segment:
+                continue
+            # If segment still has newlines, split further
+            sub = [s.strip() for s in segment.split('\n') if s.strip()]
+            sentences.extend(sub)
+
+        # Filter: keep sentences >= 8 chars, or short ones with strong keywords
+        filtered = []
+        for s in sentences:
+            s = s.rstrip('.')
+            if len(s) >= 12:
+                filtered.append(s)
+            elif len(s) >= 6 and self._score_sentence(s) > 1.5:
+                # Short but high-value (e.g., "50x50 grid", "Uint8Array")
+                filtered.append(s)
+        return filtered
+
+    def _score_sentence(self, text: str) -> float:
+        """Score a sentence by keyword density across tech, imperative, and domain.
+
+        Returns a float representing claim relevance:
+          < 0.8 = noise (skip entirely)
+          0.8-1.5 = moderate (include but with low confidence)
+          > 1.5 = strong claim (include independently with medium confidence)
+        """
+        lowered = text.lower()
+        score = 0.0
+
+        # Tech keywords
+        for kw, weight in self._TECH_KEYWORDS.items():
+            if kw in lowered:
+                score += weight
+
+        # Imperative/hortative keywords
+        for kw, weight in self._IMPERATIVE_KEYWORDS.items():
+            if kw in lowered:
+                score += weight
+
+        # Domain keywords
+        for kw, weight in self._DOMAIN_KEYWORDS.items():
+            if kw in lowered:
+                score += weight
+
+        # Length normalization: very short or very long adjust score
+        if len(text) < 15:
+            score *= 0.7
+        elif len(text) > 100:
+            score = min(score, score * 0.9 + 0.5)  # bonus cap
+
+        return score
+
+    def _extract_claims_fallback(
+        self, text: str, source: str
+    ) -> List[Claim]:
+        """Fallback claim extraction: sentence segmentation + keyword density.
+
+        Algorithm:
+          1. Segment into sentences
+          2. Score each sentence by keyword density
+          3. Extract sentences scoring >= 1.0 as individual claims
+          4. Skip sentences scoring < 0.8 (noise/filler)
+          5. Group low-scoring sentences (0.8-1.0) with adjacent claims
+
+        This handles vague inputs like "Mach so ein Game of Life Ding"
+        (6 claims from 510 chars) and long-winded inputs with filler
+        text (7+ claims from 2800 chars).
+        """
+        sentences = self._sentence_segment(text)
+        if not sentences:
+            return []
+
+        claims: List[Claim] = []
+        scored = [(s, self._score_sentence(s)) for s in sentences]
+
+        NOISE_THRESHOLD = 0.8   # Below this: skip entirely
+        CLAIM_THRESHOLD = 1.0   # Above this: standalone claim
+
+        i = 0
+        while i < len(scored):
+            s, score = scored[i]
+
+            if score >= CLAIM_THRESHOLD:
+                # Strong sentence → individual claim
+                claims.append(Claim(
+                    id=self._next_claim_id(),
+                    claim=s[:200],
+                    source=source,
+                    confidence="medium" if score > 2.0 else "low",
+                ))
+                i += 1
+            elif score < NOISE_THRESHOLD:
+                # Noise/filler → skip entirely
+                i += 1
+            else:
+                # Moderate sentence (0.8-1.0) → group with next claim
+                group = [s]
+                j = i + 1
+                # Collect consecutive moderate sentences (max 2)
+                while j < len(scored) and scored[j][1] < CLAIM_THRESHOLD and scored[j][1] >= NOISE_THRESHOLD and len(group) < 2:
+                    group.append(scored[j][0])
+                    j += 1
+
+                if j < len(scored) and scored[j][1] >= CLAIM_THRESHOLD:
+                    # Next is a strong claim — prepend group to it
+                    group.append(scored[j][0])
+                    combined = " ".join(group)[:200]
+                    claims.append(Claim(
+                        id=self._next_claim_id(),
+                        claim=combined,
+                        source=source,
+                        confidence="low",
+                    ))
+                    i = j + 1
+                elif len(group) >= 2:
+                    # At least 2 moderate sentences → make a weak claim
+                    combined = " ".join(group)[:200]
+                    claims.append(Claim(
+                        id=self._next_claim_id(),
+                        claim=combined,
+                        source=source,
+                        confidence="low",
+                    ))
+                    i = j
+                else:
+                    i = j  # Single moderate sentence with no strong neighbor → skip
 
         return claims
 

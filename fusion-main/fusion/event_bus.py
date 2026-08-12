@@ -115,6 +115,23 @@ class Event:
         data = json.dumps(self.to_dict(), sort_keys=True, ensure_ascii=False)
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 
+    def structural_fingerprint(self) -> str:
+        """SHA-256 fingerprint of structural content only.
+
+        Hashes event_type + source + payload (sorted keys).
+        EXCLUDES timestamp and correlation_id — these always differ
+        on replay, so comparing them produces false divergence.
+
+        Use this for replay determinism checks.
+        """
+        structural = {
+            "event_type": self.event_type,
+            "source": self.source,
+            "payload": self.payload,
+        }
+        data = json.dumps(structural, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(data.encode()).hexdigest()[:16]
+
     def __repr__(self) -> str:
         return f"Event({self.event_type} ← {self.source}, cid={self.correlation_id})"
 
@@ -424,8 +441,8 @@ class ReplayBus:
         # Create a fresh bus for replay
         self.bus = AsyncEventBus()
 
-        # Original fingerprints for comparison
-        self._original_fingerprints = [e.fingerprint() for e in self._events]
+        # Original structural fingerprints for comparison (excludes timestamps/cids)
+        self._original_structural_fps = [e.structural_fingerprint() for e in self._events]
 
         # Capture new events generated during replay
         self._new_events: List[Event] = []
@@ -478,23 +495,38 @@ class ReplayBus:
                 await self.bus.publish(event)
                 report.replayed += 1
 
-                # Compare fingerprint if event was re-logged
+                # Compare structural fingerprint (event_type + source + payload)
+                # Timestamps and correlation_ids are excluded — they ALWAYS differ on replay.
                 if i < len(self.bus._event_log):
                     replayed_event = self.bus._event_log[i]
-                    replayed_fp = replayed_event.fingerprint()
-                    original_fp = self._original_fingerprints[i]
-                    if replayed_fp == original_fp:
-                        report.identical += 1
-                    else:
+                    if replayed_event.event_type != event.event_type:
                         report.diverged += 1
                         report.diverged_details.append({
                             "index": i,
                             "event_type": event.event_type,
                             "correlation_id": event.correlation_id,
-                            "original_fp": original_fp,
-                            "replayed_fp": replayed_fp,
-                            "reason": "fingerprint mismatch — event payload differs",
+                            "replayed_type": replayed_event.event_type,
+                            "reason": f"event_type changed: {event.event_type} → {replayed_event.event_type}",
+                            "original_event": event.to_dict(),
+                            "replayed_event": replayed_event.to_dict(),
                         })
+                    else:
+                        replayed_fp = replayed_event.structural_fingerprint()
+                        original_fp = self._original_structural_fps[i]
+                        if replayed_fp == original_fp:
+                            report.identical += 1
+                        else:
+                            report.diverged += 1
+                            report.diverged_details.append({
+                                "index": i,
+                                "event_type": event.event_type,
+                                "correlation_id": event.correlation_id,
+                                "original_fp": original_fp,
+                                "replayed_fp": replayed_fp,
+                                "reason": "structural fingerprint mismatch — payload differs",
+                                "original_event": event.to_dict(),
+                                "replayed_event": replayed_event.to_dict(),
+                            })
 
                 if self._delay_ms > 0:
                     await asyncio.sleep(self._delay_ms / 1000.0)
@@ -524,6 +556,8 @@ class ReplayBus:
             report.identical, report.diverged, report.errors,
             report.elapsed_ms,
         )
+        # Auto-persist the report for dashboard visualization
+        _save_replay_report(report)
         return report
 
     async def replay_with(
@@ -533,6 +567,67 @@ class ReplayBus:
         """Wire and replay in one call. Convenience wrapper."""
         self.wire_all(wiring_fn)
         return await self.replay()
+
+
+# ─── Replay Report Persistence ────────────────────────────────────────
+
+_REPLAY_REPORT_PATH: Optional[Path] = None
+_last_replay_report: Optional[ReplayReport] = None
+
+
+def set_replay_report_path(path: Path) -> None:
+    """Set the path where the last replay report is persisted."""
+    global _REPLAY_REPORT_PATH
+    _REPLAY_REPORT_PATH = path
+
+
+def get_last_replay_report() -> Optional[ReplayReport]:
+    """Return the last replay report (in-memory or from disk)."""
+    global _last_replay_report, _REPLAY_REPORT_PATH
+    if _last_replay_report is not None:
+        return _last_replay_report
+    if _REPLAY_REPORT_PATH and _REPLAY_REPORT_PATH.is_file():
+        try:
+            data = json.loads(_REPLAY_REPORT_PATH.read_text(encoding="utf-8"))
+            _last_replay_report = ReplayReport(
+                total_events=data.get("total_events", 0),
+                replayed=data.get("replayed", 0),
+                errors=data.get("errors", 0),
+                identical=data.get("identical", 0),
+                diverged=data.get("diverged", 0),
+                new_events=data.get("new_events", 0),
+                elapsed_ms=data.get("elapsed_ms", 0.0),
+                diverged_details=data.get("diverged_details", []),
+                error_details=data.get("error_details", []),
+            )
+        except Exception:
+            pass
+    return _last_replay_report
+
+
+def _save_replay_report(report: ReplayReport) -> None:
+    """Persist a replay report to disk."""
+    global _last_replay_report, _REPLAY_REPORT_PATH
+    _last_replay_report = report
+    if _REPLAY_REPORT_PATH:
+        try:
+            _REPLAY_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+            data = {
+                "total_events": report.total_events,
+                "replayed": report.replayed,
+                "errors": report.errors,
+                "identical": report.identical,
+                "diverged": report.diverged,
+                "new_events": report.new_events,
+                "elapsed_ms": report.elapsed_ms,
+                "deterministic": report.deterministic,
+                "diverged_details": report.diverged_details,
+                "error_details": report.error_details,
+                "saved_at": datetime.now(timezone.utc).isoformat(),
+            }
+            _REPLAY_REPORT_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        except Exception as exc:
+            logger.warning("Failed to persist replay report: %s", exc)
 
 
 # ─── Global singleton (for module-level access) ───────────────────────
