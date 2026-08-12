@@ -1060,15 +1060,22 @@ def smoke_test_databases(console: Console) -> bool:
         (SHINON_MEM, "Shinon-Memory", False),
         (GOALCHAIN_DB, "goal-chain", False),
     ]:
-        if not db.exists():
+        target_db = db
+        if not target_db.exists() and label == "goal-chain" and P.PROJECT_PROJECT_GOALCHAIN_DB.exists():
+            target_db = P.PROJECT_PROJECT_GOALCHAIN_DB
+        if not target_db.exists():
             if optional:
                 console.info(f"{label}: nicht angelegt (wird beim ersten Start erzeugt)")
             else:
-                console.warn(f"{label}: nicht vorhanden ({db.relative_to(PROJECT_ROOT)})")
+                try:
+                    rel = str(target_db.relative_to(PROJECT_ROOT))
+                except ValueError:
+                    rel = str(target_db)
+                console.warn(f"{label}: nicht vorhanden ({rel})")
                 ok = False
             continue
         try:
-            with sqlite3.connect(str(db)) as conn:
+            with sqlite3.connect(str(target_db)) as conn:
                 conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
                 tables = conn.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'"
