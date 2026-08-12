@@ -267,6 +267,14 @@ class GoalChainSubscriber:
         self._seed_script = self._goal_chain_dir / "scripts" / "seed_tids.py"
         self._dispatch_script = self._goal_chain_dir / "scripts" / "dispatch.sh"
 
+        # Zentral-first: $SHINON_HOME/data/goal-chain/tid-state.db falls
+        # vorhanden, sonst Legacy-Pfad. Ein Ort fuer TID-State.
+        import os as _os
+        _shinon_home = _os.environ.get("SHINON_HOME") or _os.path.expanduser("~/.shinon")
+        _central_db = Path(_shinon_home) / "data" / "goal-chain" / "tid-state.db"
+        _legacy_db = self._goal_chain_dir / "db" / "tid-state.db"
+        self._goal_db = _central_db if _central_db.exists() else _legacy_db
+
     def wire(self, bus: Optional[AsyncEventBus] = None) -> None:
         """Wire goal-chain subscriptions to the EventBus."""
         b = bus or self.bus
@@ -645,7 +653,7 @@ class GoalChainSubscriber:
         import sqlite3 as _sqlite
         from datetime import datetime as _dt, timezone as _tz
 
-        goal_db = self._goal_chain_dir / "db" / "tid-state.db"
+        goal_db = self._goal_db
         if not goal_db.exists():
             logger.warning("GoalChain: tid-state.db not found — cannot fail TIDs")
             return 0
@@ -729,7 +737,7 @@ class GoalChainSubscriber:
         """
         import sqlite3 as _sqlite
 
-        goal_db = self._goal_chain_dir / "db" / "tid-state.db"
+        goal_db = self._goal_db
         if not goal_db.exists():
             logger.warning("GoalChain: tid-state.db not found — cannot recover TIDs")
             return 0

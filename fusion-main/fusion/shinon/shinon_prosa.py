@@ -486,23 +486,96 @@ def render(
 # Der Böse Zwilling LIEFERT den Widerspruch als STRUKTUR (die Entscheidung
 # liegt in der deterministischen Schicht / im Mirror-Thinker). Das kleine
 # Modell formuliert NUR die Schärfe — es erfindet KEINEN Widerspruch.
+#
+# v4.0: typisiertes objections[]-Schema (kind/target/claim/argument/
+# required_evidence) mit variabler Länge und deterministischem Validator
+# (validate_objections, fail-closed). Ersetzt das alte points[]-Schema
+# (assumption/contradiction/why_unfounded, starr auf max 3 gekappt).
+
+
+# Kanonische Einwand-Kategorien. Der deterministische Validator akzeptiert
+# NUR diese Werte (fail-closed) — kein Freitext, kein Drift.
+OBJECTION_KINDS: Tuple[str, ...] = (
+    "assumption",        # eine stillschweigende Annahme wird angezweifelt
+    "contradiction",     # Widerspruch zu einer anderen Behauptung/Tatsache
+    "missing_evidence",  # Behauptung ohne Beleg / unbelegt
+    "scope",             # falsches Problem / falscher Fokus
+    "architecture",      # fundamentale Architektur-Richtung falsch
+    "determinism",       # behauptete Determinismus-/Reproduzierbarkeits-Garantie nicht haltbar
+)
 
 
 @dataclass(frozen=True)
-class CritiquePoint:
-    """Ein bereits feststehender Kritikpunkt (Inhalt, NICHT Formulierung)."""
+class Objection:
+    """Ein typisierter Einwand (Inhalt, NICHT Formulierung).
 
-    assumption: str        # welche stillschweigende Annahme angezweifelt wird
-    contradiction: str     # die Gegenthese / der Widerspruch
-    why_unfounded: str = ""  # warum der Beleg fehlt (optional)
+    kind               — kanonische Kategorie (OBJECTION_KINDS, fail-closed)
+    target             — WAS kritisiert wird (Komponente/Claim/Schritt)
+    claim              — die angegriffene Behauptung/Annahme
+    argument           — die Gegenthese / das Gegenargument
+    required_evidence  — welcher Beleg fehlt / gefordert wird (optional)
+    """
+
+    kind: str
+    target: str
+    claim: str
+    argument: str
+    required_evidence: str = ""
 
     def __post_init__(self) -> None:
-        if not isinstance(self.assumption, str) or not self.assumption.strip():
-            _fail_closed("prosa", "CritiquePoint.assumption must be a non-empty string")
-        if not isinstance(self.contradiction, str) or not self.contradiction.strip():
-            _fail_closed("prosa", "CritiquePoint.contradiction must be a non-empty string")
-        if not isinstance(self.why_unfounded, str):
-            _fail_closed("prosa", "CritiquePoint.why_unfounded must be a string")
+        validate_objection(self)
+
+
+def validate_objection(obj: "Objection") -> "Objection":
+    """Deterministischer Validator für EINEN Einwand (rein, fail-closed)."""
+    if not isinstance(obj.kind, str) or obj.kind not in OBJECTION_KINDS:
+        _fail_closed("prosa", f"Objection.kind must be one of {OBJECTION_KINDS}, got {obj.kind!r}")
+    for name in ("target", "claim", "argument"):
+        value = getattr(obj, name)
+        if not isinstance(value, str) or not value.strip():
+            _fail_closed("prosa", f"Objection.{name} must be a non-empty string")
+    if not isinstance(obj.required_evidence, str):
+        _fail_closed("prosa", "Objection.required_evidence must be a string")
+    return obj
+
+
+def _str_or_empty(value: Any, field_name: str) -> str:
+    """None → ""; Nicht-String → fail-closed (kein stilles str()-Coercing)."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        _fail_closed("prosa", f"objection.{field_name} must be a string")
+    return value
+
+
+def objection_from_dict(data: Any) -> "Objection":
+    """Roh-Dict → typisierter Objection (deterministisch, fail-closed)."""
+    if not isinstance(data, dict):
+        _fail_closed("prosa", "objection must be a plain object")
+    return Objection(
+        kind=_str_or_empty(data.get("kind"), "kind"),
+        target=_str_or_empty(data.get("target"), "target"),
+        claim=_str_or_empty(data.get("claim"), "claim"),
+        argument=_str_or_empty(data.get("argument"), "argument"),
+        required_evidence=_str_or_empty(data.get("required_evidence"), "required_evidence"),
+    )
+
+
+def validate_objections(raw: Any) -> Tuple["Objection", ...]:
+    """Deterministischer Validator für die objections[]-Liste (rein, fail-closed).
+
+    Variable Länge (0..n). Akzeptiert sowohl rohe Dicts als auch bereits
+    typisierte Objection-Instanzen (idempotent).
+    """
+    if not isinstance(raw, (list, tuple)):
+        _fail_closed("prosa", "objections must be a list of objects")
+    items: List["Objection"] = []
+    for item in raw:
+        if isinstance(item, Objection):
+            items.append(validate_objection(item))
+        else:
+            items.append(objection_from_dict(item))
+    return tuple(items)
 
 
 CRITIQUE_VERDICTS = ("FUNDAMENTAL", "OBERFLÄCHLICH")
@@ -512,10 +585,10 @@ CRITIQUE_VERDICTS = ("FUNDAMENTAL", "OBERFLÄCHLICH")
 class CritiqueResult:
     """Evil-Twin-Critique: Struktur + Prosa sauber getrennt.
 
-    Das FalsificationGate konsumiert NUR `verdict` und `points` — beide sind
-    deterministisch und kommen NICHT vom Modell. `prose` ist der reine
+    Das FalsificationGate konsumiert NUR `verdict` und `objections` — beide
+    sind deterministisch und kommen NICHT vom Modell. `prose` ist der reine
     Qualitätslayer: das Modell kann sie natürlicher formulieren, ändert aber
-    NIE verdict/points. Fehlt das Modell, liefert der deterministische
+    NIE verdict/objections. Fehlt das Modell, liefert der deterministische
     Fallback exakt dieselbe Kritik template-basiert (prose.source ==
     "fallback").
 
@@ -523,12 +596,12 @@ class CritiqueResult:
       Qualitätslayer (offline/Termux: identische Kritik, template-basiert).
     """
     verdict: str
-    points: Tuple[CritiquePoint, ...]
+    objections: Tuple[Objection, ...]
     prose: RenderedProsa
 
 
 def render_critique(
-    points: List[CritiquePoint],
+    objections: List[Objection],
     *,
     verdict: str = "FUNDAMENTAL",
     max_sentences: int = 4,
@@ -537,34 +610,40 @@ def render_critique(
     llama_cli: Optional[str] = None,
     timeout: float = 60.0,
 ) -> CritiqueResult:
-    """Bereits feststehende Kritik in scharfe, provozierende Prosa rendern.
+    """Bereits feststehende Einwände in scharfe, provozierende Prosa rendern.
 
     Harte Auflage bleibt gültig: das Modell formuliert NUR. Das FINDEN der
     Widersprüche passiert davor (deterministische FalsificationGate-Probes /
-    Mirror-Thinker-Struktur) und wird hier als CritiquePoints hereingereicht.
+    Mirror-Thinker-Struktur) und wird hier als Objections hereingereicht.
 
-    `verdict` und `points` sind strukturell und modellunabhängig — der
+    `verdict` und `objections` sind strukturell und modellunabhängig — der
     deterministische Fallback (kein Modell) liefert dieselbe Kritik
-    template-basiert, ohne LLM.
+    template-basiert, ohne LLM. Variable Länge: alle Einwände bleiben in der
+    Struktur erhalten (kein Cap bei 3 mehr).
     """
-    if not points:
-        _fail_closed("prosa", "render_critique requires at least one CritiquePoint")
+    validated = validate_objections(objections)
+    if not validated:
+        _fail_closed("prosa", "render_critique requires at least one Objection")
     verdict_norm = (verdict or "").strip().upper()
     if verdict_norm not in CRITIQUE_VERDICTS:
         _fail_closed("prosa", f"verdict must be one of {CRITIQUE_VERDICTS}")
 
-    selected = tuple(points[:3])
     extra: List[Tuple[str, str]] = []
-    for i, p in enumerate(selected, start=1):
-        stmt = f"Annahme '{p.assumption}' ist nicht haltbar: {p.contradiction}"
-        if p.why_unfounded:
-            stmt += f". Beleg fehlt: {p.why_unfounded}"
-        extra.append((f"kritik_{i}", stmt))
+    for i, o in enumerate(validated, start=1):
+        stmt = f"[{o.kind}] {o.target}: '{o.claim}' ist nicht haltbar — {o.argument}"
+        if o.required_evidence:
+            stmt += f". Geforderter Beleg: {o.required_evidence}"
+        extra.append((f"objekt_{i}", stmt))
+
+    # Prosa-Länge skaliert mit der Einwand-Zahl, damit die WIDERSPRUCH-Datei
+    # bei variabler Länge nicht still Einträge abschneidet (Spec-Cap: 10 Sätze).
+    # Die STRUKTUR (objections) bleibt ohnehin vollständig — nur die Prosa.
+    effective_max = min(10, max(max_sentences, 2 * len(validated)))
 
     spec = NarrativeSpec(
         task="EVIL_TWIN_CRITIQUE",
         tone="adversarial",
-        max_sentences=max_sentences,
+        max_sentences=effective_max,
         user_fact=None,
         system_state=verdict_norm,
         allowed_actions=("REQUIRE_EVIDENCE", "DEMAND_REVISION"),
@@ -572,8 +651,16 @@ def render_critique(
         extra=tuple(extra),
     )
     prose = render(spec, model_path=model_path, llama_cli=llama_cli, timeout=timeout)
+    if verdict_norm not in prose.text:
+        # Verdict-Anker (Invariante): die Kritik-Prosa MUSS den Verdict
+        # (FUNDAMENTAL/OBERFLÄCHLICH) tragen — der Drift-Marker der
+        # Goal-Chain hängt daran. Hat das Modell den Verdict fallen
+        # gelassen, gewinnt der deterministische Fallback (der ihn via
+        # system_state immer enthält). Symmetrisch zu
+        # _looks_like_regurgitation. Reine Funktion bleibt erhalten.
+        prose = render(spec, model_path=None, llama_cli=None, timeout=timeout)
     return CritiqueResult(
         verdict=verdict_norm,
-        points=selected,
+        objections=validated,
         prose=prose,
     )

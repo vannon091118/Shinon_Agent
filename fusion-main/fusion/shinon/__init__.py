@@ -81,7 +81,8 @@ from fusion.shinon.shinon_engine import (
 from fusion.shinon.shinon_prosa import (
     NarrativeSpec,
     RenderedProsa,
-    CritiquePoint,
+    Objection,
+    OBJECTION_KINDS,
     CritiqueResult,
     MOODS,
     normalize_tone,
@@ -92,6 +93,9 @@ from fusion.shinon.shinon_prosa import (
     build_model_command,
     render,
     render_critique,
+    validate_objection,
+    objection_from_dict,
+    validate_objections,
     clamp_sentences,
     count_sentences,
 )
@@ -122,8 +126,9 @@ __all__ = [
     "ShinonEngine", "ShinonInput", "ShinonOutput", "CharacterContext",
     "ShinonIdentity", "DEFAULT_IDENTITY",
     # Prosa (pure NarrativeSpec -> Text renderer)
-    "NarrativeSpec", "RenderedProsa", "CritiquePoint", "CritiqueResult",
+    "NarrativeSpec", "RenderedProsa", "Objection", "OBJECTION_KINDS", "CritiqueResult",
     "MOODS", "normalize_tone", "spec_hash", "pick_block", "build_prompt",
     "build_fallback", "build_model_command", "render", "render_critique",
+    "validate_objection", "objection_from_dict", "validate_objections",
     "clamp_sentences", "count_sentences",
 ]
