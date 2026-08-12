@@ -12,7 +12,19 @@ Skills-only mode (used by GoalChainSubscriber for KARMA-triggered TIDs):
 import sqlite3, sys, os, re
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'db', 'tid-state.db')
+def _resolve_db_path():
+    """Zentral-first: $SHINON_HOME/data/goal-chain/tid-state.db falls vorhanden,
+    sonst Legacy-Pfad. Ein Ort fuer TID-State, kein Fragmentieren."""
+    env = os.environ.get("SHINON_GOALCHAIN_DB")
+    if env:
+        return env
+    shinon_home = os.environ.get("SHINON_HOME") or os.path.expanduser("~/.shinon")
+    central = os.path.join(shinon_home, "data", "goal-chain", "tid-state.db")
+    if os.path.exists(central):
+        return central
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'db', 'tid-state.db')
+
+DB_PATH = _resolve_db_path()
 
 if len(sys.argv) < 3:
     print("Usage: seed_tids.py PROJEKT GOAL [--skills-only --skills sk1,sk2,...]")
@@ -333,10 +345,13 @@ templates = {
         ("SECTION_HEADER", r"^# Gate", "WARNING", "Gate-Title"),
     ],
     "evil-twin-v1": [
-        ("SECTION_HEADER", r"^# 👯 Evil Twin", "ERROR", "Title H1 mit Evil-Twin-Marker"),
-        ("SECTION_HEADER", r"^## Fundamentale Widersprüche", "ERROR", "Section: Widersprüche"),
-        ("SECTION_HEADER", r"^## Bewertung", "ERROR", "Section: FUNDAMENTAL/OBERFLÄCHLICH"),
-        ("MARKER_LINE", r"FUNDAMENTAL|OBERFLÄCHLICH", "ERROR", "Bewertung muss FUNDAMENTAL oder OBERFLÄCHLICH sein"),
+        # v3.0: Die WIDERSPRUCH-Datei (.md) enthält nur noch die gerenderte
+        # Prosa (result.prose.text). Die Prosa trägt den Verdict
+        # (FUNDAMENTAL/OBERFLÄCHLICH) über render_critique's system_state —
+        # das ist der einzige verbleibende Marker. Die Struktur
+        # (verdict/objections) lebt in <output>.result.json und wird vom Gate
+        # konsumiert, NICHT aus der Prosa geparst.
+        ("MARKER_LINE", r"FUNDAMENTAL|OBERFLÄCHLICH", "ERROR", "Verdict muss in der Prosa stehen"),
     ],
     "root-cause-v1": [
         ("SECTION_HEADER", r"^# Root-Cause", "ERROR", "Title H1 mit Root-Cause"),

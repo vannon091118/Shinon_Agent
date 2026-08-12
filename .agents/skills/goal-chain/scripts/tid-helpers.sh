@@ -55,6 +55,83 @@ task_field() {
     db_query "SELECT $field FROM tasks WHERE tid='$tid';" | head -1
 }
 
+# ─── Evil-Twin Synthesis (v4.0: structured result.json statt Prosa) ──
+# Die Synthese-Schritte (writing-plans, writing-plans-v2) konsumieren NICHT
+# die Prosa (WIDERSPRUCH .md), sondern die STRUKTUR aus <output>.result.json:
+# verdict + objections[]. Der Evil Twin kritisiert das GLEICHE Artefakt, das
+# der Synthese-Schritt als input_artifacts liest — daher Auflösung über den
+# input_artifacts-Match (deterministisch, kein Prosa-Parsing).
+#
+# Usage: evil_twin_result_json TID → echo Pfad (leer wenn keiner gefunden)
+evil_twin_result_json() {
+    local tid="$1"
+    local inp; inp=$(task_field "$tid" "input_artifacts")
+    [[ -z "$inp" ]] && { echo ""; return 0; }
+    local out
+    out=$(db_query "SELECT t.output_artifact FROM tasks t
+        WHERE t.run_id=(SELECT run_id FROM tasks WHERE tid='$tid')
+          AND t.phase_section LIKE 'evil-twin%'
+          AND t.input_artifacts='$inp'
+        ORDER BY t.phase_seq DESC LIMIT 1;" 2>/dev/null | head -1 || true)
+    [[ -z "$out" ]] && { echo ""; return 0; }
+    if [[ "$out" == *.md ]]; then
+        echo "${out%.md}.result.json"
+    else
+        echo "${out}.result.json"
+    fi
+    return 0
+}
+
+# Read verdict + objections from an Evil-Twin result.json (structure, NOT prose).
+# Sets globals: ET_VERDICT (FUNDAMENTAL|OBERFLÄCHLICH|""), ET_OBJECTIONS (text).
+# Never fails the caller: missing file / bad JSON → both globals stay empty.
+# Usage: read_evil_twin_result RESULT_JSON
+read_evil_twin_result() {
+    local f="$1"
+    ET_VERDICT=""
+    ET_OBJECTIONS=""
+    [[ -z "$f" ]] && return 0
+    # CWD-robust: erst relativ (Ziel-Chain-Konvention), dann via PROJECT_ROOT.
+    if [[ ! -f "$f" && "$f" != /* ]]; then f="${PROJECT_ROOT}/${f}"; fi
+    [[ -f "$f" ]] || return 0
+    if ! command -v python3 &>/dev/null; then
+        return 0
+    fi
+    local parsed
+    parsed=$(python3 - "$f" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+v = (d.get("verdict") or "").strip().upper()
+# Unbekannter/leerer Verdict → explizit NONE statt stiller Einwand-Drop:
+# sonst würden objections als "kein Result" verworfen, ohne dass es sichtbar ist.
+if v not in ("FUNDAMENTAL", "OBERFLÄCHLICH"):
+    print("VERDICT|NONE")
+    sys.exit(0)
+print("VERDICT|" + v)
+for o in (d.get("objections") or []):
+    kind = (o.get("kind") or "").strip()
+    target = (o.get("target") or "").strip()
+    claim = (o.get("claim") or "").strip()
+    argument = (o.get("argument") or "").strip()
+    evidence = (o.get("required_evidence") or "").strip()
+    if not claim and not argument:
+        continue
+    line = f"- [{kind}] {target}: '{claim}'"
+    if argument:
+        line += f" | Gegenargument: {argument}"
+    if evidence:
+        line += f" | Geforderter Beleg: {evidence}"
+    print("POINT|" + line)
+PY
+)
+    ET_VERDICT=$(printf '%s\n' "$parsed" | sed -n 's/^VERDICT|//p' | head -1)
+    ET_OBJECTIONS=$(printf '%s\n' "$parsed" | sed -n 's/^POINT|//p')
+    return 0
+}
+
 # ─── State Transitions ─────────────────────────────────────────────
 tid_start() {
     local tid="$1"
