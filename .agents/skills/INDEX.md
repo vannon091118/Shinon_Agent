@@ -1,6 +1,11 @@
-# 🧠 Skills Index — 645 Skills · 29 Kategorien (Namenskonflikte bereinigt)
+# 🧠 Skills Index — 666 SKILL.md · 29 Kategorien + 10 v4-Router
 
-**Stand: August 2026** · Inhaltsbasiert sortiert · Global sync: `~/.agents/skills/`
+**Stand: 12. August 2026 (v4-Reparatur)** · Inhaltsbasiert sortiert · Global sync: `~/.agents/skills/`
+
+> **Quelle der Wahrheit:** [`validate-catalog.py`](validate-catalog.py) — reproduzierbarer Prüfer.
+> v4: 100 Description-Fixes (0 ungültige YAML), 0 Duplikate, 10 neue Router:
+> `claude-tools-router` · `data-analytics-router` · `devtools-router` · `documents-router` ·
+> `games-router` · `gaming-router` · `gemini-tools-router` · `meta-router` · `productivity-router` · `web-dev-router`
 
 ---
 
@@ -349,4 +354,4 @@
 
 ---
 
-_645 Skills · 29 Kategorien · verifiziert am 11. August 2026 · Namenskonflikte bereinigt · Global sync: ~/.agents/skills/_
+_666 SKILL.md · 29 Kategorien + 10 v4-Router · verifiziert am 12. August 2026 (v4-Reparatur) · Global sync: ~/.agents/skills/_

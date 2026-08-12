@@ -1,33 +1,13 @@
-# 🔬 SKILL-AUDIT v4 — Verifizierter Katalog-Zustand nach Reparatur
+# 🔬 SKILL-AUDIT v4 — Reproduzierbarer Katalog-Prüfer
 
-> **666 SKILL.md · 50 Top-Level-Verzeichnisse · Stand: 12. August 2026**
-> Reproduzierbarer Prüfer: validate-catalog.py. Reparatur: fix-frontmatter.py
-> (100 Description-Fixes, YAML-validiert) + generate-routers.py (10 neue Router)
-> + autorun-Duplikat konsolidiert.
-
-## Ergebnis auf einen Blick
-
-| Befund | vorher | nachher |
-|---|---:|---:|
-| OK (keine Befunde) | 249 | **527** |
-| Ungültige YAML-Frontmatter | unbekannt | **0** |
-| Kaputte/leere Descriptions | 100 | **0** |
-| Duplikat-Gruppen | 1 | **0** |
-| NOT_IN_CHAIN | 225 | **2** (content-parser, osint-self-audit — bewusst) |
-| NO_H1 (kosmetisch, P2) | 128 | 127 |
-
-## Werkzeuge (reproduzierbar)
-
-- `validate-catalog.py` — Prüfer (fail-closed/fail-open, JSON/Markdown-Report)
-- `fix-frontmatter.py` — Description-Reparatur (dry-run/apply, YAML-sicher)
-- `generate-routers.py` — fehlende Kategorie-Router erzeugen (--force)
+> Stand: automatisch erzeugt von `validate-catalog.py` · 666 SKILL.md · 50 Kategorien
+> Fehlermodus: fail-open (YAML = Bestandsbefund)
 
 ## Befunde nach Typ
 | Befund | Anzahl | Bedeutung |
 |---|---|---|
 | `NO_H1` | 127 | Kein H1-Titel im Body |
 | `NOT_IN_CHAIN` | 2 | Skill wird von keinem Router/skill-chains referenziert |
-| `NAME_NOT_KEBAB` | 1 | Name verletzt kebab-case |
 
 
 ## Kategorien (SKILL.md je Top-Level)
@@ -211,4 +191,3 @@
 - `mobile-dev/expo/upgrading-expo/SKILL.md` → NO_H1
 - `mobile-dev/expo/use-dom/SKILL.md` → NO_H1
 - `osint-self-audit/SKILL.md` → NOT_IN_CHAIN
-- `productivity/zotero/zotero/SKILL.md` → NAME_NOT_KEBAB:Zotero
