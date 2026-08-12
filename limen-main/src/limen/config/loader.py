@@ -18,26 +18,51 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 _ENV_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
+def _resolve_key_store_path() -> Path:
+    """Single source of truth for the LIMEN key-fallback file.
+
+    Priority:
+      1. ``SHINON_KEYS`` env var (full path, e.g. /opt/secrets/keys.json)
+      2. ``SHINON_HOME`` env var + ``/keys.json``  (default: ~/.shinon/keys.json)
+      3. ``~/.limen/keys.json`` (legacy back-compat)
+    """
+    explicit = os.environ.get("SHINON_KEYS")
+    if explicit:
+        return Path(explicit).expanduser()
+    shinon_home = os.environ.get("SHINON_HOME")
+    if shinon_home:
+        return Path(shinon_home).expanduser() / "keys.json"
+    return Path("~/.limen/keys.json").expanduser()
+
+
 def _resolve_env_vars(value: str) -> str:
     """Replace ``${VAR_NAME}`` placeholders with environment variable values.
 
-    Falls back to ``~/.limen/keys.json`` if the env var is not set.
-    Unknown variables are left verbatim.
+    Falls back to the LIMEN key-store file (see ``_resolve_key_store_path``
+    for path resolution — respects ``SHINON_KEYS`` / ``SHINON_HOME``) if the
+    env var is not set. Unknown variables are left verbatim.
     """
+    key_store = _resolve_key_store_path()
+
     def _lookup(match: re.Match[str]) -> str:
         var_name = match.group(1)
         env_value = os.environ.get(var_name)
         if env_value:
             return env_value
-        # Fallback: ~/.limen/keys.json — derive provider from env var name
+        # Fallback: keys.json — derive provider from env var name
         # e.g. OPENROUTER_API_KEY → openrouter
         provider = var_name.lower().replace("_nim", "").replace("_api_key", "")
         try:
-            raw = json.loads(Path("~/.limen/keys.json").expanduser().read_text())
-            store: dict[str, str] = raw if isinstance(raw, dict) else {}
-            return store.get(provider, match.group(0))
+            raw = json.loads(key_store.read_text())
+            store: dict[str, object] = raw if isinstance(raw, dict) else {}
+            # Handle both legacy string values and {"key": ..., "name": ...} dicts.
+            from limen.api.routes.internal import _resolve_key_value
+            resolved = _resolve_key_value(store.get(provider))
+            if resolved is not None:
+                return resolved
         except (FileNotFoundError, json.JSONDecodeError, OSError):
-            return match.group(0)
+            pass
+        return match.group(0)
     return _ENV_VAR_PATTERN.sub(_lookup, value)
 
 

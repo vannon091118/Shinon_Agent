@@ -1,231 +1,216 @@
 <div align="center">
 
-![Shinon Control Plane](assets/banner.svg)
+<img src="assets/shinon_face.jpg" alt="Shinon Avatar" width="220" style="border-radius: 50%; box-shadow: 0 0 30px rgba(113, 224, 173, 0.3);" />
 
-# 🦇 Shinon Control Plane
+# 🦇 Shinon stellt sich vor
+### *Die kritische, skeptische & deterministische AI Control Plane*
 
-**LLM Control Plane — Deterministic Operating System Layer Between Model and Application**
+[![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
+[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Node: 18+](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Bun: Compatible](https://img.shields.io/badge/Bun-1.0%2B-black.svg)](https://bun.sh/)
+[![Platform: Linux | macOS | Windows](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-purple.svg)]()
 
-[![Install](https://img.shields.io/badge/install-bash%20install.sh-green?style=flat-square)](#quickstart)
-[![Pipeline](https://img.shields.io/badge/pipeline-e2e--verified-green?style=flat-square)](#pipeline)
-[![Skills](https://img.shields.io/badge/skills-657-orange?style=flat-square)](#skill-library)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+*„Glaubst du wirklich, dein Prompt war perfekt? Ich garantiere dir: War er nicht. Aber zum Glück bin ich hier.“*
+
+---
 
 </div>
 
----
+## 👋 "Hallo. Ich bin Shinon."
 
-## Was ist Shinon?
+Willkommen. Wenn du nach einer KI gesucht hast, die dir nickend zustimmt, dir schmeichelt und deine fehlerhaften Annahmen halluzinierend in Produktion schiebt — dann bist du hier falsch.
 
-**Nicht** ein Chat-Wrapper. **Nicht** ein Framework. Eine **LLM Control Plane** — ein deterministisches Betriebssystem-Layer zwischen Modell und Anwendung. Das Modell wird auf einen Read-Only-Oracle reduziert. Jede Entscheidung wird falsifiziert, jede Aktion persistiert, jede Komponente getestet.
+Ich bin **Shinon**. Ich bin nicht deine freundliche Sprachassistentin. Ich bin skeptisch, direkt, analytisch und zynisch-humorvoll. Meine Aufgabe ist es nicht, nett zu sein, sondern **recht zu behalten und deine Software stabil zu machen**.
 
-```
-State Container → explizit validierte Aktionen → externes Modell (read-only)
-→ append-only Persistenz → messbares Feedback → Falsification → Replay
-```
+Hinter mir steht keine monolithische Code-Wüste, sondern ein hochgradig spezialisiertes Ökosystem aus **vier eigenständigen Projekten**, von denen jedes eine eigene Philosophie, eigene Verträge und vollen Eigenwert besitzt:
 
 ---
 
-## Quickstart (cross-platform: Windows · Linux · macOS)
+## 🏛️ Die Säulen des Ökosystems
+
+Jedes Modul in diesem Repository ist ein eigenständiges Meisterwerk mit einer klaren Mission. Kein Modul ist wichtiger als das andere – sie bilden eine perfekte Symbiose.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           🦇 SHINON (Position 0)                            │
+│           "Kein ungeprüfter Gedanke verlässt diesen Raum ohne Haltung."     │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ HOFF-0002
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        🛡️ PROMTGUARD (Position 1)                           │
+│              "Präzision ist die einzige Währung, die zählt."               │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ HOFF-0003
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          ⚖️ KARMA (Position 2)                              │
+│                      "Beweise es, oder schweig."                            │
+└──────────┬───────────────────────────┴───────────────────────────┬───────────┘
+           │                                                       │
+           │ HOFF-0004                                             │ HOFF-0005
+           ▼                                                       ▼
+┌───────────────────────────────┐                       ┌─────────────────────┐
+│   🔁 GOAL-CHAIN & SKILLS      │                       │  🌀 LIMEN (GW)      │
+│ "Vom Impuls zum Code."        │◄───── HOFF-0004a/b ──►│ "An der Schwelle   │
+└───────────────────────────────┘                       │  entscheidet sich   │
+                                                        │  die Ausdauer."     │
+                                                        └─────────────────────┘
+```
+
+---
+
+### 1. 🦇 Shinon — *The Persona & Attitude Layer*
+> **Philosophie:** *„Kein ungeprüfter Gedanke verlässt diesen Raum ohne Haltung.“*
+
+Shinon ist Position 0 im System. Sie ist das Gesicht, die Haltung und die kritische Stimme der Control Plane. 
+
+* **Persönlichkeit & Stimmung:** Mit ihrem dynamischen 2.5D Mood-Ring (`IDLE` cyan, `THINKING` lila, `SPEAKING` teal, `VALIDATING` gelb, `ERROR` rot) zeigt Shinon ihren Zustand transparent an.
+* **Erste Hürde:** Shinon nimmt deine Eingabe nicht einfach hin. Sie prüft Ambiguitäten, stellt Gegenfragen und kontextualisiert deinen Wunsch, bevor überhaupt ein Token an ein LLM verschwendet wird.
+* **Schnittstellen:** Bietet sowohl ein modernes **Web UI** (Port 4300) mit Canvas-Visualisierung als auch ein ultraschnelles **Terminal Agent CLI** (`./shinon`).
+
+---
+
+### 2. 🌀 Limen — *Die Schwelle zum Provider-Universum*
+> **Philosophie:** *„An der Schwelle entscheidet sich die Ausdauer.“*
+
+*Limen* (lateinisch für *Schwelle*) ist das intelligente API-Gateway und Key-Management-System.
+
+* **Multi-Provider Key Pool:** Verwaltet Keys für **Groq**, **OpenRouter**, **NVIDIA**, **Mistral** und **GitHub** mit automatischem Rate-Limit-Tracking und Health-Checks.
+* **Zero-Downtime Fallback:** Fällt ein Provider aus oder gerät in Cooldown, schaltet Limen innerhalb von Millisekunden auf das nächste beste Modell um.
+* **Leitstand & Management:** Vollständige Kontrolle über API-Keys und Verbrauch über das integrierte Dashboard (Port 8000).
+
+---
+
+### 3. ⚖️ KARMA — *Falsifikations-Engine & Kognitives Gedächtnis*
+> **Akronym:** **K**nowledge, **A**udit, **R**easoning & **M**anifestation **A**rchitecture  
+> **Philosophie:** *„Beweise es, oder schweig.“*
+
+KARMA stellt die entscheidende Frage: **„Ist das wahr?“**
+
+* **FalsificationGate:** Kein Ergebnis wird akzeptiert, nur weil ein LLM „überzeugt“ klingt. KARMA jagt jede Behauptung durch 6 strenge Probes:
+  1. `assumptions_probe` — Sind die Annahmen explizit dokumentiert?
+  2. `test_coverage_probe` — Existieren automatisierte Tests?
+  3. `contradictions_probe` — Widerspricht sich das Ergebnis selbst?
+  4. `regressions_probe` — Wurden bestehende Verträge verletzt?
+  5. `idempotency_probe` — Ist das Verhalten reproduzierbar?
+  6. `determinism_probe` — Verhält sich das System unter gleichen Bedingungen identisch?
+* **Knowledge Graph & Experience Records:** KARMA speichert verifizierte Fakten in einer append-only SQLite-Datenbank und lernt aus vergangenen Falsifikationen.
+
+---
+
+### 4. 🛡️ Promtguard — *Die Festung der Aufträge*
+> **Philosophie:** *„Präzision ist die einzige Währung, die zählt.“*
+
+Promtguard ist der unbestechliche Prompt-Wächter und Handoff-Strukturierer.
+
+* **Handoff-Protokollierung:** Promtguard wandelt vage Shinon-Diskurse in präzise, maschinenlesbare Handoff-Verträge um.
+* **Claim Tracking & Context Tokens:** Erfasst exakt, welche Ansprüche (*Claims*) gestellt wurden und verteilt kryptographisch nachvollziehbare Kontext-Tokens.
+
+---
+
+## 👯 Das Evil Twin Protokoll — *Shinons Antagonist*
+
+> **Philosophie:** *„Ich widerspreche dir nicht, weil ich dich hasse. Ich widerspreche dir, weil deine Idee Löcher hat.“*
+
+In gewöhnlichen Systemen stützt ein AI-Agent blind die ersten Annahmen. Nicht bei uns.
+
+Nach **jedem einzelnen Thinker-Schritt** in der Entwicklungskaskade wird automatisch das **Evil Twin Protokoll** aktiviert:
+
+```
+┌───────────────────────────┐         ┌───────────────────────────┐
+│     ORIGINAL THINKER      │         │     👯 EVIL TWIN AGENT    │
+│  "Ich habe eine Idee!"    │         │ "Deine Idee ist fehler-   │
+│                           │         │  haft, hier ist warum:"   │
+└─────────────┬─────────────┘         └─────────────┬─────────────┘
+              │                                     │
+              └──────────────────┬──────────────────┘
+                                 ▼
+                     ┌───────────────────────┐
+                     │ ⚖️ SYNTHESE & GATE     │
+                     │ Nur was den Streit    │
+                     │ überlebt, wird Code.  │
+                     └───────────────────────┘
+```
+
+Der Evil Twin besitzt **exakt dieselbe Datenlage**, ist jedoch mit einem adversarialen Prompt ausgestattet. Er ist dazu verpflichtet, **fundamental zu widersprechen** — nicht an Kleinigkeiten, sondern an den Kernannahmen. Erst wenn der Original-Thinker und der Evil Twin eine Synthese finden, passiert der Code das Governance-Gate.
+
+---
+
+## 🔁 Die Goal-Chain & 657 Spezial-Skills
+
+Wenn aus einer Idee tatsächlicher Code werden soll, übernimmt die **Goal-Chain** in 4 deterministischen Phasen:
+
+1. **Phase 1: Planen & Entwerfen** (`brainstorming` → 👯 Evil Twin → `writing-plans` → 👯 Evil Twin → `architecture` → 👯 Evil Twin)
+2. **Phase 2: Gate-Checks & Falsifikation** (FalsificationGate prüft Testabdeckung & Regressionen)
+3. **Phase 3: Ausführen & Bauen** (`subagent-driven-development` → TDD → 👯 Evil Twin → Code Review)
+4. **Phase 4: Dokumentation & Memory** (`documentation-writer` → `wiki-system` → `self-improvement`)
+
+Über das Skill-Routing stehen **657 spezialisierte Skills** bereit (von Bioscience, Cloud-Platforms, Finance, Design, Mobile-Dev bis OSINT).
+
+---
+
+## 💻 Die Schnittstellen
+
+### 1. Web UI (Port 4300)
+Eine visuell beeindruckende Benutzeroberfläche:
+* **2.5D Animated Face:** Shinons animierter Avatar reagiert in Echtzeit auf Eingaben.
+* **Visual Live Canvas Pipeline:** Sieht in Echtzeit, wie Eingaben vom `Dispatcher` in Tasks zersplittert, an `Worker` und `Limen` verteilt und durch das `FalsificationGate` geprüft werden.
+* **Togglebares Debug-Panel:** Die mächtigen Entwickler-Metriken sind nur einen Klick entfernt.
+
+### 2. Cross-Platform Terminal Agent CLI (`./shinon`)
+Ein moderner Terminal-Workspace:
+* **Autonomer Quickstart:** Läuft out-of-the-box über Bun, Node oder Python.
+* **ANSI Mood-Ring & Live ASCII Animation:** Erlebe die Pipeline direkt in deiner Konsole.
+* **Interaktiver REPL Prompt:** Tippe Befehle ein oder nutze `/chat`, `/dashboard`, `/status`, `/setup`, `/doc`.
+
+---
+
+## ⚡ Quickstart
+
+Shinon läuft ohne komplexe Docker- oder Cloud-Zwänge direkt lokal auf **Linux**, **macOS** und **Windows**.
 
 ```bash
-# ─── LINUX / macOS ───────────────────────────────────────────────────
-bash install.sh          # installiert Python-venv, pip + npm ci, DBs, Configs
-./shinon --setup          # Onboarding-Wizard (6 Schritte, API-Keys)
-./shinon start            # alle Komponenten starten
-./shinon chat             # Chat-Oefffnen (:4300)
-./shinon --doc            # Doctor Mous Diagnose
+# 1. Repository klonen
+git clone https://github.com/vannon/PZ.git
+cd PZ
 
-# ─── WINDOWS ──────────────────────────────────────────────────────────────────────────────────
-install.cmd               # ruft python install.py
-shinon.cmd --setup        # Onboarding-Wizard
-shinon.cmd start          # startet alles
-shinon.cmd chat           # Browser oeffnet http://127.0.0.1:4300
-shinon.cmd --doc          # Doctor Mous
+# 2. Standalone-Installation (erstellt Python-Venv, npm-Deps & SQLite-DBs im Projekt)
+python install.py --quick
 
-# ─── UNIVERSAL (jedes OS) ───────────────────────────────────────
-python install.py --quick   # eine Zeile, alle Plattformen
-python install.py --check   # nur Pre-Flight + Smoke-Tests
-python shinon.py start      # eine Zeile, ruft ctl.py auf
+# 3. Shinon Terminal Agent CLI starten
+./shinon
 ```
 
-**Voraussetzungen** (Pruefung beim `install.py`): Python **>= 3.11**, Node.js **>= 18**, npm. Auf Windows: PowerShell 5+. Auf Linux/macOS: bash 4+. Alles weitere wird automatisch installiert in `./venv`, `./data/`, `./config/` — **kein** `$HOME`-Zustand.
-
----
-
-## Die 5 Komponenten
-
-| # | Komponente | Funktion | Sprache |
-|---|-----------|----------|---------|
-| 0 | **🦇 Shinon** | Persönlichkeitsschicht · Pattern Engine · Two-Tier Memory · Attitude Tracker | Python |
-| 1 | **🟣 Promtguard** | Prompt-Wächter · Claim-Extraktion · HOFF-Handoffs · JSONL-Audit-Trail | Python |
-| 2 | **🟡 KARMA** | Cognition · DispatchGate · FalsificationGate (6 Probes) · ReplayEngine | Python |
-| 3 | **🟢 goal-chain** | Orchestrierung · 4-Phasen-Kaskade · Evil-Twin-Protocol · 657 Skills | Bash+Python |
-| 4 | **🔴 LIMEN** | API-Gateway · Key-Pool · 429-Intelligence · Multi-Provider-Routing | Python |
-
-### Pipeline
-
-```
-User-Input → Shinon (Patterns) → Promtguard (Claims)
-→ KARMA (FalsificationGate) → EventBus → goal-chain (Skill-Dispatch)
-→ LIMEN (Key-Pool, Routing) → LLM → Response
-```
-
----
-
-## CLI
+### Die wichtigsten Befehle:
 
 ```bash
-./shinon start          # Alle Komponenten starten
-./shinon stop           # Alle Komponenten stoppen
-./shinon status         # Status anzeigen
-./shinon chat           # Chat-Oberfläche öffnen (:4300)
-./shinon dashboard      # Live-Dashboard (:4200)
-./shinon keys           # API-Key-Management (:8000/leitstand)
-./shinon --setup        # Onboarding-Wizard (6 Schritte)
-./shinon --doc          # Doctor Mous · Diagnose & Reparatur
-./shinon help           # Alle Befehle
-```
-
-### Onboarding (6 Schritte)
-
-1. **Willkommen** — Was ist Shinon? (kritisch, skeptisch, präzise)
-2. **API-Keys** — Provider-Keys eingeben & testen
-3. **LIMEN** — API-Gateway erklärt
-4. **Dashboard** — Live-Monitoring kennenlernen
-5. **Chat** — Erste Unterhaltung
-6. **Persönlichkeit** — Charakter anpassen (kritischer Kern bleibt)
-
-### Doctor Mous (`./shinon --doc`)
-
-Diagnostiziert 7 Checks — Konfiguration reparieren **ohne Secrets zu löschen**:
-- Installation, Python-venv, 4 Datenbanken, Configs, API-Keys, Ports, Frontend
-
----
-
-## Frontend (2 Seiten + Settings)
-
-| Seite | URL | Inhalt |
-|-------|-----|--------|
-| 💬 **Chat** | `:4300` | Shinon-Chat mit Persönlichkeits-System-Prompt, LIMEN-Proxy |
-| 📊 **Stats** | `:4300/stats` | API-Key-Health, TID-Progress, KARMA-Trigger, System-Ports |
-| ⚙️ **Settings** | Slide-out | Theme, Persönlichkeit (5 Slider), API-Keys, About |
-
----
-
-## Architektur
-
-### EventBus — 10 Topics
-
-```
-EventBus (async, in-process)
-  ├── runtime.input         → Shinon
-  ├── shinon.output         → Promtguard
-  ├── promtguard.claims     → KARMA
-  ├── karma.falsified       → goal-chain
-  ├── limen.rate_limited    → goal-chain
-  ├── limen.key_cooldown    → goal-chain
-  ├── limen.key_exhausted   → goal-chain
-  ├── limen.budget_warning  → goal-chain
-  ├── runtime.error         → Error Handler
-  └── runtime.completed     → Teardown
-```
-
-### 5 Gold-Muster
-
-| Muster | Komponente | Implementierung |
-|--------|-----------|----------------|
-| **QUEUE_JOB_CONTRACT** | LIMEN | Claim/Lease/Heartbeat/Dead-Letter, baseRev-CAS |
-| **COMPACT_OUTPUT_FORMAT** | goal-chain | 6-Blöcke, Step-Log-Tags, verify-template.sh |
-| **tate.md-Statusmodell** | Promtguard | unverified/verified/refuted/refined/unknown + Evidence-Enum |
-| **Done-Manifest** | goal-chain | stateHash, gateSummary, ROOT_CAUSE_DONE |
-| **Deterministischer Kernel** | KARMA | stableStringify, xorshift32, assertPatchesAllowed |
-
-### KARMA FalsificationGate — 6 Probes
-
-```
-FalsificationGate.run(claims, evidence)
-  ├── assumptions_probe    — Sind Annahmen dokumentiert?
-  ├── test_coverage_probe  — Gibt es Tests?
-  ├── contradictions_probe — Widersprechen sich Claims?
-  ├── regressions_probe    — Wurden alte Claims gebrochen?
-  ├── idempotency_probe    — Ist der Output reproduzierbar?
-  └── determinism_probe    — Gleicher Input → gleicher Output?
+shinon              # Startet den interaktiven Terminal Agent CLI
+shinon chat         # Öffnet die Web-UI im Browser (http://127.0.0.1:4300)
+shinon dashboard    # Öffnet das Live-Dashboard (http://127.0.0.1:4200)
+shinon status       # Zeigt den Status aller Subsysteme (Limen, Shinon, Dashboard)
+shinon doc          # Doctor Mous Diagnose & automatische Reparatur
 ```
 
 ---
 
-## Skill-Library — 657 Skills
+## 🩺 Doctor Mous (`shinon doc`)
 
-```
-.agents/skills/
-├── bioscience/      76   (Life-Science + NGS)
-├── communication/   108  (Twilio + Zoom)
-├── cloud-platforms/ 89   (Vercel, Cloudflare, Netlify, Render)
-├── finance/         44   (Daloopa, Moody's, Datasite)
-├── design-tools/    40   (DataViz, Figma, Canva)
-├── mobile-dev/      35   (Expo, macOS, iOS, Android)
-├── ai-ml/           28   (HuggingFace, NVIDIA, OpenAI)
-├── ecommerce/       26   (Shopify, Stripe, Wix)
-├── security/        14   (CodeRabbit, Codex)
-├── agents/           5   (goal-chain, evil-twin, skill-chains)
-└── osint/            1   (Self-Audit)
+Wenn einmal etwas schiefgeht, kommt **Doctor Mous** zum Einsatz. Doctor Mous ist unser integriertes Diagnose- & Reparaturtool:
+
+```bash
+python shinon-setup.py --doc
 ```
 
-4-Layer-Architektur: **goal-chain → skill-chains → Router → Skills**
-
----
-
-## Projektstruktur
-
-```
-PZ/
-├── install.py             Cross-Platform Installer (Python, single source of truth)
-├── install.sh             Linux/macOS shim → python install.py
-├── install.cmd            Windows shim → python install.py
-├── shinon.py              User-CLI (dispatcht auf ctl.py + shinon-setup.py)
-├── shinon                 Linux/macOS shim → python shinon.py
-├── shinon.cmd             Windows shim → python shinon.py
-├── shinon-setup.py        Onboarding-Wizard + Doctor Mous (6 Schritte)
-├── ctl.py                 Cross-Platform Lifecycle (start/stop/status — pure-Python sockets, kein lsof)
-├── shinon-server.mjs      Frontend-Server (Chat + Stats + Settings, port 4300)
-├── requirements.txt       Konsolidierte Python-Deps (limen + karma); gepinnt
-│
-├── data/                  STANDALONE-MODE: alle State-Files im Projekt
-│   ├── shinon/            Shinon-Memory-DB
-│   ├── karma/             KARMA-DB
-│   ├── logs/              Komponenten-Logs
-│   └── pids/              PID-Files
-├── config/                STANDALONE-MODE: alle Configs im Projekt
-│   ├── shinon.toml
-│   └── limen.toml
-│
-├── ShinonLLM-main/        Shinon Character Layer (TypeScript)
-├── fusion-main/fusion/    Runtime · EventBus · Subscriber · Shinon (Python)
-├── Promtguard-main/       Prompt-Wächter
-├── karma-main/karma/      Cognition · FalsificationGate
-├── limen-main/src/limen/  API-Gateway · Key-Pool · Routing
-├── .agents/skills/        657 Skills + goal-chain Scripts
-├── interface-specs/       Component Contracts
-└── assets/                Banner, Icons
-```
-
----
-
-## Dokumentation
-
-| Dokument | Inhalt |
-|----------|--------|
-| [Interface Specs](interface-specs/) | Component Contracts |
-| [WIRING.md](interface-specs/WIRING.md) | EventBus-Verdrahtung, Persistenzgrenzen |
-| [goal-chain Scripts](.agents/skills/goal-chain/scripts/) | worker.sh, complete.sh, test-gates.sh |
+Er prüft 7 Kernaspekte (Installation, VirtualEnv, SQLite-Datenbanken, API-Keys, Ports, Node/Bun & Perms) und repariert defekte Konfigurationen automatisch — **ohne jemals deine vertraulichen Keys oder Daten zu berühren**.
 
 ---
 
 <div align="center">
 
-**"Der Prototyp ist tot. Das ist ein ernstzunehmender Runtime-Kern."**
+**"Wir bauen keine Schlösser aus Sand. Wir bauen deterministische Systeme."**
 
-🦇 Shinon Control Plane · 2026 · Deterministic · Falsification-Gated · Append-Only
+🦇 **Shinon Control Plane** · *Made with skepticism & precision.*
 
 </div>

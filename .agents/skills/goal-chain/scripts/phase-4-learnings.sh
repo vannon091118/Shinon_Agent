@@ -59,6 +59,17 @@ agent_footer "$TID" "$SCRIPT_DIR/complete.sh" ""
 emit_user_input_end "complete.sh $TID DONE"
 
 # ─── Engine-Side Self-Improvement (deterministisch, automatisch) ───────
+#
+# POST-EVIL-TWIN G2 → karma ml train (echte State-Mutation, kein Dry-Run).
+# Safety-Stop in SelfImprovementController greift bei degrading rewards.
+# MAX_CYCLES=10, TREND_WINDOW=5 — pro Pipeline-Run läuft EIN Train-Cycle.
+#
+# Warum train statt simulate:
+#   - simulate (dry_run) schreibt KEINE Patterns, evolvt KEINE Gewichte
+#   - train schreibt record_gap-Facts, evolvt Pattern-Gewichte via RL
+#   - Outcome ist deterministisch (RewardModel._compute, keine LLM/API)
+#   - Safety: wenn Rewards < 0.20 für 3 Zyklen → Abbruch + CRITICAL-Need
+#
 # Findet Karma-CLI: venv-Python bevorzugt, sonst System-Python als Fallback.
 PROJECT_NAME="$(basename "$(pwd)")"
 LEARNINGS_DIR=".learnings"
@@ -72,12 +83,12 @@ KARMA_PY=".venv/bin/python3"
 echo ""
 echo "── KARMA SELF-IMPROVE (post-EvilTwin) ───────────────────────────"
 echo "  project:   $PROJECT_NAME"
-echo "  cycles:    3  (simulate, dry-run = safe)"
+echo "  cycles:    1  (train, state mutation, Safety-Stop-gesichert)"
 echo "  dump:      $CYCLES_JSON"
 
-CYCLE_OUTPUT=$("$KARMA_PY" -m karma.cli ml simulate \
+CYCLE_OUTPUT=$("$KARMA_PY" -m karma.cli ml train \
     --project "$PROJECT_NAME" \
-    --cycles 3 2>&1 || true)
+    --cycles 1 2>&1 || true)
 
 # Snapshot schreiben (Überschreiben erlaubt: ist deterministisch pro Phase)
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -88,8 +99,8 @@ TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     printf '  "tid":     "%s",\n'   "$TID"
     printf '  "timestamp": "%s",\n' "$TIMESTAMP"
     printf '  "skill_under_review": "%s",\n' "$SKILL"
-    printf '  "cycles_requested": 3,\n'
-    printf '  "mode": "simulate (dry-run, no state mutation)",\n'
+    printf '  "cycles_requested": 1,\n'
+    printf '  "mode": "train (state mutation, Safety-Stop-gesichert)",\n'
     printf '  "raw_output":\n'
     # Indent raw_output by 4 spaces inside the JSON string
     printf '%s' "$CYCLE_OUTPUT" | sed 's/^/    /' || true

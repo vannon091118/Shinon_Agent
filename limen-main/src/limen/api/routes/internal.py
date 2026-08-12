@@ -16,7 +16,24 @@ from pydantic import BaseModel, Field
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-_KEY_STORE = Path("~/.limen/keys.json").expanduser()
+# Path-resolution priority (top wins):
+#   1. SHINON_KEYS  env var     (e.g. /opt/shinon/config/keys.json)
+#   2. SHINON_HOME  + "/keys.json"  (default: ~/.shinon/keys.json)
+#   3. ~/.limen/keys.json      (legacy back-compat for older installs)
+# This way `install.py` can centralise everything under ~/.shinon/ without
+# having to fork LIMEN — installing via pip -e picks up the new code, and
+# running without any env var still works on old systems.
+def _resolve_key_store_path() -> Path:
+    explicit = os.environ.get("SHINON_KEYS")
+    if explicit:
+        return Path(explicit).expanduser()
+    shinon_home = os.environ.get("SHINON_HOME")
+    if shinon_home:
+        return Path(shinon_home).expanduser() / "keys.json"
+    return Path("~/.limen/keys.json").expanduser()
+
+
+_KEY_STORE = _resolve_key_store_path()
 
 
 class KeySetRequest(BaseModel):

@@ -83,7 +83,7 @@ if [[ "$RESULT" == "DONE" ]]; then
             GOAL_OF_TID=$(task_field "$TID" "goal" 2>/dev/null || echo "")
             # Aufruf mit --output json; falls karma das Flag nicht kennt,
             # fällt es zurück auf stdout und wir wrappen es in JSON.
-            RAW=$("$KARMA_PY" -m karma.cli ml simulate \
+            RAW=$("$KARMA_PY" -m karma.cli ml train \
                 --project "$PROJECT_NAME" \
                 --cycles 1 2>&1 || true)
             # Wenn RAW leer ist (karma noch ohne ml-patterns), notiere "no-op"

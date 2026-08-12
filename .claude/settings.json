@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": [
+    "Self-Improvement Hooks:",
+    "  - UserPromptSubmit -> activator.sh: reminds the agent before each prompt to capture learnings.",
+    "  - PostToolUse (Bash) -> error-detector.sh: nudges the agent to log non-obvious errors to .learnings/ERRORS.md.",
+    "Both scripts live in .agents/skills/meta/self-improvement/scripts/.",
+    "$CLAUDE_PROJECT_DIR is expanded by Claude Code at runtime, so this file stays portable across clones."
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.agents/skills/meta/self-improvement/scripts/activator.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.agents/skills/meta/self-improvement/scripts/error-detector.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
