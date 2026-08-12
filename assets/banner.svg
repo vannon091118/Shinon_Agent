@@ -1,105 +1,181 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 360" width="1000" height="360">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0a0a1a"/>
-      <stop offset="50%" style="stop-color:#12122a"/>
-      <stop offset="100%" style="stop-color:#0a0a1a"/>
+    <!-- Background Gradients -->
+    <linearGradient id="cyberBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#050811;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0d1326;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#050811;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="50%" style="stop-color:#a78bfa"/>
-      <stop offset="100%" style="stop-color:#6366f1"/>
+
+    <linearGradient id="cyanNeon" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00f5d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#05ffa1;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="50%" style="stop-color:#fbbf24"/>
-      <stop offset="100%" style="stop-color:#f59e0b"/>
+
+    <linearGradient id="magentaNeon" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff007f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9b5de5;stop-opacity:1" />
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+
+    <linearGradient id="hudGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffb703;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fb8500;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Filters & Glows -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
     </filter>
-    <filter id="softGlow">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+
+    <filter id="pinkGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
     </filter>
+
+    <!-- Clip path for circular avatar -->
+    <clipPath id="avatarClip">
+      <circle cx="150" cy="180" r="80" />
+    </clipPath>
   </defs>
 
-  <!-- Background -->
-  <rect width="900" height="320" fill="url(#bg)"/>
+  <!-- Dark Background -->
+  <rect width="1000" height="360" fill="url(#cyberBg)" />
 
-  <!-- Circuit grid lines -->
-  <g stroke="#1e1e3a" stroke-width="0.5" opacity="0.4">
-    <line x1="0" y1="40" x2="900" y2="40"/>
-    <line x1="0" y1="80" x2="900" y2="80"/>
-    <line x1="0" y1="200" x2="900" y2="200"/>
-    <line x1="0" y1="240" x2="900" y2="240"/>
-    <line x1="0" y1="280" x2="900" y2="280"/>
-    <line x1="100" y1="0" x2="100" y2="320"/>
-    <line x1="300" y1="0" x2="300" y2="320"/>
-    <line x1="500" y1="0" x2="500" y2="320"/>
-    <line x1="700" y1="0" x2="700" y2="320"/>
+  <!-- Cyberdeck HUD Grid & Scanlines -->
+  <g stroke="#00f5d4" stroke-width="0.5" opacity="0.12">
+    <line x1="0" y1="40" x2="1000" y2="40" />
+    <line x1="0" y1="90" x2="1000" y2="90" />
+    <line x1="0" y1="270" x2="1000" y2="270" />
+    <line x1="0" y1="320" x2="1000" y2="320" />
+    <line x1="60" y1="0" x2="60" y2="360" />
+    <line x1="270" y1="0" x2="270" y2="360" />
+    <line x1="650" y1="0" x2="650" y2="360" />
+    <line x1="940" y1="0" x2="940" y2="360" />
   </g>
 
-  <!-- Circuit nodes -->
-  <g fill="#2a2a4a" stroke="#6366f1" stroke-width="0.5" opacity="0.3">
-    <circle cx="100" cy="80" r="3"/><circle cx="300" cy="40" r="3"/>
-    <circle cx="500" cy="80" r="3"/><circle cx="700" cy="40" r="3"/>
-    <circle cx="200" cy="280" r="3"/><circle cx="600" cy="280" r="3"/>
-    <circle cx="400" cy="240" r="3"/><circle cx="800" cy="240" r="3"/>
+  <!-- Diagonal Cyber Lines -->
+  <path d="M 0 0 L 120 0 L 40 360 L 0 360 Z" fill="#00f5d4" opacity="0.03" />
+  <path d="M 880 0 L 1000 0 L 1000 360 L 960 360 Z" fill="#ff007f" opacity="0.04" />
+
+  <!-- HUD Corner Brackets -->
+  <g stroke="#00f5d4" stroke-width="2" fill="none">
+    <path d="M 20 40 L 20 20 L 40 20" />
+    <path d="M 980 40 L 980 20 L 960 20" />
+    <path d="M 20 320 L 20 340 L 40 340" />
+    <path d="M 980 320 L 980 340 L 960 340" />
   </g>
 
-  <!-- Main title -->
-  <text x="450" y="100" text-anchor="middle" font-family="monospace" font-size="48" font-weight="bold" fill="url(#accent)" filter="url(#glow)">
-    弑 の ん
-  </text>
-
-  <!-- Subtitle -->
-  <text x="450" y="140" text-anchor="middle" font-family="monospace" font-size="22" fill="#a78bfa" filter="url(#softGlow)" letter-spacing="8">
-    S H I N O N
-  </text>
-
-  <!-- Tagline -->
-  <text x="450" y="170" text-anchor="middle" font-family="monospace" font-size="13" fill="#6b7280" letter-spacing="2">
-    CONTROL PLANE — LLM OPERATING SYSTEM LAYER
-  </text>
-
-  <!-- Divider line -->
-  <line x1="200" y1="190" x2="700" y2="190" stroke="url(#accent)" stroke-width="1" opacity="0.3"/>
-
-  <!-- Component row -->
-  <g font-family="monospace" font-size="10" text-anchor="middle">
-    <text x="130" y="215" fill="#6366f1">SHINON</text>
-    <text x="130" y="228" fill="#4b5563">Character</text>
-
-    <text x="260" y="215" fill="#a78bfa">PROMTGUARD</text>
-    <text x="260" y="228" fill="#4b5563">Claims</text>
-
-    <text x="390" y="215" fill="#f59e0b">KARMA</text>
-    <text x="390" y="228" fill="#4b5563">Falsification</text>
-
-    <text x="530" y="215" fill="#10b981">GOAL-CHAIN</text>
-    <text x="530" y="228" fill="#4b5563">Orchestration</text>
-
-    <text x="670" y="215" fill="#ef4444">LIMEN</text>
-    <text x="670" y="228" fill="#4b5563">Dispatch</text>
+  <!-- FEMALE SHINON ANIME AVATAR HUD -->
+  <g transform="translate(10, 0)">
+    <!-- Outer Pulsing Glow -->
+    <circle cx="150" cy="180" r="92" fill="none" stroke="#ff007f" stroke-width="1.5" opacity="0.4" stroke-dasharray="8, 6" />
+    <circle cx="150" cy="180" r="86" fill="none" stroke="#00f5d4" stroke-width="2" filter="url(#neonGlow)" />
+    
+    <!-- Image Avatar -->
+    <image href="shinon_face.jpg" x="70" y="100" width="160" height="160" clip-path="url(#avatarClip)" preserveAspectRatio="xMidYMid slice" />
+    
+    <!-- Avatar Tech Overlay Ring -->
+    <circle cx="150" cy="180" r="80" fill="none" stroke="#00f5d4" stroke-width="2" opacity="0.8" />
+    
+    <!-- Mood Ring HUD Status Badge -->
+    <rect x="95" y="272" width="110" height="22" rx="4" fill="#050811" stroke="#00f5d4" stroke-width="1" />
+    <text x="150" y="287" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#00f5d4" letter-spacing="2">
+      ◉ CYBER-AI
+    </text>
   </g>
 
-  <!-- Component connecting lines -->
-  <g stroke="#4b5563" stroke-width="0.5" opacity="0.3">
-    <line x1="165" y1="222" x2="225" y2="222"/>
-    <line x1="295" y1="222" x2="355" y2="222"/>
-    <line x1="425" y1="222" x2="495" y2="222"/>
-    <line x1="565" y1="222" x2="635" y2="222"/>
+  <!-- MAIN BRANDING & TITLE SECTION -->
+  <g transform="translate(290, 0)">
+    <!-- Header Tag -->
+    <rect x="0" y="45" width="220" height="20" rx="3" fill="rgba(255,0,127,0.1)" stroke="#ff007f" stroke-width="1" />
+    <text x="10" y="59" font-family="monospace" font-size="10" font-weight="bold" fill="#ff007f" letter-spacing="3">
+      SHINON // CONTROL PLANE v2.5
+    </text>
+
+    <!-- Main Title: Japanese Kanji + English -->
+    <text x="0" y="112" font-family="'Orbitron', sans-serif, monospace" font-size="44" font-weight="900" fill="url(#cyanNeon)" filter="url(#neonGlow)" letter-spacing="4">
+      SHINON <tspan fill="#ff007f" font-size="34">・ 弑のん</tspan>
+    </text>
+
+    <!-- Subtitle / Persona Definition -->
+    <text x="0" y="145" font-family="monospace" font-size="15" font-weight="bold" fill="#e0f7fc" letter-spacing="2">
+      SIE IST SHINON — DIE CYBERDECK KI-PERSONA
+    </text>
+
+    <!-- Tagline -->
+    <text x="0" y="172" font-family="sans-serif" font-size="13" fill="#94b9d0" letter-spacing="1">
+      Kritisch. Skeptisch. Präzise. • Deterministische &amp; Falsifikations-Gated AI Architecture
+    </text>
+
+    <!-- Divider Line -->
+    <line x1="0" y1="195" x2="650" y2="195" stroke="url(#magentaNeon)" stroke-width="1.5" opacity="0.6" />
+
+    <!-- CORE MODULE PIPELINE BADGES -->
+    <g transform="translate(0, 215)">
+      <!-- Shinon Badge -->
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="115" height="38" rx="6" fill="#0a0e1a" stroke="#00f5d4" stroke-width="1" />
+        <text x="57" y="16" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#00f5d4">🦇 SHINON</text>
+        <text x="57" y="29" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#5c8098">Position 0 • Persona</text>
+      </g>
+
+      <text x="125" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#94b9d0">→</text>
+
+      <!-- Promtguard Badge -->
+      <g transform="translate(138, 0)">
+        <rect x="0" y="0" width="115" height="38" rx="6" fill="#0a0e1a" stroke="#9b5de5" stroke-width="1" />
+        <text x="57" y="16" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#9b5de5">🛡️ PROMTGUARD</text>
+        <text x="57" y="29" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#5c8098">Position 1 • Wächter</text>
+      </g>
+
+      <text x="263" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#94b9d0">→</text>
+
+      <!-- KARMA Badge -->
+      <g transform="translate(276, 0)">
+        <rect x="0" y="0" width="115" height="38" rx="6" fill="#0a0e1a" stroke="#ffb703" stroke-width="1" />
+        <text x="57" y="16" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#ffb703">⚖️ KARMA</text>
+        <text x="57" y="29" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#5c8098">Falsification Gate</text>
+      </g>
+
+      <text x="401" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#94b9d0">→</text>
+
+      <!-- Goal Chain Badge -->
+      <g transform="translate(414, 0)">
+        <rect x="0" y="0" width="115" height="38" rx="6" fill="#0a0e1a" stroke="#05ffa1" stroke-width="1" />
+        <text x="57" y="16" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#05ffa1">🔁 GOAL-CHAIN</text>
+        <text x="57" y="29" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#5c8098">4-Phasen Kaskade</text>
+      </g>
+
+      <text x="539" y="24" text-anchor="middle" font-family="monospace" font-size="12" fill="#94b9d0">→</text>
+
+      <!-- Limen Badge -->
+      <g transform="translate(552, 0)">
+        <rect x="0" y="0" width="105" height="38" rx="6" fill="#0a0e1a" stroke="#ff007f" stroke-width="1" />
+        <text x="52" y="16" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#ff007f">🌀 LIMEN</text>
+        <text x="52" y="29" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#5c8098">Key Gateway</text>
+      </g>
+    </g>
+
+    <!-- Bottom System Status Row -->
+    <g transform="translate(0, 275)">
+      <text x="0" y="15" font-family="monospace" font-size="10" fill="#5c8098" letter-spacing="1">
+        STANDALONE MODE <tspan fill="#00f5d4">•</tspan> 657 SKILLS <tspan fill="#00f5d4">•</tspan> EVIL TWIN PROTOCOL <tspan fill="#00f5d4">•</tspan> CROSS-PLATFORM
+      </text>
+    </g>
   </g>
 
-  <!-- Footer: origin line -->
-  <text x="450" y="260" text-anchor="middle" font-family="monospace" font-size="9" fill="#374151" letter-spacing="3">
-    LIFEGAMELAB → LLM_MIDDLEWARE → SyxBridge → Shinon → Promtguard → KARMA → goal&#x2011;chain → LIMEN
-  </text>
-
-  <!-- Footer: version -->
-  <text x="450" y="295" text-anchor="middle" font-family="monospace" font-size="9" fill="#1f2937" letter-spacing="2">
-    CONTROL PLANE MVP · 2026 · DETERMINISTIC · FALSIFICATION-GATED · APPEND-ONLY
-  </text>
+  <!-- Right Side Cyber Metric Graphic -->
+  <g transform="translate(950, 60)" opacity="0.3">
+    <rect x="0" y="0" width="4" height="240" fill="#00f5d4" />
+    <rect x="-10" y="40" width="14" height="4" fill="#ff007f" />
+    <rect x="-10" y="120" width="14" height="4" fill="#00f5d4" />
+    <rect x="-10" y="200" width="14" height="4" fill="#ffb703" />
+  </g>
 </svg>

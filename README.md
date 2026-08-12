@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/shinon_face.jpg" alt="Shinon Avatar" width="220" style="border-radius: 50%; box-shadow: 0 0 30px rgba(113, 224, 173, 0.3);" />
+<img src="assets/banner.svg" alt="Shinon Cyberdeck Control Plane Banner" width="100%" />
 
 # 🦇 Shinon stellt sich vor
 ### *Die kritische, skeptische & deterministische AI Control Plane*
