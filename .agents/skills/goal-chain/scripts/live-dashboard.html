@@ -56,6 +56,35 @@
     }
     .header-right-group { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .header-left { flex: 1; }
+
+    /* ── Top Navigation Bar ── */
+    .top-nav {
+      display: flex; gap: 2px; margin-bottom: 12px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 4px; overflow: hidden;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    .nav-tab {
+      flex: 1; padding: 10px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 700; text-align: center;
+      cursor: pointer; transition: all .2s ease;
+      color: var(--fg-dim); background: transparent;
+      border: none; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; white-space: nowrap;
+    }
+    .nav-tab:hover { color: var(--fg); background: var(--bg-card-light); }
+    .nav-tab.active {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+    .nav-badge {
+      font-size: 9px; padding: 1px 7px; border-radius: 10px;
+      font-weight: 700;
+    }
+    .nav-tab.active .nav-badge { background: rgba(255,255,255,.25); }
+    .nav-tab:not(.active) .nav-badge { background: var(--bg-card-light); }
+
     .title { font-size: 18px; font-weight: 700; color: var(--accent); }
     .subtitle { color: var(--fg-dim); font-size: 11px; margin-top: 3px; }
     .live-pill {
@@ -64,6 +93,14 @@
       animation: pulse 2s infinite; white-space: nowrap;
     }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+    .rl-pill {
+      padding: 4px 10px; border-radius: 10px; font-size: 10px; font-weight: 700;
+      white-space: nowrap; cursor: pointer; transition: all .3s ease;
+    }
+    .rl-pill.critical { background: #ef444422; color: #ef4444; border: 1px solid #ef444444; animation: pulse 1.5s infinite; }
+    .rl-pill.warning  { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; }
+    .rl-pill.ok       { background: #10b98122; color: #10b981; border: 1px solid #10b98144; }
+    .rl-pill.hidden   { display: none; }
     .card {
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;
@@ -224,6 +261,25 @@
 
     /* --- API Key Status --- */
     .keys-section { border-color: rgba(59,130,246,.5) !important; }
+
+    /* ── PreProcessor Card ── */
+    .preprocessor-section { border-color: rgba(167,139,250,.4) !important; }
+    .pp-mode-badge { display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;text-transform:uppercase; }
+    .pp-mode-llm { background:rgba(16,185,129,.15);color:#10b981; }
+    .pp-mode-synthetic { background:rgba(245,158,11,.15);color:#f59e0b; }
+    .pp-mode-passthrough { background:rgba(148,163,184,.15);color:#94a3b8; }
+    .pp-mode-unknown { background:rgba(107,114,128,.15);color:#6b7280; }
+    .pp-stats { display:flex;gap:12px;flex-wrap:wrap;margin:8px 0; }
+    .pp-stat { background:var(--bg-card-light);border-radius:6px;padding:8px 12px;text-align:center;min-width:60px; }
+    .pp-stat-val { font-size:18px;font-weight:800;color:var(--accent); }
+    .pp-stat-label { font-size:8px;color:var(--fg-dim);text-transform:uppercase;margin-top:2px; }
+    .pp-run-item { background:var(--bg-card-light);border-radius:6px;padding:8px 12px;margin-bottom:6px;font-size:10px; }
+    .pp-run-item:hover { background:var(--bg-card-hover); }
+    .pp-run-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:4px; }
+    .pp-run-id { font-weight:700;color:var(--fg);font-family:monospace;font-size:11px; }
+    .pp-requirements { color:var(--fg-dim);font-size:9px;margin:4px 0; }
+    .pp-components { display:flex;gap:4px;flex-wrap:wrap;margin:4px 0; }
+    .pp-comp-tag { background:rgba(167,139,250,.15);color:#a78bfa;padding:1px 6px;border-radius:8px;font-size:8px;font-weight:600; }
     .keys-summary { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
     .key-stat-pill {
       padding: 6px 14px; border-radius: 16px; font-size: 11px; font-weight: 600;
@@ -247,6 +303,29 @@
     .key-gauge-label { font-size: 8px; color: var(--fg-dim); margin-bottom: 2px; }
     .key-health-bar { width: 100%; height: 6px; background: var(--bg-card-light); border-radius: 3px; overflow: hidden; }
     .key-health-fill { height: 100%; border-radius: 3px; transition: width .5s ease, background .5s ease; }
+    /* ── Capability Matrix ── */
+    .cap-matrix { width: 100%; border-collapse: collapse; font-size: 9px; }
+    .cap-matrix th { 
+      background: var(--bg-card-light); color: var(--fg-dim); 
+      padding: 5px 8px; text-align: left; font-weight: 700; 
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; 
+    }
+    .cap-matrix td { 
+      padding: 4px 8px; border-bottom: 1px solid var(--border); 
+      vertical-align: middle;
+    }
+    .cap-matrix tr:hover td { background: var(--bg-card-light); }
+    .cap-badge {
+      display: inline-block; padding: 1px 5px; border-radius: 3px;
+      font-size: 7px; font-weight: 700; margin: 1px;
+    }
+    .cap-badge.on  { background: #10b98122; color: #10b981; border: 1px solid #10b98144; }
+    .cap-badge.off { background: transparent; color: var(--muted); }
+    .cap-cell-yes { color: #10b981; font-weight: 700; }
+    .cap-cell-no  { color: var(--muted); }
+    .cap-provider-header { font-size: 10px; font-weight: 800; text-align: center; }
+    .cap-provider-sub  { font-size: 7px; color: var(--fg-dim); text-align: center; }
+
     .keys-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
 
     /* ── Health Banner ── */
@@ -677,8 +756,30 @@
     <div class="header-right-group">
       <button class="settings-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙️</button>
       <div class="live-pill" id="live-pill">● LIVE · --:--:--</div>
+      <div class="rl-pill hidden" id="rl-pill" title="" onclick="document.getElementById('events-toolbar').querySelector('.events-filter-btn:nth-child(10)')?.click(); scrollToEventStream();">⚡</div>
     </div>
   </div>
+
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav" id="top-nav">
+    <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      🧬 Dashboard
+    </button>
+    <button class="nav-tab" data-tab="glossary" onclick="switchTab('glossary')">
+      📚 Glossary
+    </button>
+    <button class="nav-tab" data-tab="audit" onclick="switchTab('audit')">
+      🔐 Audit
+      <span class="nav-badge" id="audit-nav-badge" style="display:none;">⚠</span>
+    </button>
+    <button class="nav-tab" data-tab="events" onclick="switchTab('events')">
+      📡 Events
+      <span class="nav-badge" id="events-nav-badge" style="display:none;">0</span>
+    </button>
+  </nav>
+
+  <!-- ═══ Dashboard View (all cards) ═══ -->
+  <div id="dashboard-view">
 
   <!-- Settings Panel -->
   <div class="settings-panel closed" id="settings-panel">
@@ -752,6 +853,20 @@
     </div>
   </div>
 
+  <!-- 🤖 LLM PreProcessor — Structured Input -->
+  <div class="card preprocessor-section">
+    <div class="section-title" style="color:#a78bfa;display:flex;justify-content:space-between;align-items:center;">
+      <span>🤖 LLM PreProcessor — Structured Input</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="pp-updated"></span>
+    </div>
+    <div id="pp-summary"></div>
+    <div id="pp-latest"></div>
+    <div id="pp-runs"></div>
+    <div class="pp-empty" id="pp-empty" style="display:none;">
+      ⏳ No PreProcessor data. Run <code>test_gol_3_round_robin.py</code> or a GOL test to see structured input here.
+    </div>
+  </div>
+
   <!-- 💓 LIMEN Health Dashboard -->
   <div class="card keys-section">
     <div class="section-title" style="color:var(--accent);display:flex;justify-content:space-between;align-items:center;">
@@ -764,6 +879,20 @@
     <div id="keys-list"></div>
     <div class="keys-empty" id="keys-empty" style="display:none;">
       🛑 LIMEN NICHT GESTARTET — keine API-Keys verfügbar. <code>python -m limen</code>
+    </div>
+  </div>
+
+  <!-- LIMEN Capability Matrix -->
+  <div class="card" style="border-color: rgba(167,139,250,.5) !important;">
+    <div class="section-title" style="color:#a78bfa;display:flex;justify-content:space-between;align-items:center;">
+      <span>🧩 LIMEN Capability Matrix — Provider × Model Family</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="cap-updated">static</span>
+    </div>
+    <div id="cap-matrix-container" style="max-height:400px;overflow-y:auto;">
+      <div style="color:var(--muted);font-size:10px;padding:6px;">Loading capability matrix...</div>
+    </div>
+    <div style="font-size:8px;color:var(--muted);margin-top:6px;text-align:right;">
+      source: <code>limen/routing/capability.py</code> · ModelFamily + guess_capability()
     </div>
   </div>
 
@@ -849,6 +978,15 @@
       <a href="/glossary" style="color:var(--accent);">📚 Alle registrierten Skills im Glossary</a>
     </div>
     <div class="registry-tail" id="registry-tail"></div>
+  </div>
+
+  </div><!-- /dashboard-view -->
+
+  <!-- ═══ Glossary View (iframe) ═══ -->
+  <div id="glossary-view" style="display:none;">
+    <iframe id="glossary-iframe" src="/glossary" 
+            style="width:100%;height:calc(100vh - 160px);border:none;border-radius:8px;"
+            onload="onGlossaryLoaded()"></iframe>
   </div>
 
   <div class="footer">
@@ -1200,6 +1338,32 @@ function render(s) {
 // ═══════════════════════════════════════════════════════════════
 // 💓 LIMEN HEALTH DASHBOARD — fetch from /api/keys every 2s
 // ═══════════════════════════════════════════════════════════════
+// ── Rate-Limit Status Pill ────────────────────────────────────────
+function updateRateLimitPill(rl) {
+  const pill = document.getElementById('rl-pill');
+  if (!pill) return;
+  if (!rl || !rl.active) {
+    pill.className = 'rl-pill hidden';
+    return;
+  }
+  const failed = rl.failed_tids || 0;
+  const hasCooldowns = (rl.cooldowns || []).length > 0;
+  
+  if (failed > 0 && hasCooldowns) {
+    pill.className = 'rl-pill critical';
+  } else if (hasCooldowns) {
+    pill.className = 'rl-pill warning';
+  } else {
+    pill.className = 'rl-pill ok';
+  }
+  
+  pill.textContent = '\u26A0 ' + rl.summary;
+  pill.title = rl.summary + '\n' + (rl.cooldowns || []).map(function(c) {
+    return c.provider + '/' + c.deployment + (c.remaining_s ? ' ' + c.remaining_s + 's' : '') + (c.is_db ? ' (DB)' : '');
+  }).join('\n');
+  pill.style.display = '';
+}
+
 function fetchKeyStatus() {
   fetch('/api/keys')
     .then(r => r.json())
@@ -1207,6 +1371,19 @@ function fetchKeyStatus() {
     .catch(() => {
       document.getElementById('keys-empty').style.display = 'block';
       document.getElementById('keys-empty').textContent = '⚠️ /api/keys endpoint not available — server may need restart';
+    });
+}
+
+var lastKeyData = null;
+
+// ── Capability Matrix Fetcher ───────────────────────────────────
+function fetchCapabilities() {
+  fetch('/api/capabilities')
+    .then(r => r.json())
+    .then(data => renderCapMatrix(data))
+    .catch(() => {
+      var c = document.getElementById('cap-matrix-container');
+      if (c) c.innerHTML = '<div style="color:var(--muted);font-size:10px;padding:6px;">⚠️ /api/capabilities endpoint not available</div>';
     });
 }
 
@@ -1269,6 +1446,99 @@ function renderSparkline(history, maxTokens, maxRequests) {
     '<span style="margin-left:auto;font-size:7px;color:var(--muted);">' + (times[0]||'') + ' → ' + (times[times.length-1]||'') + '</span>' +
     '</div>';
   return html;
+}
+
+// ── Health Sparkline Renderer ────────────────────────────────────
+function renderHealthSparkline(history) {
+  // Compact SVG sparkline for health score trend (amber/green/red)
+  if (!history || history.length < 2) return '';
+  
+  var healths = [];
+  for (var i = 0; i < history.length; i++) {
+    if (typeof history[i].health === 'number') healths.push(history[i].health);
+  }
+  if (healths.length < 2) return '';
+  
+  var W = 80, H = 18, pad = 2;
+  var hMax = 100; // Health is always 0-100
+  var hMin = Math.min.apply(null, healths);
+  if (hMin > 80) hMin = 80; // Don't flatten healthy keys
+  
+  var scaleY = function(v) { return H - pad - ((v - hMin) / (hMax - hMin)) * (H - pad*2); };
+  
+  var hPoints = healths.map(function(v, i) {
+    var x = pad + (i / (healths.length - 1)) * (W - pad*2);
+    var y = scaleY(Math.max(0, Math.min(100, v)));
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  
+  var lastH = healths[healths.length-1];
+  var hColor = lastH >= 70 ? '#10b981' : lastH >= 30 ? '#f59e0b' : '#ef4444';
+  
+  // Gradient fill under the line
+  var fillPoints = hPoints + ' ' + (W - pad).toFixed(1) + ',' + (H - pad).toFixed(1) + ' ' + pad.toFixed(1) + ',' + (H - pad).toFixed(1);
+  
+  return '<div class="sparkline-row" style="margin-top:2px;padding-top:4px;">' +
+    '<span class="sparkline-label" style="font-size:7px;">Health</span>' +
+    '<svg class="sparkline-svg" style="height:18px;" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+    '<polygon points="' + fillPoints + '" fill="' + hColor + '11" />' +
+    '<polyline points="' + hPoints + '" fill="none" stroke="' + hColor + '" stroke-width="1.2" vector-effect="non-scaling-stroke"/>' +
+    '</svg>' +
+    '<span style="font-size:8px;font-weight:700;color:' + hColor + ';flex-shrink:0;">' + Math.round(lastH) + '%</span>' +
+    '</div>';
+}
+
+// ── Capability Matrix Renderer ─────────────────────────────────────
+function renderCapMatrix(data) {
+  var container = document.getElementById('cap-matrix-container');
+  if (!data || !data.matrix) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:10px;padding:6px;">⚠️ Capability matrix not available</div>';
+    return;
+  }
+  var providers = data.providers;
+  var families = data.families;
+  
+  var html = '<table class="cap-matrix"><thead><tr>' +
+    '<th>Family</th><th>Models</th><th>CTX</th>';
+  for (var pi = 0; pi < providers.length; pi++) {
+    html += '<th class="cap-provider-header">' + providers[pi].label +
+      '<div class="cap-provider-sub">' + providers[pi].cost + ' · ' + providers[pi].note + '</div></th>';
+  }
+  html += '<th>Tools</th><th>Stream</th><th>Vision</th><th>JSON</th></tr></thead><tbody>';
+  
+  for (var ri = 0; ri < data.matrix.length; ri++) {
+    var row = data.matrix[ri];
+    var cap = row.capabilities;
+    html += '<tr>' +
+      '<td style="font-weight:700;">' + row.family + '</td>' +
+      '<td style="color:var(--fg-dim);">' + row.models + '</td>' +
+      '<td style="color:var(--accent);font-weight:700;">' + row.ctx + '</td>';
+    
+    for (var pi = 0; pi < row.providers.length; pi++) {
+      var p = row.providers[pi];
+      if (p.supported) {
+        html += '<td style="text-align:center;"><span class="cap-cell-yes">●</span></td>';
+      } else {
+        html += '<td style="text-align:center;"><span class="cap-cell-no">—</span></td>';
+      }
+    }
+    
+    // Capability badges
+    var badges = [
+      { key: 'tools',  label: '🛠 tools',  on: cap.tools },
+      { key: 'streaming', label: '📡 stream', on: cap.streaming },
+      { key: 'vision', label: '👁 vision', on: cap.vision },
+      { key: 'json',   label: '{} json',  on: cap.json },
+    ];
+    for (var bi = 0; bi < badges.length; bi++) {
+      var b = badges[bi];
+      html += '<td><span class="cap-badge ' + (b.on ? 'on' : 'off') + '">' + b.label + '</span></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+  document.getElementById('cap-updated').textContent = providers.length + ' providers × ' + data.matrix.length + ' families';
 }
 
 function renderKeys(data) {
@@ -1440,6 +1710,7 @@ function renderKeys(data) {
 
         // Sparkline chart (TPM/RPM 60s history)
         renderSparkline(k.history || [], k.tokens_max, k.requests_max) +
+        renderHealthSparkline(k.history || []) +
 
         '</div>';  // key-card
     }
@@ -1521,6 +1792,7 @@ setInterval(function() {
 // Poll key status every 2 seconds
 setInterval(fetchKeyStatus, 2000);
 fetchKeyStatus();
+fetchCapabilities();  // Static capability matrix — fetch once
 
 // ═══════════════════════════════════════════════════════════════
 // TRIGGERED SKILLS — fetch from /api/triggers every 2s
@@ -1813,6 +2085,10 @@ const EVENT_COLORS = {
   "runtime.completed": "ev-color-Completed",
   "runtime.error": "ev-color-Error",
   "limen.rate_limited": "ev-color-RateLimit",
+  "limen.key_cooldown": "ev-color-RateLimit",
+  "limen.key_exhausted": "ev-color-RateLimit",
+  "limen.key_recovered": "ev-color-Recovered",
+  "limen.budget_warning": "ev-color-RateLimit",
 };
 
 const EVENT_SHORT = {
@@ -1828,10 +2104,11 @@ const EVENT_SHORT = {
   "runtime.completed": "Completed",
   "runtime.error": "Error",
   "dispatch.executed": "Dispatch",
-  "limen.rate_limited": "RateLimit",
-  "limen.key_cooldown": "KeyCooldown",
-  "limen.key_exhausted": "KeyExhaust",
-  "limen.budget_warning": "BudgetWarn",
+  "limen.rate_limited": "429",
+  "limen.key_cooldown": "Cooldown",
+  "limen.key_exhausted": "Exhausted",
+  "limen.key_recovered": "Recovered",
+  "limen.budget_warning": "Budget",
 };
 
 async function buildEventToolbar() {
@@ -1867,66 +2144,127 @@ function toggleAutoScroll() {
   }
 }
 
-async function pollEvents() {
-  try {
-    const url = "/api/events?limit=100&since=" + eventSeq +
-      (eventFilter !== "all" ? "&type=" + encodeURIComponent(eventFilter) : "");
-    const res = await fetch(url);
-    const data = await res.json();
+// ── Render events into the event stream ──
+function renderEvents(events) {
+  const stream = document.getElementById("event-stream");
+  const wasAtBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 40;
 
-    if (!data.available || !data.events.length) return;
-
-    const stream = document.getElementById("event-stream");
-    const wasAtBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 40;
-
-    let html = "";
-    // Only clear on first poll (eventSeq === 0)
-    if (eventSeq === 0 && stream.querySelector(".events-empty")) {
-      stream.innerHTML = "";
+  let html = "";
+  for (const e of events) {
+    // Apply client-side filter
+    if (eventFilter !== "all") {
+      if (eventFilter === "RateLimit") {
+        if (!e.type.startsWith("limen.") &&
+            !(e.type === "goal_chain.triggered" && e.payload && e.payload.source_event && e.payload.source_event.startsWith("limen."))) {
+          continue;
+        }
+      } else if (e.type !== eventFilter && !e.type.includes(eventFilter)) {
+        continue;
+      }
     }
 
-    for (const e of data.events) {
-      const short = EVENT_SHORT[e.type] || e.type.split(".").pop() || "?";
-      const colorClass = EVENT_COLORS[e.type] || "";
-      const ts = (e.ts || "").slice(11, 19) || "--:--:--";
-      const cid = e.correlation_id ? '<span class="ev-cid">' + e.correlation_id.slice(0, 8) + "</span>" : "";
-      const payload = (e.payload_snippet || "").slice(0, 120);
-      html +=
-        '<div class="event-row">' +
-        '<span class="ev-ts">' + ts + "</span>" +
-        '<span class="ev-type ' + colorClass + '">' + short + cid + "</span>" +
-        '<span class="ev-source">' + (e.source || "") + "</span>" +
-        '<span class="ev-payload" title="' + escapeHtml(payload) + '">' + escapeHtml(payload) + "</span>" +
-        "</div>";
-    }
-
-    stream.insertAdjacentHTML("beforeend", html);
-    eventSeq = data.seq || (eventSeq + data.events.length);
-
-    // Auto-scroll to bottom
-    if (eventAutoScroll && wasAtBottom) {
-      stream.scrollTop = stream.scrollHeight;
-    }
-
-    // Update timestamp + count
-    document.getElementById("events-updated").textContent =
-      new Date().toTimeString().slice(0, 8);
-    const countEl = document.getElementById("events-count");
-    if (countEl) countEl.textContent = data.total_events + " events";
-
-    // Remove empty placeholder if we have events
-    const empty = stream.querySelector(".events-empty");
-    if (empty && data.events.length > 0) empty.remove();
-
-  } catch (e) {
-    console.error("pollEvents:", e);
+    const short = EVENT_SHORT[e.type] || e.type.split(".").pop() || "?";
+    const colorClass = EVENT_COLORS[e.type] || "";
+    const ts = (e.ts || "").slice(11, 19) || "--:--:--";
+    const cid = e.correlation_id ? '<span class="ev-cid">' + e.correlation_id.slice(0, 8) + "</span>" : "";
+    const payload = (e.payload_snippet || e.payload || "").slice(0, 120);
+    html +=
+      '<div class="event-row">' +
+      '<span class="ev-ts">' + ts + "</span>" +
+      '<span class="ev-type ' + colorClass + '">' + short + cid + "</span>" +
+      '<span class="ev-source">' + (e.source || "") + "</span>" +
+      '<span class="ev-payload" title="' + escapeHtml(payload) + '">' + escapeHtml(payload) + "</span>" +
+      "</div>";
   }
+
+  if (!html) return;
+  stream.insertAdjacentHTML("beforeend", html);
+
+  // Auto-scroll to bottom
+  if (eventAutoScroll && wasAtBottom) {
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  // Remove empty placeholder if we have events
+  const empty = stream.querySelector(".events-empty");
+  if (empty) empty.remove();
 }
 
-// Start event polling
+// ── WebSocket connection — live event push ──
+function connectEventStream() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = protocol + '//' + location.host + '/ws/events';
+  let ws = null;
+  let reconnectTimer = null;
+  let totalEvents = 0;
+
+  function connect() {
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('[ws] Event stream connected');
+        document.getElementById("events-updated").textContent =
+          '🔌 Live · ' + new Date().toTimeString().slice(0, 8);
+      };
+
+      ws.onmessage = (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          if (data.type === 'events' && data.events && data.events.length > 0) {
+            if (eventSeq === 0) {
+              // First batch: clear placeholder
+              const stream = document.getElementById("event-stream");
+              if (stream.querySelector(".events-empty")) {
+                stream.innerHTML = "";
+              }
+            }
+            renderEvents(data.events);
+            totalEvents += data.events.length;
+            eventSeq = totalEvents;
+
+            document.getElementById("events-updated").textContent =
+              '🔌 Live · ' + new Date().toTimeString().slice(0, 8);
+            const countEl = document.getElementById("events-count");
+            if (countEl) countEl.textContent = totalEvents + ' events';
+            updateNavBadges(totalEvents, null);
+          }
+        } catch (e) { console.error('[ws] parse error:', e); }
+      };
+
+      ws.onclose = () => {
+        console.log('[ws] Disconnected — reconnecting in 3s...');
+        document.getElementById("events-updated").textContent =
+          '⚠ Reconnecting...';
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    } catch (e) {
+      reconnectTimer = setTimeout(connect, 3000);
+    }
+  }
+
+  connect();
+
+  // Expose reconnect for filter changes
+  window._wsReconnect = connect;
+}
+
+// ── Filter change: clear and reconnect ──
+function setEventFilter(filter) {
+  eventFilter = filter;
+  eventSeq = 0;
+  document.getElementById("event-stream").innerHTML =
+    '<div class="events-empty">Filter: ' + filter + " — live stream active...</div>";
+  buildEventToolbar();
+}
+
+// Start WebSocket + toolbar
 buildEventToolbar();
-pollEvents();
-eventPollTimer = setInterval(pollEvents, settings.refreshRate || 500);
+connectEventStream();
 
 // ── Audit Trail ──
 let lastAuditPoll = 0;
@@ -1961,6 +2299,9 @@ function renderAudit(data) {
     return;
   }
   emptyEl.style.display = 'none';
+
+  // Update nav badge
+  updateNavBadges(null, data.tamper_status);
 
   // Status banner
   const icons = { intact: '🔐', tampered: '🚨', gaps: '⚠️', empty: '⏳', no_db: '🗄️', pre_v5: '📦' };
@@ -2030,8 +2371,97 @@ function renderAudit(data) {
 
 // Initial fetch + periodic polling
 fetchAudit();
+
+// ── PreProcessor Fetcher ──────────────────────────────────────
+function fetchPP(){fetch('/api/preprocessor').then(r=>r.json()).then(d=>renderPP(d)).catch(()=>{document.getElementById('pp-empty').style.display='block';});}
+function renderPP(d){document.getElementById('pp-updated').textContent=new Date().toTimeString().slice(0,8);if(!d.available){document.getElementById('pp-empty').style.display='block';['pp-summary','pp-latest','pp-runs'].forEach(id=>document.getElementById(id).innerHTML='');return;}
+document.getElementById('pp-empty').style.display='none';
+let s='<div class="pp-stats">';const modes=d.modes||{};
+for(const[m,c]of Object.entries(modes))s+='<div class="pp-stat"><div class="pp-stat-val">'+c+'</div><div class="pp-stat-label"><span class="pp-mode-badge pp-mode-'+m+'">'+m+'</span></div></div>';
+s+='<div class="pp-stat"><div class="pp-stat-val">'+(d.runs||[]).length+'</div><div class="pp-stat-label">Total Runs</div></div></div>';
+document.getElementById('pp-summary').innerHTML=s;
+const l=d.latest;if(l){let h='<div class="pp-run-item" style="border-left:3px solid #a78bfa;">';
+const m=l.mode||(l.preprocessor||{}).mode||'?';h+='<div class="pp-run-header"><span class="pp-run-id">'+(l.run_id||l.test||'?')+'</span><span class="pp-mode-badge pp-mode-'+m+'">'+m+'</span></div>';
+if(l.user_input)h+='<div style="font-size:9px;color:var(--fg-dim);"><span style="color:var(--muted);">Input:</span> '+l.user_input.slice(0,120)+(l.user_input.length>120?'...':'')+'</div>';
+if(l.requirements_count)h+='<div class="pp-requirements">📋 '+l.requirements_count+' Requirements</div>';
+if(l.components&&l.components.length){h+='<div class="pp-components">';for(const c of l.components)h+='<span class="pp-comp-tag">'+c+'</span>';h+='</div>';}
+if(l.pool)h+='<div style="font-size:9px;color:var(--fg-dim);">🔑 '+l.pool.total_keys+' keys · <span style="color:#10b981;">active:'+l.pool.active+'</span> <span style="color:#f59e0b;">cooldown:'+l.pool.cooldown+'</span></div>';
+h+='</div>';document.getElementById('pp-latest').innerHTML=h;}
+if(d.runs&&d.runs.length>1){let rh='<div style="margin-top:8px;font-size:9px;color:var(--fg-dim);">📜 '+d.runs.length+' runs</div>';document.getElementById('pp-runs').innerHTML=rh;}else document.getElementById('pp-runs').innerHTML='';}
+fetchPP();setInterval(fetchPP,5000);
 // Audit trail changes slowly — poll every 10s
 setInterval(fetchAudit, 10000);
+
+
+// ── Tab Navigation ─────────────────────────────────────────────────
+let activeTab = 'dashboard';
+let glossaryLoaded = false;
+
+function switchTab(tab) {
+  activeTab = tab;
+  
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+  });
+
+  const dashView  = document.getElementById('dashboard-view');
+  const glossView = document.getElementById('glossary-view');
+  
+  if (dashView)  dashView.style.display  = tab === 'dashboard' || tab === 'audit' || tab === 'events' ? '' : 'none';
+  if (glossView) glossView.style.display = tab === 'glossary' ? '' : 'none';
+
+  if (tab === 'audit') {
+    const auditCard = document.querySelector('.audit-section');
+    if (auditCard) auditCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (tab === 'events') {
+    const eventsCard = document.querySelector('.events-section');
+    if (eventsCard) eventsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (tab === 'dashboard') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (tab === 'glossary' && !glossaryLoaded) {
+    const iframe = document.getElementById('glossary-iframe');
+    if (iframe && !iframe.src) iframe.src = '/glossary';
+  }
+
+  history.replaceState(null, '', '#' + tab);
+}
+
+function onGlossaryLoaded() {
+  glossaryLoaded = true;
+}
+
+function updateNavBadges(eventsCount, auditStatus) {
+  const evBadge = document.getElementById('events-nav-badge');
+  if (evBadge) {
+    if (eventsCount > 0) {
+      evBadge.style.display = '';
+      evBadge.textContent = eventsCount;
+    } else {
+      evBadge.style.display = 'none';
+    }
+  }
+  
+  const auditBadge = document.getElementById('audit-nav-badge');
+  if (auditBadge) {
+    if (auditStatus === 'tampered' || auditStatus === 'gaps') {
+      auditBadge.style.display = '';
+      auditBadge.textContent = '⚠';
+    } else {
+      auditBadge.style.display = 'none';
+    }
+  }
+}
+
+(function() {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && ['dashboard','glossary','audit','events'].includes(hash)) {
+    switchTab(hash);
+  }
+})();
 
 </script>
 

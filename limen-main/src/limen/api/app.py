@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import sys
 from contextlib import asynccontextmanager
 from time import monotonic
@@ -22,6 +23,8 @@ from limen.persistence import Database
 from limen.queue import QueueWorker
 from limen.routing import Dispatcher
 from limen.routing.registry import ProviderRegistry
+
+logger = logging.getLogger(__name__)
 from limen.transport import HttpTransport
 
 if TYPE_CHECKING:
@@ -99,9 +102,48 @@ def create_app(config: LimenConfig) -> FastAPI:
             pass  # recovery is best-effort
         await transport.open()
         await worker.start()
+
+        # ── Health sync: KeyPool (RAM) → providers table (DB) every 30s ──
+        health_sync_task: asyncio.Task[None] | None = None
+
+        async def _sync_health_loop() -> None:
+            """Periodically write in-memory health data to the providers table."""
+            # Initial sync on startup (don't wait 30s for first write)
+            try:
+                for dep in registry.deployments:
+                    snapshot = dep.pool.get_health_snapshot()
+                    if snapshot:
+                        database.sync_health_snapshot(dep.deployment, snapshot, provider=dep.provider)
+            except Exception:
+                logger.warning("health-sync initial failed", exc_info=True)
+
+            while True:
+                await asyncio.sleep(30)
+                try:
+                    total_updated = 0
+                    for dep in registry.deployments:
+                        snapshot = dep.pool.get_health_snapshot()
+                        if snapshot:
+                            updated = database.sync_health_snapshot(
+                                dep.deployment, snapshot, provider=dep.provider
+                            )
+                            total_updated += updated
+                    if total_updated > 0:
+                        logger.debug("health-sync: %d key states persisted", total_updated)
+                except Exception:
+                    logger.warning("health-sync failed", exc_info=True)
+
+        health_sync_task = asyncio.create_task(_sync_health_loop())
+
         try:
             yield
         finally:
+            if health_sync_task is not None:
+                health_sync_task.cancel()
+                try:
+                    await health_sync_task
+                except asyncio.CancelledError:
+                    pass
             await worker.stop()
             await transport.close()
             database.close()

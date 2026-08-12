@@ -63,6 +63,31 @@ for d in SCAN_DIRS:
                     findings_list.append(f'SEC-{finding_id:03d}|HIGH|Unsafe permissions ({perms})|{f}|Should be 600/400|OWASP A05:2021')
             except: pass
 
+# Probe 3: Dependency audit — built-in vs third-party
+# Built-in Node.js modules that should NOT be flagged
+NODE_BUILTINS = {
+    'node:sqlite', 'node:http', 'node:fs', 'node:path', 'node:url',
+    'node:os', 'node:crypto', 'node:child_process', 'node:net',
+    'DatabaseSync',  # node:sqlite class
+}
+dep_findings = []
+for d in SCAN_DIRS:
+    if not d.exists(): continue
+    for f in d.rglob('*.mjs'):
+        try:
+            for i, line in enumerate(f.read_text().split('\n'), 1):
+                # Check for import statements
+                m = re.match(r"""import\s+.*?from\s+['"]([^'"]+)['"]""", line)
+                if m:
+                    mod = m.group(1)
+                    if mod.startswith('node:'):
+                        mod_name = mod
+                    elif mod in ('ws', 'express', 'axios', 'lodash', 'moment', 'socket.io'):
+                        finding_id_custom = len(dep_findings) + 1
+                        dep_findings.append(f'DEP-{finding_id_custom:03d}|INFO|Third-party dependency|{f}:{i}|{mod}|Review license & update policy')
+                    # Built-in: silently skip (not a finding)
+        except: pass
+
 # Generate report
 output = Path(OUTPUT_FILE)
 output.parent.mkdir(parents=True, exist_ok=True)
@@ -74,6 +99,11 @@ lines = ['# Security Scan Report', '',
     f'**Run**: $RUN_ID',
     f'**TID**: $TID',
     f'**Goal**: $GOAL',
+    '', '## What Was Checked', '',
+    '- **Probe 1: Hardcoded secrets** — API keys, tokens, passwords in Python/JS/SH/JSON (excludes FCC_QUICKREF, mock/example values)',
+    '- **Probe 2: File permissions** — .env, .pem, credentials files (must be 600/400)',
+    '- **Probe 3: Dependency audit** — Third-party vs built-in (node:sqlite, node:http etc. are NOT flagged)',
+    '- **Scope**: fusion-main, karma-main, limen-main/src, .agents/skills/goal-chain/scripts',
     '', '## Summary', '',
     '| Severity | Count |',
     '|----------|-------|',

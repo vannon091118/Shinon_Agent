@@ -43,6 +43,7 @@ from fusion.event_bus import (
     EVENT_LIMEN_KEY_COOLDOWN,
     EVENT_LIMEN_KEY_EXHAUSTED,
     EVENT_LIMEN_BUDGET_WARNING,
+    EVENT_LIMEN_KEY_RECOVERED,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,77 +61,14 @@ EVENT_GOAL_CHAIN_REWORK = "goal_chain.rework"
 # Maps claim keywords/patterns to goal-chain skill sections.
 # When KARMA refutes a claim matching a pattern, the corresponding
 # skill-chain TIDs are triggered for gap-filling.
-_DEFAULT_CLAIM_TO_SKILL_MAP: Dict[str, List[str]] = {
-    # Security claims → security-scan, validation
-    "security": ["security-scan", "validation"],
-    "auth": ["security-scan", "validation"],
-    "jwt": ["security-scan", "validation"],
-    "oauth": ["security-scan", "validation"],
-    "token": ["security-scan", "validation"],
-    "encrypt": ["security-scan"],
 
-    # Architecture claims → guide-architekt, multi-agent-orch
-    "architecture": ["guide-architekt", "multi-agent-orchestr"],
-    "design pattern": ["guide-architekt"],
-    "pattern": ["guide-architekt"],
-    "scal": ["guide-architekt"],
-    "microservice": ["guide-architekt", "multi-agent-orchestr"],
 
-    # Code quality → code-review, python-testing
-    "test": ["python-testing-patte", "validation"],
-    "coverage": ["python-testing-patte"],
-    "lint": ["validation"],
-    "type check": ["validation"],
-    "ci/cd": ["autorun", "validation"],
 
-    # Data → consolidate-memory, track-findings
-    "data": ["consolidate-memory", "track-findings"],
-    "persistence": ["consolidate-memory", "track-findings"],
-    "database": ["consolidate-memory", "track-findings"],
-    "sqlite": ["consolidate-memory"],
-
-    # UI/UX → frontend-design, web-design-guidelines
-    "ui": ["frontend-design", "web-design-guidelines"],
-    "ux": ["frontend-design", "web-design-guidelines"],
-    "frontend": ["frontend-design"],
-    "css": ["frontend-design", "web-design-guidelines"],
-    "component": ["frontend-design"],
-
-    # Documentation → document-tools, pdf
-    "documentation": ["document-tools", "pdf"],
-    "docs": ["document-tools"],
-    "readme": ["document-tools"],
-
-    # API/Integration → clerk-webhooks, delivery-tracking
-    "api": ["clerk-webhooks", "delivery-tracking"],
-    "endpoint": ["clerk-webhooks"],
-    "webhook": ["clerk-webhooks"],
-    "integration": ["clerk-webhooks", "delivery-tracking"],
-
-    # Testing → playwright-expert, python-testing
-    "playwright": ["playwright-expert"],
-    "e2e": ["playwright-expert"],
-    "integration test": ["playwright-expert", "python-testing-patte"],
-    "unit test": ["python-testing-patte"],
-
-    # Community/research → community-deep-resea
-    "community": ["community-deep-resea"],
-    "research": ["community-deep-resea"],
-    "feedback": ["community-deep-resea"],
-
-    # Prompting → sub-agent-prompts, executing-plans
-    "prompt": ["sub-agent-prompts", "executing-plans"],
-    "agent": ["sub-agent-prompts", "multi-agent-orchestr"],
-    "instruction": ["sub-agent-prompts"],
-
-    # Generic claims → track-findings (always useful)
-    "must": ["track-findings"],
-    "shall": ["track-findings"],
-    "should": ["track-findings"],
-}
-
-# Backward-compatible alias for external consumers
-CLAIM_TO_SKILL_MAP = _DEFAULT_CLAIM_TO_SKILL_MAP
+# Hardcoded fallback — when the external JSON file is missing or unreadable.
+# Maps claim keywords/patterns to goal-chain skill sections.
+# When KARMA refutes a claim matching a pattern, the corresponding
+# skill-chain TIDs are triggered for gap-filling.
+_DEFAULT_CLAIM_TO_SKILL_MAP: Dict[str, List[str]] = {}
 
 
 def _build_reverse_map(mapping: Dict[str, List[str]]) -> Dict[str, Set[str]]:
@@ -192,7 +130,11 @@ def _load_claim_skill_map(project_root: Optional[Path] = None) -> Dict[str, List
 # Module-level reverse map for external consumers.
 # NOTE: Built from the hardcoded default — does NOT reflect JSON file overrides.
 # The GoalChainSubscriber instance uses self._claim_skill_map for internal lookups.
-SKILL_TO_CLAIM_DOMAINS = _build_reverse_map(_DEFAULT_CLAIM_TO_SKILL_MAP)
+# Load at module level from JSON file
+CLAIM_TO_SKILL_MAP = _load_claim_skill_map()
+
+# Module-level reverse map for external consumers
+SKILL_TO_CLAIM_DOMAINS = _build_reverse_map(CLAIM_TO_SKILL_MAP)
 
 
 # ─── Data Classes ─────────────────────────────────────────────────────
@@ -335,6 +277,7 @@ class GoalChainSubscriber:
         b.subscribe(EVENT_LIMEN_KEY_COOLDOWN, self.on_limen_key_cooldown)
         b.subscribe(EVENT_LIMEN_KEY_EXHAUSTED, self.on_limen_key_exhausted)
         b.subscribe(EVENT_LIMEN_BUDGET_WARNING, self.on_limen_budget_warning)
+        b.subscribe(EVENT_LIMEN_KEY_RECOVERED, self.on_limen_key_recovered)
 
         logger.info(
             "GoalChain wired to EventBus (karma.falsified + limen.*) dispatch=%s",
@@ -766,6 +709,108 @@ class GoalChainSubscriber:
             logger.exception("GoalChain: failed to set TIDs to FAILED: %s", exc)
             return 0
 
+    def _recover_failed_tids_for_provider(
+        self,
+        *,
+        provider: str,
+        deployment: str,
+        correlation_id: str = "",
+    ) -> int:
+        """Reset FAILED TIDs to PENDING when a LIMEN key recovers from cooldown.
+
+        Finds TIDs that were marked FAILED due to LIMEN rate limits / key
+        exhaustion for the given provider/deployment, and resets them to
+        PENDING so the goal-chain worker can retry them automatically.
+
+        Only resets TIDs that have a dispatcher_decision with LIMEN_RATE_LIMITED
+        or LIMEN_KEY_EXHAUSTED — not TIDs that failed for other reasons.
+
+        Returns the number of TIDs recovered.
+        """
+        import sqlite3 as _sqlite
+
+        goal_db = self._goal_chain_dir / "db" / "tid-state.db"
+        if not goal_db.exists():
+            logger.warning("GoalChain: tid-state.db not found — cannot recover TIDs")
+            return 0
+
+        try:
+            conn = _sqlite.connect(str(goal_db))
+            conn.row_factory = _sqlite.Row
+            now = datetime.now(timezone.utc).isoformat()
+
+            # Find FAILED TIDs with LIMEN-related dispatcher_decisions
+            # matching this provider/deployment
+            failed_tids = conn.execute(
+                """SELECT DISTINCT t.tid, t.run_id,
+                          d.decision_value, d.decision_type
+                   FROM tasks t
+                   JOIN dispatcher_decisions d ON d.tid = t.tid
+                   WHERE t.status = 'FAILED'
+                     AND d.decision_type IN ('LIMEN_RATE_LIMITED', 'LIMEN_KEY_EXHAUSTED')
+                     AND (d.decision_value LIKE ? OR d.decision_value LIKE ?)
+                """,
+                (f"%{provider}/{deployment}%", f"%{provider}%{deployment}%"),
+            ).fetchall()
+
+            if not failed_tids:
+                logger.info(
+                    "GoalChain: no FAILED TIDs to recover for %s/%s",
+                    provider, deployment,
+                )
+                conn.close()
+                return 0
+
+            recovered_count = 0
+            for row in failed_tids:
+                tid = row["tid"]
+                old_reason = row["decision_value"]
+
+                # Reset TID to PENDING
+                conn.execute(
+                    "UPDATE tasks SET status='PENDING', completed_at=NULL, updated_at=? WHERE tid=?",
+                    (now, tid),
+                )
+
+                # Record recovery decision
+                recovery_value = (
+                    f"RECOVERED: Key {provider}/{deployment} returned from cooldown. "
+                    f"Previous failure: {old_reason[:200]}"
+                )
+                conn.execute(
+                    """INSERT INTO dispatcher_decisions
+                       (tid, decision_type, decision_value, rationale, timestamp)
+                       VALUES (?, 'LIMEN_KEY_RECOVERED', ?, ?, ?)""",
+                    (
+                        tid,
+                        recovery_value,
+                        f"Automatic recovery after {provider}/{deployment} key cooldown ended. "
+                        f"TID reset from FAILED → PENDING for retry.",
+                        now,
+                    ),
+                )
+
+                recovered_count += 1
+                logger.info(
+                    "GoalChain: RECOVERED TID %s → PENDING (was FAILED for %s/%s)",
+                    tid, provider, deployment,
+                )
+
+            conn.commit()
+            conn.close()
+
+            if recovered_count > 0:
+                logger.warning(
+                    "GoalChain: RECOVERED %d FAILED TIDs → PENDING for %s/%s",
+                    recovered_count, provider, deployment,
+                )
+
+            return recovered_count
+
+        except Exception as exc:
+            logger.exception("GoalChain: failed to recover TIDs: %s", exc)
+            return 0
+
     async def _publish_skill_chain(
         self, skills: List[str], correlation_id: str, goal: str
     ) -> None:
@@ -1023,6 +1068,51 @@ class GoalChainSubscriber:
         ))
 
         self._dispatch_skill_chains(skills, event.correlation_id)
+
+    async def on_limen_key_recovered(self, event: Event) -> None:
+        """Handle ``limen.key_recovered`` — reset FAILED TIDs → PENDING.
+
+        When a LIMEN key returns from cooldown (status: cooldown → active),
+        goal-chain finds all TIDs that were FAILED due to that provider's
+        rate limit / key exhaustion, and resets them to PENDING for
+        automatic retry by the worker.
+
+        This implements the RECOVERY action — the counterpart to the
+        FAIL action in on_limen_rate_limited / on_limen_key_exhausted.
+        """
+        payload = event.payload
+        deployment = payload.get("deployment", "unknown")
+        provider = payload.get("provider", "unknown")
+
+        logger.info(
+            "GoalChain: LIMEN key_recovered — %s/%s, recovering FAILED TIDs",
+            provider, deployment,
+        )
+
+        # Reset FAILED TIDs → PENDING
+        recovered = self._recover_failed_tids_for_provider(
+            provider=provider,
+            deployment=deployment,
+            correlation_id=event.correlation_id,
+        )
+
+        # Publish recovery event
+        await self.bus.publish(Event(
+            event_type=EVENT_GOAL_CHAIN_TRIGGERED,
+            source="goal_chain",
+            payload={
+                "triggers": [],
+                "trigger_count": 0,
+                "skills_triggered": [],
+                "total_skills": 0,
+                "source_event": "limen.key_recovered",
+                "deployment": deployment,
+                "provider": provider,
+                "tids_recovered": recovered,
+                "note": f"Reset {recovered} FAILED TIDs → PENDING for automatic retry",
+            },
+            correlation_id=event.correlation_id,
+        ))
 
     # ── Stats ─────────────────────────────────────────────────────────
 

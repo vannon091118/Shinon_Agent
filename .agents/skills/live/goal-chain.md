@@ -1,23 +1,23 @@
 ---
 skill: goal-chain
-state: active
-last_activation: 2026-08-12T09:11:14Z
-activation_count: 128
-tags: [security-scan,TID]
-output_path: ".goal/R20260812-105939-game-of-life-clone-als-node-js-projekt/security-report.md"
+state: planning
+last_activation: 2026-08-12T11:32:33Z
+activation_count: 162
+tags: [subagent-dev,TID-DONE]
+output_path: ""
 ---
 
-# 🔄 goal-chain · ACTIVE
+# 🧠 goal-chain · PLANNING
 
 > **Token-saving artifact.** Dieser ~20-Zeilen-Snapshot ersetzt das vollständige
 > SKILL.md (~200-400 Zeilen) bei Re-Activation. Re-Aktivierungen lesen NUR
 > diesen Snapshot, sofern keine erweiterte Funktionalität benötigt wird.
 
 ## Aktueller Status
-TID PZ-R20260812-105939-STACK-security-scan aktiv · security-scan
+TID PZ-R20260812-133215-P3-implementer fertig · subagent-dev → DONE
 
 ## Pfad zum Output
-.goal/R20260812-105939-game-of-life-clone-als-node-js-projekt/security-report.md
+_kein Output-File_
 
 ## Re-Aktivierung (schnell)
 ```bash

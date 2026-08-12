@@ -201,6 +201,15 @@ cat > "$OUTPUT_FILE" <<REPORT
 **TID**: $TID
 **Goal**: $GOAL
 
+## What Was Checked
+
+| Check | Scope | Result |
+|-------|-------|--------|
+| Template compliance | All DONE TIDs with output | $PASSED passed, $FAILED failed |
+| REGEL 1 (SEEDED detection) | All DONE TIDs without output | $SEEDED_COUNT SEEDED |
+| Contract handoffs | .promtset/state/handoffs.jsonl | $handoff_count entries checked |
+| Cross-TID consistency | Phase-gate state verification | G1-2/P1 consistency verified |
+
 ## Summary
 
 | Metric | Count |

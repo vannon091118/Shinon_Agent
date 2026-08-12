@@ -14,7 +14,7 @@ from limen.persistence.audit import AuditLog
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA_STATEMENTS = (
     """
@@ -34,6 +34,8 @@ _SCHEMA_STATEMENTS = (
         observed_rpm INTEGER,
         observed_itpm INTEGER,
         observed_otpm INTEGER,
+        error_count INTEGER NOT NULL DEFAULT 0,
+        success_count INTEGER NOT NULL DEFAULT 0,
         meta_json TEXT NOT NULL DEFAULT '{}'
     )
     """,
@@ -183,6 +185,25 @@ class Database:
                 self._connection.close()
                 self._connection = None
 
+    def _migrate_v1_to_v2(self, connection: sqlite3.Connection) -> None:
+        """Add error_count and success_count columns for health tracking.
+
+        Uses ALTER TABLE ADD COLUMN with IF NOT EXISTS semantics —
+        catches the 'duplicate column name' error silently since SQLite
+        doesn't support IF NOT EXISTS for ALTER TABLE.
+        """
+        for col, col_type in [
+            ("error_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("success_count", "INTEGER NOT NULL DEFAULT 0"),
+        ]:
+            try:
+                connection.execute(
+                    f"ALTER TABLE providers ADD COLUMN {col} {col_type}"
+                )
+            except sqlite3.OperationalError as exc:
+                if "duplicate column name" not in str(exc).lower():
+                    raise
+
     def initialize_schema(self) -> None:
         """Apply the current schema or reject a corrupt/incompatible database."""
         connection = self.connection
@@ -208,9 +229,18 @@ class Database:
                     f"Database schema {SCHEMA_VERSION} is incomplete; missing tables: {missing}"
                 )
             return
+
+        # ── Migrations ──
         with self.transaction():
-            for statement in _SCHEMA_STATEMENTS:
-                connection.execute(statement)
+            # Fresh DB: create all tables
+            if current_version == 0:
+                for statement in _SCHEMA_STATEMENTS:
+                    connection.execute(statement)
+            else:
+                # v1 → v2: add health tracking columns
+                if current_version <= 1:
+                    self._migrate_v1_to_v2(connection)
+
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.execute(
                 "INSERT OR REPLACE INTO schema_meta(key, value) VALUES (?, ?)",
@@ -549,6 +579,40 @@ class Database:
                 "cooldown_until": (str(row["cooldown_until"]) if row["cooldown_until"] else None),
             }
         return result
+
+    # ── Health snapshot sync (KeyPool → DB, every 30s) ────────────
+
+    def sync_health_snapshot(
+        self,
+        deployment: str,
+        health_data: dict[str, dict[str, object]],
+        *,
+        provider: str = "",
+    ) -> int:
+        """Write per-key health data from in-memory KeyPool to providers table.
+
+        Updates error_count, success_count, and status for each key.
+        Returns number of rows updated.
+        """
+        updated = 0
+        with self.transaction() as conn:
+            for key_id, data in health_data.items():
+                conn.execute(
+                    "UPDATE providers SET"
+                    " error_count = ?, success_count = ?, status = ?,"
+                    " cooldown_until = ?"
+                    " WHERE key_id = ?",
+                    (
+                        int(data.get("error_count", 0)),
+                        int(data.get("success_count", 0)),
+                        str(data.get("status", "active")),
+                        data.get("cooldown_until"),
+                        key_id,
+                    ),
+                )
+                if conn.execute("SELECT changes()").fetchone()[0] > 0:
+                    updated += 1
+        return updated
 
     # ── Budget persistence (rate limit tracking) ──────────────────
 

@@ -149,7 +149,12 @@ Promtguard and KARMA use different status vocabularies. The Run Manifest uses KA
 | `refined` | `supported` (with note) | Claim was adjusted based on evidence, now supported |
 | — | `conflicted` | Evidence both supports and contradicts (KARMA-only) |
 
-**Handoff rule:** When Promtguard hands off to KARMA, Promtguard's `verified` → KARMA's `supported`, Promtguard's `refuted` → KARMA's `refuted`. The `confirmed` and `conflicted` statuses are KARMA-native and can only be set by the FalsificationGate.
+**Handoff rule:** When Promtguard hands off to KARMA:
+- Promtguard's `verified` → KARMA's `supported`
+- Promtguard's `refuted` → KARMA's `refuted`
+- Promtguard's `refined` → KARMA's `edited` (claim was wrong, now corrected)
+- Promtguard's `unknown` → KARMA's `unverified`
+The `confirmed` and `conflicted` statuses are KARMA-native and can only be set by the FalsificationGate.
 
 ---
 

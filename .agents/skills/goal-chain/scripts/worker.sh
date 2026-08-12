@@ -1,22 +1,24 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════
-# worker.sh — Autonomous TID Executor
+# worker.sh — Autonomous TID Executor (--all = fully autonomous)
 #
 # FINALLY executes PENDING TIDs instead of just tracking them.
-# Runs chain scripts, feeds LLM prompts to Buffy, marks complete.
+# --all: Runs chain scripts, detects AUTONOM vs PROMPT output,
+#        auto-completes every TID without manual intervention.
 #
 # Usage:
-#   bash worker.sh RUN_ID              # Process next PENDING TID
-#   bash worker.sh RUN_ID --all        # Process ALL PENDING TIDs
+#   bash worker.sh RUN_ID              # Process next PENDING TID (interactive)
+#   bash worker.sh RUN_ID --all [MAX]  # Process ALL PENDING TIDs autonomously
 #   bash worker.sh RUN_ID --complete TID  # Mark TID as done
 #   bash worker.sh RUN_ID --status     # Show run progress
 #   bash worker.sh RUN_ID --dry-run    # Show what WOULD run
 #
 # Architecture:
 #   worker.sh → find next PENDING TID
-#            → bash chain-xxx.sh RUN_ID TID  (executes prompt generator)
-#            → Buffy reads prompt, does work, writes output_artifact
-#            → bash worker.sh RUN_ID --complete TID
+#            → bash chain-xxx.sh RUN_ID TID
+#            → AUTONOM: chain script wrote output → complete.sh (full drift check)
+#            → PROMPT:  chain script emitted prompt → tid_done (skip verify-template)
+#            → GATE:    always uses complete.sh for phase routing
 #            → repeat until all TIDs DONE
 # ═══════════════════════════════════════════════════════════════════
 
@@ -31,6 +33,10 @@ TID_ARG="${2:-}"
 
 ensure_db
 
+# ── Run directory (from seed_tids.py convention: .goal/RUN_ID-slug)
+RUN_DIR=$(find .goal -maxdepth 1 -name "${RUN_ID}-*" -type d 2>/dev/null | head -1)
+[[ -z "$RUN_DIR" ]] && RUN_DIR=".goal/${RUN_ID}-default"
+
 # ── Colors ────────────────────────────────────────────────────────
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'
 RED='\033[0;31m'; BOLD='\033[1m'; NC='\033[0m'
@@ -42,7 +48,7 @@ show_status() {
     echo "  GOAL-CHAIN WORKER — Run: $RUN_ID"
     echo "═══════════════════════════════════════════════════════════"
 
-    local total done inprog failed pending skipped rcd
+    local total done inprog failed pending rcd
     total=$(db_query "SELECT COUNT(*) FROM tasks WHERE run_id='$RUN_ID';" | head -1)
     done=$(db_query "SELECT COUNT(*) FROM tasks WHERE run_id='$RUN_ID' AND status='DONE';" | head -1)
     inprog=$(db_query "SELECT COUNT(*) FROM tasks WHERE run_id='$RUN_ID' AND status='IN_PROGRESS';" | head -1)
@@ -57,7 +63,6 @@ show_status() {
     echo "  Progress: $((done + rcd))/$total (${pct}%)"
     echo ""
 
-    # Show next TID
     local next; next=$(next_pending_tid "$RUN_ID")
     if [[ -n "$next" ]]; then
         local phase; phase=$(task_field "$next" "phase")
@@ -90,20 +95,16 @@ dry_run() {
     echo "    Command: bash $script $RUN_ID $next"
 }
 
-# ── Complete TID ───────────────────────────────────────────────────
+# ── Complete TID (interactive/manual mode) ──────────────────────────
 complete_tid() {
     local tid="$1"
     echo ""
     echo "── Abschluss: $tid ───────────────────────────────────────"
 
-    # Verify output exists and has content
     local output; output=$(task_field "$tid" "output_artifact")
-    local has_real_output=false
-
     if [[ -n "$output" && -f "$output" ]]; then
         local size; size=$(stat -c%s "$output" 2>/dev/null || stat -f%z "$output" 2>/dev/null || echo 0)
         if [[ "$size" -gt 50 ]]; then
-            has_real_output=true
             echo "  ✅ Output: $output (${size} bytes)"
         else
             echo "  ⚠️  Output zu klein (${size} bytes) — Inhalt prüfen"
@@ -112,11 +113,9 @@ complete_tid() {
         echo "  ⚠️  Kein Output-File: ${output:-NONE}"
     fi
 
-    # Mark complete via complete.sh
     bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto"
     echo "  ✅ $tid → DONE"
 
-    # Return next TID for chaining
     local next; next=$(next_pending_tid "$RUN_ID")
     if [[ -n "$next" ]]; then
         echo ""
@@ -134,7 +133,7 @@ complete_tid() {
     fi
 }
 
-# ── Execute Next TID ───────────────────────────────────────────────
+# ── Execute Next TID (interactive mode — shows Buffy instructions) ──
 execute_next() {
     local tid; tid=$(next_pending_tid "$RUN_ID")
     if [[ -z "$tid" ]]; then
@@ -151,7 +150,6 @@ execute_next() {
     local skill; skill=$(task_field "$tid" "skill_name")
     local goal; goal=$(task_field "$tid" "goal")
     local output; output=$(task_field "$tid" "output_artifact")
-    local template; template=$(task_field "$tid" "template_id")
 
     echo ""
     echo "╔══════════════════════════════════════════════════════════╗"
@@ -164,7 +162,6 @@ execute_next() {
     echo "║  Script:  $script"
     echo "╚══════════════════════════════════════════════════════════╝"
 
-    # Check if script exists
     if [[ ! -f "$script" ]]; then
         echo ""
         echo "❌ SCRIPT NICHT GEFUNDEN: $script"
@@ -173,7 +170,6 @@ execute_next() {
         return 2
     fi
 
-    # Create output directory
     if [[ -n "$output" ]]; then
         mkdir -p "$(dirname "$output")"
     fi
@@ -182,7 +178,6 @@ execute_next() {
     echo "── Chain-Script wird ausgeführt ──────────────────────────"
     echo ""
 
-    # Execute the chain script and capture its output (the LLM prompt)
     if [[ -n "$output" ]]; then
         bash "$script" "$RUN_ID" "$tid" 2>&1 | tee "$output.tmp"
     else
@@ -216,38 +211,192 @@ execute_next() {
     return 0
 }
 
-# ── Execute ALL Pending TIDs ───────────────────────────────────────
+# ── Execute ALL Pending TIDs (AUTONOMOUS) ────────────────────────────
 execute_all() {
     local max="${TID_ARG:-100}"
     local count=0
+    local done_count=0
+    local fail_count=0
+    local auto_count=0
+    local prompt_count=0
+
+    # Trap: reset IN_PROGRESS TIDs back to PENDING on unexpected exit
+    cleanup_in_progress() {
+        local stuck; stuck=$(db_query "SELECT tid FROM tasks WHERE run_id='$RUN_ID' AND status='IN_PROGRESS' LIMIT 1;" | head -1)
+        if [[ -n "$stuck" ]]; then
+            db_exec "UPDATE tasks SET status='PENDING', updated_at=datetime('now') WHERE tid='$stuck';"
+            echo "  🧹 Cleanup: $stuck → PENDING (interrupted)" >&2
+        fi
+    }
+    trap cleanup_in_progress EXIT INT TERM
+
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  🤖 WORKER --all: AUTONOMER DURCHLAUF                  ║"
+    echo "║  Run: $RUN_ID  |  Max: $max TIDs                       ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
 
     while [[ $count -lt $max ]]; do
         local tid; tid=$(next_pending_tid "$RUN_ID")
         if [[ -z "$tid" ]]; then
-            echo ""
-            echo "✅ ALLE TIDs abgearbeitet ($count in diesem Lauf)"
-            return 0
+            break
         fi
+
+        count=$((count + 1))
+
+        # Get TID details
+        local script; script=$(script_for_tid "$tid")
+        local skill; skill=$(task_field "$tid" "skill_name")
+        local output; output=$(task_field "$tid" "output_artifact")
+        local phase; phase=$(task_field "$tid" "phase")
+        local section; section=$(task_field "$tid" "phase_section")
+        local goal; goal=$(task_field "$tid" "goal")
+
+        # Normalize output (DB may store Python None as "None")
+        [[ "$output" == "None" ]] && output=""
 
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "  WORKER LOOP #$((count + 1)): TID $tid"
+        echo "  WORKER #$count: ${CYAN}${tid}${NC}"
+        echo "  Phase: $phase · $section | Skill: $skill"
+        echo "  Goal:  ${goal:0:70}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        execute_next || {
-            local rc=$?
-            if [[ $rc -eq 1 ]]; then
-                # No more TIDs — success
-                return 0
-            else
-                echo "⚠️  TID $tid fehlgeschlagen, fahre mit nächstem fort..."
-            fi
-        }
+        # Check if script exists
+        if [[ ! -f "$script" ]]; then
+            echo "  ❌ SCRIPT NICHT GEFUNDEN: $script → FAILED"
+            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" > /dev/null 2>&1 || true
+            fail_count=$((fail_count + 1))
+            continue
+        fi
 
-        count=$((count + 1))
+        # Resolve output path (may not exist yet)
+        local resolved_output=""
+        local output_existed_before=false
+        if [[ -n "$output" ]]; then
+            if [[ -f "$PROJECT_ROOT/$output" ]]; then
+                resolved_output="$PROJECT_ROOT/$output"
+                output_existed_before=true
+            elif [[ -f "$output" ]]; then
+                resolved_output="$output"
+                output_existed_before=true
+            else
+                resolved_output="$PROJECT_ROOT/$output"
+            fi
+            mkdir -p "$(dirname "$resolved_output")" 2>/dev/null || true
+        fi
+
+        # Record mtime BEFORE running script
+        local output_mtime_before=0
+        if $output_existed_before; then
+            output_mtime_before=$(stat -c%Y "$resolved_output" 2>/dev/null || echo 0)
+        fi
+
+        # Run chain script, capture output
+        local tmp_output="/tmp/worker-${tid}-$$.tmp"
+        local exit_code=0
+        if [[ -n "$output" ]]; then
+            bash "$script" "$RUN_ID" "$tid" > "$tmp_output" 2>&1 || exit_code=$?
+        else
+            bash "$script" "$RUN_ID" "$tid" > /dev/null 2>&1 || exit_code=$?
+        fi
+
+        # Check if chain script CREATED/MODIFIED the output file
+        local output_size=0
+        local output_is_new=false
+        if [[ -n "$resolved_output" && -f "$resolved_output" ]]; then
+            output_size=$(stat -c%s "$resolved_output" 2>/dev/null || echo 0)
+            if $output_existed_before; then
+                local mtime; mtime=$(stat -c%Y "$resolved_output" 2>/dev/null || echo 0)
+                [[ "$mtime" -gt "$output_mtime_before" ]] && output_is_new=true
+            else
+                output_is_new=true
+            fi
+        fi
+
+        # Gate TIDs (G1-2, G2-3) ALWAYS need complete.sh for routing
+        local is_gate=false
+        [[ "$phase" == G* ]] && is_gate=true
+
+        # ── Classify and complete ──
+        if [[ $exit_code -ne 0 ]]; then
+            echo "  ❌ Chain-Script exit=$exit_code → FAILED"
+            bash "$SCRIPT_DIR/complete.sh" "$tid" "FAIL" "--auto" > /dev/null 2>&1 || true
+            fail_count=$((fail_count + 1))
+
+        elif $output_is_new && [[ "$output_size" -gt 50 ]]; then
+            echo "  ✅ AUTONOM: $resolved_output (${output_size} bytes) → DONE"
+            bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1 || true
+            done_count=$((done_count + 1))
+            auto_count=$((auto_count + 1))
+
+        elif [[ -f "$tmp_output" && -s "$tmp_output" ]]; then
+            # PROMPT script: captured output becomes the artifact
+            local target
+            if [[ -n "$output" ]]; then
+                target="$resolved_output"
+            else
+                target="$RUN_DIR/${tid}-output.md"
+                mkdir -p "$RUN_DIR" 2>/dev/null || true
+            fi
+            mv "$tmp_output" "$target"
+            output_size=$(stat -c%s "$target" 2>/dev/null || echo 0)
+
+            if $is_gate; then
+                # Gate TIDs: use complete.sh for proper phase routing
+                echo "  🔀 GATE PROMPT: $target (${output_size} bytes)"
+                bash "$SCRIPT_DIR/complete.sh" "$tid" "DONE" "--auto" > /dev/null 2>&1 || true
+                echo "  ✅ → DONE (gate routing applied)"
+            else
+                # Regular PROMPT: skip verify-template (output = captured prompt)
+                if [[ "$output_size" -gt 50 ]]; then
+                    echo "  📋 PROMPT: $target (${output_size} bytes) → DONE"
+                else
+                    echo "  ⚠️  PROMPT: Minimal output (${output_size} bytes) → DONE"
+                fi
+                tid_done "$tid"
+                notify_dashboard "TID_DONE" "$tid" "$(progress_summary "$RUN_ID")" || true
+                record_decision "$tid" "PROMPT_CAPTURED" "DONE" "Worker captured chain script output ($output_size bytes)" "" "" || true
+            fi
+            done_count=$((done_count + 1))
+            prompt_count=$((prompt_count + 1))
+
+        else
+            echo "  ⚠️  Kein Output → DONE (leer)"
+            tid_done "$tid"
+            notify_dashboard "TID_DONE" "$tid" "$(progress_summary "$RUN_ID")" || true
+            record_decision "$tid" "EMPTY_OUTPUT" "DONE" "Worker: no output produced by chain script" "" "" || true
+            done_count=$((done_count + 1))
+        fi
+
+        # Clean up tmp
+        rm -f "$tmp_output"
     done
 
-    echo "⚠️  Max $max TIDs erreicht — Rest manuell fortsetzen"
+    # ── Summary ──
+    local total_done total_all pct
+    total_done=$(db_query "SELECT COUNT(*) FROM tasks WHERE run_id='$RUN_ID' AND status='DONE';" | head -1)
+    total_all=$(db_query "SELECT COUNT(*) FROM tasks WHERE run_id='$RUN_ID';" | head -1)
+    pct=0
+    [[ "$total_all" -gt 0 ]] && pct=$(( total_done * 100 / total_all ))
+
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  🎉 WORKER --all ABGESCHLOSSEN                         ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  In diesem Lauf:                                       ║"
+    echo "║    ✅ DONE:     $done_count  (autonom: $auto_count, prompt: $prompt_count)"
+    echo "║    ❌ FAILED:   $fail_count"
+    echo "║                                                        ║"
+    echo "║  Gesamt: $total_done/$total_all TIDs (${pct}%)"
+    echo "╚══════════════════════════════════════════════════════════╝"
+
+    if [[ "$count" -ge "$max" ]]; then
+        echo "  ⚠️  Max $max TIDs erreicht — Rest manuell:"
+        echo "      bash worker.sh $RUN_ID --all"
+    fi
+
+    [[ "$done_count" -gt 0 ]] && return 0 || return 1
 }
 
 # ── Main Dispatch ──────────────────────────────────────────────────

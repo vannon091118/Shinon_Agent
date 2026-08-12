@@ -40,6 +40,9 @@ class Key:
     # Health tracking (v2.0)
     error_count: int = 0
     success_count: int = 0
+    # Latency tracking (v2.2)
+    total_latency_ms: float = 0.0
+    latency_count: int = 0
 
     @property
     def is_ready(self) -> bool:
@@ -55,6 +58,13 @@ class Key:
         if total == 0:
             return 0.0
         return self.error_count / total
+
+    @property
+    def avg_latency_ms(self) -> float:
+        """Average latency in milliseconds, or 0 if no requests yet."""
+        if self.latency_count == 0:
+            return 0.0
+        return self.total_latency_ms / self.latency_count
 
     @property
     def health_score(self) -> float:
@@ -305,6 +315,7 @@ class KeyPool:
         *,
         cooldown_seconds: float = 0.0,
         tokens_used: int = 0,
+        latency_ms: float = 0.0,
     ) -> None:
         """Update key state after a provider call."""
         lock = await self._get_lock()
@@ -319,6 +330,9 @@ class KeyPool:
                 if key.request_budget is not None:
                     key.request_budget.record()
                 key.success_count += 1
+                if latency_ms > 0:
+                    key.total_latency_ms += latency_ms
+                    key.latency_count += 1
                 if key.status == "cooldown":
                     key.status = "active"
                     key.cooldown_until = None
@@ -355,6 +369,36 @@ class KeyPool:
         result["errors"] = key.error_count
         result["successes"] = key.success_count
         return result
+
+    # ── health snapshot (for DB persistence) ────────────────────────
+
+    def get_health_snapshot(self) -> dict[str, dict[str, object]]:
+        """Return per-key health data for DB sync.
+
+        Returns dict keyed by key_id (deployment:fingerprint).
+        Each value: {error_count, success_count, health_score, status, cooldown_until}
+        """
+        snapshot: dict[str, dict[str, object]] = {}
+        for key in self._keys:
+            fp = hashlib.sha256(key.value.encode()).hexdigest()[:16]
+            key_id = f"{self.deployment}:{fp}"
+            cooldown: Optional[str] = None
+            if key.cooldown_until is not None:
+                from datetime import datetime, timedelta, timezone
+                remaining = key.cooldown_until - self._clock()
+                if remaining > 0:
+                    cooldown = (
+                        datetime.now(timezone.utc) + timedelta(seconds=remaining)
+                    ).isoformat()
+            snapshot[key_id] = {
+                "error_count": key.error_count,
+                "success_count": key.success_count,
+                "health_score": round(key.health_score, 4),
+                "avg_latency_ms": round(key.avg_latency_ms, 1),
+                "status": key.status,
+                "cooldown_until": cooldown,
+            }
+        return snapshot
 
     # ── internal ────────────────────────────────────────────────────
 

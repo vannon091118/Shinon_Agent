@@ -84,6 +84,7 @@ async def dashboard_keys(request: Request) -> dict[str, object]:
         lambda: list(database.connection.execute(
             "SELECT key_id, provider, deployment, status, cooldown_until,"
             " observed_itpm, observed_otpm, observed_rpm,"
+            " error_count, success_count,"
             " meta_json, last_used_at, priority"
             " FROM providers ORDER BY priority ASC, provider ASC"
         ).fetchall())
@@ -91,6 +92,22 @@ async def dashboard_keys(request: Request) -> dict[str, object]:
 
     keys: list[dict[str, object]] = []
     now = datetime.now(UTC)
+
+    # Build in-memory KeyPool lookup for real-time health stats
+    # Key: key_id → {error_count, success_count, health_score, error_rate, total_requests}
+    pool_stats: dict[str, dict[str, object]] = {}
+    for dep in registry.deployments:
+        import hashlib as _hl
+        for key in dep.pool.keys:
+            fp = _hl.sha256(key.value.encode()).hexdigest()[:16]
+            key_id = f"{dep.deployment}:{fp}"
+            pool_stats[key_id] = {
+                "error_count": key.error_count,
+                "success_count": key.success_count,
+                "total_requests": key.total_requests,
+                "error_rate": round(key.error_rate, 4),
+                "health_score": round(key.health_score, 4),
+            }
 
     # Build a lookup of registry deployments for capability/rpm info
     dep_lookup: dict[str, object] = {}
@@ -132,9 +149,26 @@ async def dashboard_keys(request: Request) -> dict[str, object]:
         soft_rpm = reg_info.get("soft_rpm")
         soft_itpm = reg_info.get("soft_itpm")
 
-        # Calculate health: if status is cooldown/dead, health is low
+        # Read persisted error/success counts (fallback: 0 if column missing from v1 DB)
+        db_error_count = 0
+        db_success_count = 0
+        try:
+            db_error_count = int(row["error_count"] or 0)
+            db_success_count = int(row["success_count"] or 0)
+        except (IndexError, KeyError):
+            pass
+
+        # Merge with in-memory KeyPool stats (real-time, live from Key objects)
+        live_stats = pool_stats.get(key_id, {})
+        error_count = live_stats.get("error_count", db_error_count)
+        success_count = live_stats.get("success_count", db_success_count)
+        total_requests = error_count + success_count
+        error_rate = live_stats.get("error_rate", (error_count / max(total_requests, 1)) if total_requests > 0 else 0.0)
+        health_score = live_stats.get("health_score", 1.0 if status == "active" else 0.25 if status == "cooldown" else 0.0)
+
+        # Calculate health: use KeyPool health_score if available, else fallback
         if status == "active":
-            health_pct = min(100.0, max(10.0, 100.0 - (itpm / max(tokens_max, 1)) * 50.0))
+            health_pct = round(health_score * 100, 1)
         elif status == "cooldown":
             health_pct = 25.0
         else:
@@ -165,6 +199,11 @@ async def dashboard_keys(request: Request) -> dict[str, object]:
             "request_pct": round(rpm / max(requests_max, 1) * 100, 1),
             "health_pct": round(health_pct, 1),
             "health_color": "#10b981" if health_pct > 70 else "#f59e0b" if health_pct > 30 else "#ef4444",
+            "error_count": error_count,
+            "success_count": success_count,
+            "total_requests": total_requests,
+            "error_rate": round(error_rate * 100, 1),
+            "health_score": round(health_score, 4),
             "priority": priority_val,
             "model": model,
             "soft_rpm": soft_rpm,
