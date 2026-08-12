@@ -38,11 +38,17 @@ const LIMEN_DB = process.env.LIMEN_DB
   || path.join(SHINON_HOME, 'data', 'limen', 'limen.db');
 const TID_DB = process.env.GOALCHAIN_DB
   || path.join(SHINON_HOME, 'data', 'goal-chain', 'tid-state.db');
-// ─── SHINON memory (env-first, then SHINON_HOME)
+// ─── SHINON character storage (env-first, then SHINON_HOME)
 const SHINON_DATA_DIR = process.env.SHINON_DATA_DIR
   || path.join(SHINON_HOME, 'data', 'shinon');
 try { fs.mkdirSync(SHINON_DATA_DIR, { recursive: true }); } catch (_) {}
-const SHINON_MEM = path.join(SHINON_DATA_DIR, 'memory.db');
+const SHINON_MEM       = path.join(SHINON_DATA_DIR, 'memory.db');
+const SHINON_ATTITUDES = path.join(SHINON_DATA_DIR, 'attitudes.db');
+
+// user_id, mit dem die globale Persönlichkeitsansicht im UI lebt
+// (= ~/.shinon/data/shinon/attitudes.db). Fusion-Engine nutzt
+// session-spezifische user_ids separat; der UI-Filter bleibt hier stabil.
+const PERSONALITY_USER = 'default';
 // ─── BUG-P0-1 FIX: LIMEN runs on 8001 (confirmed by limen-main/start_limen.py)
 const LIMEN_URL = 'http://127.0.0.1:8001';
 
@@ -187,6 +193,15 @@ function writeChatConfig(useApi) {
       lines.push('', '[chat]', newLine, 'default_intent = "chat"');  // Sektion anlegen
     }
     fs.writeFileSync(cfgPath, lines.join('\n'), 'utf-8');
+    // Re-apply owner-only ACL after writeFileSync.  Node's default write
+    // honors umask (POSIX: file becomes 0o644 under default umask 022) and
+    // on Windows removes inheritance — both break the "mode 0o600" rules
+    // that LIMEN enforces at startup.  Mirror install.py's hardening.
+    try {
+      if (process.platform !== 'win32') {
+        fs.chmodSync(cfgPath, 0o600);
+      }
+    } catch (e) { /* best-effort */ }
     return true;
   } catch (e) { return false; }
 }
@@ -391,12 +406,15 @@ const server = http.createServer(async (req, res) => {
     // ── Step 2a: Fusion produced a full reply (task OR local chat) ───
     if (fusionResult && fusionResult._exit === 0 && fusionResult.reply) {
       return sendJSON(res, 200, {
-        reply:  fusionResult.reply,
-        model:  fusionResult.model  || 'fusion',
-        source: fusionResult.source || 'fusion',
-        intent: fusionResult.intent  || '',
-        claims: fusionResult.claims_count || 0,
-        cid:    fusionResult.correlation_id || '',
+        reply:        fusionResult.reply,
+        model:        fusionResult.model  || 'fusion',
+        source:       fusionResult.source || 'fusion',
+        intent:       fusionResult.intent  || '',
+        claims:       fusionResult.claims_count || 0,
+        cid:          fusionResult.correlation_id || '',
+        // prosa_source = "model" | "skip" | "" (bridge-only field).
+        // Empty when fusion didn't produce the reply itself (LIMEN branch).
+        prosa_source: fusionResult.prosa_source || '',
       });
     }
 
@@ -414,16 +432,28 @@ const server = http.createServer(async (req, res) => {
         reply:  limenResult.reply,
         model:  limenResult.model || 'limen',
         source: characterContext ? 'fusion+limen' : 'limen',
+        // LIMEN path used for API-backed chat (cfg.use_api=true); intent
+        // is the classifier's verdict from the bridge.
+        intent: fusionResult?.intent  || 'chat',
+        intent_source: 'limen',
         claims: fusionResult?.claims_count || 0,
         cid:    fusionResult?.correlation_id || '',
+        // LIMEN path = use_api=true (paid path). The Prosa quality-layer
+        // only runs on the deterministic fusion chat path, so this is
+        // conceptually NOT a Prosa attempt.
+        prosa_source: 'skip',
       });
     }
 
     // ── Step 4: Full offline fallback ────────────────────────────────
     return sendJSON(res, 200, {
-      reply:  generateFallbackReply(message),
-      model:  'shinon-offline',
-      source: 'fallback',
+      reply:         generateFallbackReply(message),
+      model:         'shinon-offline',
+      source:        'fallback',
+      intent:        'chat',
+      intent_source: 'offline',
+      // No fusion call → no Prosa attempt possible.
+      prosa_source: 'skip',
     });
   }
 
@@ -488,22 +518,36 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // API: Personality
+  // API: Personality — zentral aus ~/.shinon/data/shinon/attitudes.db geladen.
+  // Fusion-Schema: attitudes(user_id TEXT, dimension TEXT, score REAL)
+  // UI-Mapping:    { "<dimension>": <score> } für user_id = PERSONALITY_USER.
   if (req.method === 'GET' && pathname === '/api/personality') {
-    const rows = queryDB(SHINON_MEM, "SELECT dimension, value FROM attitudes");
+    const rows = queryDB(
+      SHINON_ATTITUDES,
+      'SELECT dimension, score FROM attitudes WHERE user_id = ?',
+      PERSONALITY_USER,
+    );
     const personality = {};
-    if (rows) rows.forEach(r => { personality[r.dimension] = r.value; });
+    if (rows) rows.forEach(r => { personality[r.dimension] = r.score; });
     return sendJSON(res, 200, personality);
   }
 
   if (req.method === 'POST' && pathname === '/api/personality') {
     const body = await readJSON(req);
-    // Prepared Statements (native sqlite) — keine Shell, keine Interpolation.
+    // Zentrale attitudes.db (fusion-Schema: user_id+dimension PK).
+    // ON CONFLICT überschreibt den Score — idempotent gegenüber
+    // wiederholtem POST + Pre-Existing-Defaults.
     const updates = Object.entries(body)
       .filter(([k]) => /^[a-zA-Z0-9_]+$/.test(k))  // whitelist dimension names
       .map(([k, v]) => ({ dim: k, val: Math.max(-10, Math.min(10, Number(v))) }));
+    const upsert = (
+      "INSERT INTO attitudes (user_id, dimension, score, updated_at) "
+      + "VALUES (?, ?, ?, datetime('now')) "
+      + "ON CONFLICT(user_id, dimension) DO UPDATE SET "
+      + "score = excluded.score, updated_at = datetime('now')"
+    );
     for (const { dim, val } of updates) {
-      execDB(SHINON_MEM, "UPDATE attitudes SET value=?,updated_at=datetime('now') WHERE dimension=?", val, dim);
+      execDB(SHINON_ATTITUDES, upsert, PERSONALITY_USER, dim, val);
     }
     return sendJSON(res, 200, { ok: true });
   }

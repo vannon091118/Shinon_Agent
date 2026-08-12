@@ -34,6 +34,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# paths.py sitzt im Projekt-Root; sys.path enthält das Root sowohl beim
+# Aufruf über shinon_fusion_bridge.py als auch bei direktem python -m.
+# Hard-fail statt stumm auf einen falschen CWD-relativen Pfad zu fallen —
+# das frühere ``Path("fusion-main/data/...")`` ist ein Fallback, der den
+# Service nur aus genau dem Projekt-Root heraus starten lässt und an
+# allen anderen Aufrufstellen (cron, systemd, container, …) bricht.
+import paths as _P  # type: ignore
+
 from fusion.event_bus import (
     AsyncEventBus,
     Event,
@@ -382,8 +390,8 @@ class ControlPlaneRuntime:
             try:
                 from fusion.shinon import ShinonEngine
                 return ShinonEngine(
-                    memory_db=Path("fusion-main/data/shinon_memory.db"),
-                    attitude_db=Path("fusion-main/data/shinon_attitudes.db"),
+                    memory_db=_P.SHINON_MEM,
+                    attitude_db=_P.SHINON_ATTITUDES,
                 )
             except Exception:
                 from fusion.shinon_passthrough import ShinonPassthrough

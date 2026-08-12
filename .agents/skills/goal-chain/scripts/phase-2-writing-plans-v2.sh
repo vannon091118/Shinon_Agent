@@ -53,7 +53,7 @@ Kein strukturiertes Result vorhanden — schließe nur die Gate-Gaps."
     SYNTH_MODE="NONE"
 fi
 
-record_decision "$TID" "EVIL_TWIN_SYNTHESIS" "$SYNTH_MODE" \
+record_decision "$TID" "EVIL_TWIN_SYNTHESIS:writing-plans-v2" "$SYNTH_MODE" \
     "writing-plans-v2 liest verdict='${ET_VERDICT:-?}' aus ${ET_RESULT:-<kein result.json>}" "" "" || true
 
 agent_header "$TID" "Phase 2.1 — Writing Plans V2 (Gap-Schließung)"

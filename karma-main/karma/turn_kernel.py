@@ -132,7 +132,10 @@ def handle_turn(persistence: PersistenceLayer, req: TurnRequest) -> TurnResult:
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
-    from karma.core.evidence import EvidenceStore, Claim, Evidence
+    from karma.core.evidence import (
+        EvidenceStore, Claim, Evidence,
+        ConfidenceResolver, emit_entailment_rejections,
+    )
     evidence_store = EvidenceStore(persistence)
     turn_claim = Claim.create(req.project, f"Turn execution for task: {req.task} completed successfully", domain="turn_execution")
     for r in probe_results:
@@ -146,6 +149,21 @@ def handle_turn(persistence: PersistenceLayer, req: TurnRequest) -> TurnResult:
         turn_claim.evidences.append(ev)
     
     evidence_store.save_claim(turn_claim)
+
+    # Entailment-Gate: Probe-Evidence, die den Claim strukturell NICHT
+    # entailed, wird verworfen. Verdict einmal (rein) berechnen; die
+    # Rejections werden unten in den hash-verketteten Audit-Trail
+    # geschrieben, damit sie in Dashboard/karma-audit.py sichtbar sind —
+    # statt nur im resolve()-Rückgabewert zu verschwinden.
+    #
+    # Erwartung: RUNTIME-Proben (regressions, idempotency) tragen KEINE
+    # metadata-Deklaration (nur evidence_str/details) und sind empirisch
+    # positiv (confidence > 0.5) → sie werden JEDEN Turn als "empirical
+    # positive evidence without declaration" verworfen. Das ist korrekt und
+    # gewollt: Der Turn-Claim ("... completed successfully") ist eine
+    # Meta-Behauptung, die von einzelnen Qualitätsproben strukturell nie
+    # ENTAILED wird — genau diese Lücke soll der Audit-Trail sichtbar machen.
+    turn_verdict = ConfidenceResolver.resolve(turn_claim)
 
     probes_dict = [r.to_dict() for r in probe_results]
 
@@ -165,6 +183,13 @@ def handle_turn(persistence: PersistenceLayer, req: TurnRequest) -> TurnResult:
                 source="turn_kernel",
             ),
             persistence,
+        )
+
+        # Abgelehnte Evidenz (entailment gate) in den Audit-Trail schreiben:
+        # ein Event pro Rejection, mit declared_terms vs claim_terms + reason.
+        emit_entailment_rejections(
+            persistence, req.project, turn_verdict,
+            claim_id=turn_claim.claim_id, correlation_id=req.request_id,
         )
 
         # ─── Experience (unveränderlich) ───────────────────────────────────

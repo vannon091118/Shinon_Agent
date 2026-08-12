@@ -23,8 +23,8 @@
 #     data/
 #       limen/limen.db
 #       karma/karma.db
-#       shinon/memory.db
-#       shinon/attitudes.db      <- (legacy fusion-main frontier)
+#       shinon/memory.db         <- fusion-Schema (personal_facts/patterns/pattern_links)
+#       shinon/attitudes.db      <- fusion-Schema (attitudes/attitude_history)
 #       goal-chain/tid-state.db
 #     logs/
 #     pids/

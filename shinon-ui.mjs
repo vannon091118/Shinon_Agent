@@ -187,6 +187,24 @@ body::after{
 .chat-tool-btn{background:rgba(0,245,212,0.06);border:1px solid var(--border);color:var(--t2);font-family:'Share Tech Mono',monospace;font-size:.62rem;padding:3px 10px;border-radius:5px;cursor:pointer;letter-spacing:.06em;transition:all .2s}
 .chat-tool-btn:hover{color:var(--cyan);border-color:var(--cyan);background:rgba(0,245,212,0.14)}
 .chat-tool-btn.active{color:var(--green);border-color:var(--green);background:rgba(5,255,161,0.1)}
+/* Chat-Modus-Badges (right-aligned in chat-toolbar) */
+.chat-mode-badges{display:flex;gap:6px;align-items:center;margin-left:auto}
+.chat-mode-badge{font-family:'Share Tech Mono',monospace;font-size:.6rem;padding:3px 9px;border:1px solid var(--border-md);border-radius:5px;background:rgba(0,0,0,0.35);color:var(--t2);letter-spacing:.08em;transition:all .25s;cursor:default}
+.chat-mode-badge[data-live="true"]{border-color:var(--green);color:var(--green);background:rgba(5,255,161,0.07)}
+.chat-mode-badge[data-mode="api"]{border-color:var(--magenta);color:var(--magenta);background:rgba(255,0,127,0.06)}
+.chat-mode-badge[data-mode="model"]{border-color:var(--cyan);color:var(--cyan);background:rgba(0,245,212,0.07)}
+.chat-mode-badge[data-mode="offline"]{border-color:var(--t3);color:var(--t3);background:rgba(40,40,40,0.3)}
+.chat-mode-badge:hover{filter:brightness(1.15)}
+.chat-mode-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chat-mode-row-text{flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px}
+.chat-mode-row-text small{color:var(--t3);font-size:.7rem;line-height:1.55}
+.chat-mode-toggle{display:flex;border:1px solid var(--border-md);border-radius:7px;overflow:hidden}
+.chat-mode-toggle button{padding:6px 14px;background:transparent;border:none;color:var(--t2);font-family:'Share Tech Mono',monospace;font-size:.66rem;letter-spacing:.1em;cursor:pointer;transition:all .2s}
+.chat-mode-toggle button.active{background:rgba(5,255,161,0.12);color:var(--green)}
+.chat-mode-toggle button.active[data-mode="api"]{background:rgba(255,0,127,0.12);color:var(--magenta)}
+.chat-mode-status{font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:4px 10px;border:1px solid var(--border-md);border-radius:5px;color:var(--t2);background:rgba(0,0,0,0.3)}
+.chat-mode-status[data-live="true"]{color:var(--green);border-color:var(--green);background:rgba(5,255,161,0.06)}
+.chat-mode-status[data-live="false"]{color:var(--gold);border-color:rgba(255,200,0,0.4);background:rgba(255,200,0,0.06)}
 .chat-send-btn{width:46px;height:46px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--accent2));color:var(--s0);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0;box-shadow:0 0 16px rgba(0,245,212,0.3)}
 .chat-send-btn:hover{box-shadow:0 0 28px rgba(0,245,212,0.5);transform:translateY(-1px) scale(1.04)}
 .chat-send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
@@ -342,6 +360,10 @@ body::after{
         <button class="chat-tool-btn" id="btn-clear-chat" title="Chat leeren">🗑 CLEAR</button>
         <button class="chat-tool-btn" id="btn-pipeline-demo" title="Pipeline Demo">⚡ PIPELINE</button>
         <span class="char-counter" id="char-counter">0</span>
+        <div class="chat-mode-badges">
+          <span class="chat-mode-badge" id="chat-mode-badge" data-mode="local" data-live="true" title="Chat-Modus: lokal (Textbaustein-Pool)">CHAT · lokal</span>
+          <span class="chat-mode-badge" id="quality-layer-badge" data-mode="offline" data-live="false" title="SmolLM2-360M Qualitätslayer">QUALITÄT — aus</span>
+        </div>
       </div>
       <div class="chat-input-row">
         <textarea id="chat-input" rows="1" placeholder="Nachricht an Shinon… (Enter = Senden, Shift+Enter = Zeilenumbruch)" aria-label="Chat-Nachricht"></textarea>
@@ -429,6 +451,32 @@ body::after{
           <button class="theme-btn" id="scanlines-off" onclick="toggleScanlines(false)">AUS</button>
         </div>
       </div>
+    </div>
+    <div class="settings-section">
+      <h3>💬 Chat-Modus</h3>
+      <div class="chat-mode-row">
+        <div class="chat-mode-row-text">
+          <strong>Chat nutzt meine API</strong>
+          <small>Ist dieser Toggle <u>aus</u>, ist Chat 100 % lokal und kostenlos (Textbaustein-Pool). <u>An</u> → Chat läuft über LIMEN und deine API-Keys. Tasks laufen immer über die API.</small>
+        </div>
+        <div class="chat-mode-toggle" id="chat-use-api-toggle">
+          <button type="button" id="chat-use-api-off" data-mode="local" onclick="setChatUseApi(false)">AUS</button>
+          <button type="button" id="chat-use-api-on"  data-mode="api"   onclick="setChatUseApi(true)">AN</button>
+        </div>
+      </div>
+      <div class="settings-row" style="margin-top:10px">
+        <label>API-Keys</label>
+        <span class="chat-mode-status" data-live="false" id="chat-keys-status">— keine —</span>
+      </div>
+      <div class="settings-row" style="margin-top:8px">
+        <label>SmolLM2-360M</label>
+        <span class="chat-mode-status" data-live="false" id="settings-quality-status">— nicht geladen —</span>
+      </div>
+      <div class="settings-row" style="margin-top:8px">
+        <label>Quelle</label>
+        <small style="color:var(--t3);font-size:.62rem">Aktivierung via <code style="color:var(--cyan);font-size:.8em">python model_bootstrap.py --model</code> (opt-in, kein Auto-Download). llama.cpp via <code style="color:var(--cyan);font-size:.8em">python model_bootstrap.py --llama-cli</code>.</small>
+      </div>
+      <div class="settings-toast" id="chat-config-toast"></div>
     </div>
     <div class="settings-section">
       <h3>🎭 Persönlichkeit <small style="color:var(--t3);font-size:.6rem">(Shinon bleibt immer kritisch)</small></h3>
@@ -541,6 +589,13 @@ const state = {
   personality: {skepticism:8, directness:7, helpfulness:4, patience:5, curiosity:6},
   logEntries: [],
   logFilter: 'ALL',
+  // Chat-Modus / Prosa-Qualitätslayer (read from /api/chat/config + /api/prosa/status)
+  chat: {
+    use_api: false,                 // Toggle in Settings: chat -> LIMEN path
+    prosa_layer: null,              // /api/prosa/status (model + llama-cli presence)
+    last_prosa_source: 'skip',      // per-turn: 'model' / 'skip' / ''
+    last_intent: 'chat',            // per-turn intent from /api/chat
+  },
 };
 
 // ════ THEME SYSTEM ══════════════════════════════════════════════════════
@@ -769,6 +824,15 @@ async function sendMessage() {
     await new Promise(function(r){ setTimeout(r, 400); });
     setMood('speak');
     addMessage('shinon', data.reply || '(keine Antwort — ist LIMEN gestartet?)', data.model);
+    // Per-turn update of badges: prosa_source drives Qualitätslayer glow;
+    // intent reflects the classifier verdict (chat / task / ambiguous).
+    state.chat.last_prosa_source = (data && data.prosa_source) || state.chat.last_prosa_source || 'skip';
+    state.chat.last_intent       = (data && data.intent)       || state.chat.last_intent       || 'chat';
+    if (data && typeof data.source === 'string' && data.source.startsWith('fusion')) {
+      // local/lokal or fusion response: anything NOT 'limen' / 'shinon-offline' is local.
+      // limen path means user opted in (use_api=true) — update state from response.
+    }
+    updateChatModeBadges({ prosa_source: state.chat.last_prosa_source });
     moodTimer = setTimeout(function(){ setMood('idle'); }, 3200);
   } catch(e) {
     removeTyping();
@@ -1090,6 +1154,7 @@ async function loadSettings() {
     renderPersonalitySliders();
   } catch(e) { renderPersonalitySliders(); }
   loadKeys();
+  loadChatConfig();
 }
 
 function renderPersonalitySliders() {
@@ -1126,7 +1191,149 @@ async function loadKeys() {
     const hasNoKeys = state.keys.length === 0;
     const badge = document.getElementById('keys-badge');
     if (badge) badge.classList.toggle('show', hasNoKeys);
+    // Reflect into Chat-Modus key status pill.
+    const ks = document.getElementById('chat-keys-status');
+    if (ks) {
+      const live = state.keys.length > 0;
+      ks.textContent = live ? (state.keys.length + ' hinterlegt') : '— keine —';
+      ks.dataset.live = String(live);
+    }
   } catch(e) {}
+}
+
+// ─── Chat-Modus / SmolLM2-Status ───────────────────────────────────────
+// /api/chat/config (use_api toggle) and /api/prosa/status (qualitätslayer).
+// Loaded on demand from Settings; polled periodically so badges stay live.
+
+async function loadChatConfig() {
+  try {
+    const res = await fetch('/api/chat/config');
+    const data = await res.json();
+    if (typeof data.use_api === 'boolean') state.chat.use_api = data.use_api;
+  } catch(e) {}
+  await refreshProseStatus();
+  renderChatModeUi();
+}
+
+async function setChatUseApi(useApi) {
+  try {
+    const res = await fetch('/api/chat/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ use_api: !!useApi }),
+    });
+    const data = await res.json();
+    if (data && typeof data.use_api === 'boolean') {
+      state.chat.use_api = data.use_api;
+      renderChatModeUi();
+      showChatConfigToast(useApi ? 'Chat nutzt jetzt deine API.'
+                                 : 'Chat ist jetzt lokal (kostenlos).');
+    } else {
+      showChatConfigToast('⚠️ konnte Konfig nicht speichern.', true);
+    }
+  } catch(e) {
+    showChatConfigToast('⚠️ Server nicht erreichbar.', true);
+  }
+}
+
+async function refreshProseStatus() {
+  try {
+    const res = await fetch('/api/prosa/status');
+    const data = await res.json();
+    // /api/prosa/status returns:
+    //   { quality_layer_active: bool,
+    //     model:  { present, path, size_mb },
+    //     llama_cli: { present, path|null } }
+    const mp = !!(data.model && data.model.present);
+    const lp = !!(data.llama_cli && data.llama_cli.present);
+    state.chat.prosa_layer = {
+      available: !!(data.quality_layer_active && mp && lp),
+      model_present: mp,
+      llama_cli_present: lp,
+      model_name: (data.model && data.model.path) ? data.model.path.split('/').pop() : '',
+    };
+  } catch(e) {
+    state.chat.prosa_layer = {available:false, model_present:false, llama_cli_present:false, model_name:''};
+  }
+}
+
+function renderChatModeUi() {
+  // 1) Settings-page toggle
+  const offBtn = document.getElementById('chat-use-api-off');
+  const onBtn  = document.getElementById('chat-use-api-on');
+  if (offBtn && onBtn) {
+    offBtn.classList.toggle('active', !state.chat.use_api);
+    onBtn.classList.toggle('active',  state.chat.use_api);
+  }
+  // 2) Settings-page quality-layer status pill
+  const qls = document.getElementById('settings-quality-status');
+  if (qls) {
+    if (state.chat.prosa_layer && state.chat.prosa_layer.available) {
+      qls.textContent = '✅ ' + (state.chat.prosa_layer.model_name || 'SmolLM2-360M');
+      qls.dataset.live = 'true';
+    } else if (state.chat.prosa_layer && state.chat.prosa_layer.model_present) {
+      qls.textContent = '⏳ Modell geladen, llama-cli fehlt';
+      qls.dataset.live = 'false';
+    } else if (state.chat.prosa_layer && state.chat.prosa_layer.llama_cli_present) {
+      qls.textContent = '⏳ llama-cli vorhanden, Modell fehlt';
+      qls.dataset.live = 'false';
+    } else {
+      qls.textContent = '— nicht geladen —';
+      qls.dataset.live = 'false';
+    }
+  }
+  // 3) Header badges
+  updateChatModeBadges();
+}
+
+/** Update the two badges in the chat-toolbar (Mode + Qualitätslayer). */
+function updateChatModeBadges(opts) {
+  const modeEl = document.getElementById('chat-mode-badge');
+  const qualEl = document.getElementById('quality-layer-badge');
+  if (!modeEl || !qualEl) return;
+
+  // 1) Mode badge: 'local' (Textbaustein) | 'api' (LIMEN) | 'offline' (server down)
+  if (!state.serverOnline) {
+    modeEl.dataset.mode = 'offline';
+    modeEl.dataset.live = 'false';
+    modeEl.textContent = 'CHAT · offline';
+  } else if (state.chat.use_api) {
+    modeEl.dataset.mode = 'api';
+    modeEl.dataset.live = 'true';
+    modeEl.textContent = 'CHAT · API';
+  } else {
+    modeEl.dataset.mode = 'local';
+    modeEl.dataset.live = 'true';
+    modeEl.textContent = 'CHAT · lokal';
+  }
+
+  // 2) Quality-layer badge: 'model' (active for this turn) | 'idle' (available but not used) |
+  //                          'offline' (not loaded)
+  const pros = (opts && opts.prosa_source) || state.chat.last_prosa_source || 'skip';
+  const avail = state.chat.prosa_layer && state.chat.prosa_layer.available;
+  if (!avail) {
+    qualEl.dataset.mode = 'offline';
+    qualEl.dataset.live = 'false';
+    qualEl.textContent = state.chat.prosa_layer && state.chat.prosa_layer.model_present
+      ? 'QUALITÄT — llama fehlt'
+      : 'QUALITÄT — aus';
+  } else if (pros === 'model') {
+    qualEl.dataset.mode = 'model';
+    qualEl.dataset.live = 'true';
+    qualEl.textContent = 'QUALITÄT · SmolLM2';
+  } else {
+    qualEl.dataset.mode = 'idle';
+    qualEl.dataset.live = 'true';
+    qualEl.textContent = 'QUALITÄT · bereit';
+  }
+}
+
+function showChatConfigToast(msg, isError) {
+  const el = document.getElementById('chat-config-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+  setTimeout(function(){ try { el.textContent = ''; } catch(_){} }, 4000);
 }
 
 function renderKeysList() {
@@ -1272,6 +1479,9 @@ async function checkConnection() {
 checkConnection();
 setInterval(checkConnection, 15000);
 
+// Chat-Modus / Prosa-Status: re-poll every 30s so toggles + model state stay fresh.
+setInterval(function(){ loadChatConfig(); }, 30000);
+
 // ════ INIT ════════════════════════════════════════════════════════════
 (function init(){
   // Restore theme
@@ -1280,8 +1490,9 @@ setInterval(checkConnection, 15000);
   const savedScanlines = localStorage.getItem('shinon-scanlines');
   if (savedScanlines === '0') toggleScanlines(false);
 
-  // Load keys badge
+  // Load keys badge + Chat-Modus config (drives badges).
   loadKeys();
+  loadChatConfig();
 
   // Welcome log
   addLog('INFO', 'Shinon Cyberdeck UI v3.0 initialisiert.');
@@ -1292,6 +1503,9 @@ setInterval(checkConnection, 15000);
 
   // First ping
   setTimeout(checkConnection, 500);
+
+  // Initial paint of chat-mode badges (independent of loadChatConfig).
+  try { updateChatModeBadges({ prosa_source: 'skip' }); } catch(_){}
 })();
 </script>
 </body>

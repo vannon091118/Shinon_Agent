@@ -83,6 +83,73 @@ def _is_non_task_phrase(lower: str) -> bool:
     return any(p in lower for p in _NON_TASK_PHRASES)
 
 
+# ─── Tech-/Code-Indikatoren ───────────────────────────────────────────
+# Weak-Verb-Fragmente ("fix dinner", "make coffee", "write a poem") sind
+# KEINE Tasks, es sei denn ihr Objekt trägt mindestens EIN Tech-/Code-
+# Signal. Sonst → AMBIGUOUS (Rückfrage). Das ist der API-Schutz: sonst
+# verbrennt jeder Smalltalk einen Key an LIMEN. Bilingual (EN/DE),
+# bare lowercase tokens.
+_TECH_WORDS = frozenset({
+    # General / dev nouns
+    "api", "apis", "endpoint", "endpunkt", "route", "router", "middleware",
+    "controller", "model", "modell", "view", "ansicht", "template", "vorlage",
+    "schema", "db", "database", "datenbank", "sql", "query", "abfrage",
+    "migration", "migrate", "migrier", "cache", "queue", "warteschlange",
+    "worker", "job", "flow", "parser", "lexer", "ast", "engine", "runtime",
+    # Web / UI
+    "app", "application", "anwendung", "web", "server", "client", "frontend",
+    "backend", "page", "seite", "component", "komponente", "element",
+    "widget", "css", "html", "json", "yaml", "toml", "xml", "svg",
+    # Code structure
+    "code", "codebase", "codebasis", "function", "funktion", "func",
+    "method", "methode", "class", "klasse", "module", "modul", "pkg",
+    "package", "paket", "lib", "library", "bibliothek", "framework",
+    "dependency", "dep", "deps", "abhängigkeit", "import", "deprecated",
+    # Tooling
+    "tool", "werkzeug", "script", "skript", "file", "datei", "dir",
+    "directory", "verzeichnis", "folder", "ordner", "path", "pfad",
+    "src", "config", "configuration", "konfiguration", "einstellung",
+    "setting", "env", "environment", "umgebung",
+    # Build/deploy/CI
+    "build", "compile", "kompilier", "kompiliere", "deploy", "release",
+    "ship", "install", "installier", "installiere", "uninstall", "setup",
+    "einrichten", "teardown", "docker", "container", "compose", "pipeline",
+    "ci", "cd", "cron", "schedule",
+    # Test/QA
+    "test", "tests", "spec", "mock", "stub", "fixture", "suite", "coverage",
+    "abdeckung", "lint", "format", "smoke", "regression", "integration",
+    "e2e",
+    # Docs/git
+    "doc", "docs", "doku", "dokumentation", "documentation", "readme",
+    "changelog", "license", "lizenz", "commit", "branch", "merge",
+    "zusammenführen", "rebase", "push", "pull", "git", "pr",
+    # Runtime/errors/perf
+    "log", "logs", "logger", "protokoll", "metric", "metrics", "monitor",
+    "alert", "error", "errors", "fehler", "exception", "exceptions",
+    "ausnahme", "fail", "failure", "crash", "absturz", "bug", "bugs",
+    "defect", "issue", "ticket", "fix", "patch", "hotfix",
+    "refactor", "refaktoriere", "rewrite", "optimize", "optimier",
+    "optimiere", "perf", "performance", "leistung", "memory", "leak",
+    "leck", "race", "deadlock", "thread", "async", "asynchron", "promise",
+    "callback", "event", "ereignis", "hook", "handler",
+    # Auth/security
+    "auth", "login", "logout", "anmeldung", "abmeldung", "session",
+    "sitzung", "token", "jwt", "oauth", "sso", "role", "permission",
+    "user", "benutzer", "password", "kennwort", "hash", "encrypt",
+    "verschlüsseln", "decrypt", "entschlüsseln", "ssl", "tls", "https",
+    "cert", "zertifikat", "proxy", "balancer",
+    # Shinon-specific / governance
+    "probe", "gate", "evidence", "beweis", "claim", "anspruch", "fact",
+    "tatsache", "knowledge", "wissen", "persona", "attitude", "haltung",
+    "mood", "stimmung", "tone", "prompt", "llm", "agent", "skill",
+    "fähigkeit", "integration", "aufgabe",
+})
+
+
+def _has_tech_word(tokens: list[str]) -> bool:
+    return any(t.strip(".!?,;:\"").lower() in _TECH_WORDS for t in tokens)
+
+
 def strip_task_prefix(text: str) -> str:
     """Für /goal-/task-Präfixe: den eigentlichen Inhalt zurückgeben."""
     t = text.strip()
@@ -130,6 +197,8 @@ _CHAT_ACK = (
     "danke", "ok", "okay", "cool", "nice", "gut", "perfekt", "top", "super",
     "verstanden", "passt", "alles klar", "macht sinn", "ja", "nein",
     "weiß nicht", "weiss nicht", "vielleicht", "egal", "nichts", "nix",
+    # bilingual acks (small additions for parity)
+    "thanks", "ty", "merci", "thx", "danke schön", "danke sehr",
 )
 
 
@@ -187,8 +256,15 @@ def classify_intent(text: str) -> str:
     if first in TASK_VERBS:
         if first in STRONG_TASK_VERBS:
             return TASK
-        # Weak-Verb: braucht Objekt + darf keine Nicht-Task-Phrase sein.
-        if len(words) - idx >= 2 and not _is_non_task_phrase(lower):
+        # Weak-Verb: braucht Objekt + darf KEINE Nicht-Task-Phrase sein +
+        # muss ein Tech-/Code-Signal im Objekt tragen.
+        # Fragment-Schutz: "fix dinner" / "make coffee" / "write a poem"
+        # → KEIN Task (kostet API-Usage), sondern AMBIGUOUS (Rückfrage).
+        # Explizite Carve-outs ("make sense") bleiben via _NON_TASK_PHRASES.
+        tail = [w for w in words[idx + 1:] if w.strip(".!?,;:")]
+        if (len(tail) >= 1
+                and not _is_non_task_phrase(lower)
+                and _has_tech_word(tail)):
             return TASK
 
     # 3. Chat signals

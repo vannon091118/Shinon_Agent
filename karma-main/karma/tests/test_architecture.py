@@ -422,6 +422,272 @@ class TestEvidenceArchitecture:
         assert scope_deviation("abc def", "xyz qrs") == 1.0
 
 
+
+
+class TestEntailmentGateArchitecture:
+    """Architectural invariants for the Entailment Gate.
+
+    Background: the resolver refuses to vote positive on any evidence that
+    does not ENTAIL the claim. Without this gate the system becomes a
+    "digital priest" — 'there is a test, therefore it must be true' —
+    laundering low-quality, off-topic, or self-attesting evidence into
+    CONFIRMED/SUPPORTED verdicts. These cases pin the gate so it
+    cannot regress into a generic confidence aggregator.
+    """
+
+    def _claim(self, statement: str, project: str = "rt"):
+        from karma.core.evidence import Claim
+        return Claim.create(project=project, statement=statement, domain="test")
+
+
+
+class TestEntailmentGateArchitecture:
+    """Architectural invariants for the Entailment Gate.
+    Pin the gate so the resolver refuses to vote positive on any
+    evidence that does not ENTAIL the claim.
+    """
+
+    def _claim(self, statement: str, project: str = "rt"):
+        from karma.core.evidence import Claim
+        return Claim.create(project=project, statement=statement, domain="test")
+
+
+
+class TestEntailmentGateArchitecture:
+    """Architectural invariants for the Entailment Gate.
+
+    Background: the resolver refuses to vote positive on any evidence that
+    does not ENTAIL the claim. Without this gate the system becomes a
+    "digital priest" — 'there is a test, therefore it must be true' —
+    laundering low-quality, off-topic, or self-attesting evidence into
+    CONFIRMED/SUPPORTED verdicts. These five cases pin the gate so it
+    cannot regress into a generic confidence aggregator.
+    """
+
+    def _claim(self, statement: str, project: str = "rt"):
+        from karma.core.evidence import Claim
+        return Claim.create(project=project, statement=statement, domain="test")
+
+    def test_entailment_gate_blocks_laundering(self):
+        """Evidence whose declaration shares a SUBJECT term but not the
+        HEAD/predicate term with the claim MUST NOT entail. Classic
+        RT-02 laundering attempt: a passing test that merely checks
+        'X exists' cannot confirm 'X is deterministic'.
+
+        Lock-in invariant: entails()==False even though shared > 0
+        (subject overlap), and the resolver's REASON must explicitly
+        name 'head term' so a future regression cannot silently
+        downgrade 'subject-only' to 'covered'."""
+        from karma.core.evidence import (
+            Evidence, EvidenceType, entailment_report, ConfidenceResolver,
+        )
+        claim = self._claim("Component X is deterministic")
+        ev = Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.TEST,
+            source="internal_test",
+            confidence=0.95,
+            metadata={"test_name": "test_component_x_exists", "result": "PASS"},
+        )
+
+        claim.evidences.append(ev)
+        report = entailment_report(ev, claim)
+        assert report["entails"] is False, (
+            f"laundering attempt: 'exists' must NOT entail 'is deterministic', "
+            f"got entails={report['entails']!r}"
+        )
+        # Reason must mention head term — future regressions that drop the
+        # predicate guard will change this string and be detected.
+        assert "head term" in report["reason"], (
+            f"reason must name 'head term' to be auditable, got {report['reason']!r}"
+        )
+
+        verdict = ConfidenceResolver.resolve(claim)
+        # Resolver must surface entailment_rejected so RT oracles can see
+        # what was silently dropped.
+        assert verdict["status"] not in ("supported", "confirmed"), (
+            f"laundering must NOT produce truth-verdict, got {verdict['status']!r}"
+        )
+        assert verdict.get("entailment_rejected"), (
+            "rejected evidence must be logged in entailment_rejected[]"
+        )
+
+    # ── Case 2: bypass without declaration ──────────────────────────
+
+    def test_entailment_gate_blocks_bypass_without_declaration(self):
+        """Empirical positive evidence (TEST/RUNTIME/REPLAY with high
+        confidence) WITHOUT a metadata declaration MUST NOT entail.
+
+        The alternative — letting high-confidence empirical evidence in
+        just because confidence is high — would let any green test
+        with a self-attesting name pass through as 'covered' even when
+        it doesn't talk about the claim. This is the most common bypass
+        attempt: drop the declaration field, hope the resolver
+        ignores the absence."""
+        from karma.core.evidence import (
+            Evidence, EvidenceType, entailment_report, ConfidenceResolver,
+        )
+        claim = self._claim("The build pipeline prints version on every run")
+        ev = Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.RUNTIME,
+            source="integration_test",
+            confidence=0.99,  # high confidence — bypass attempt
+            metadata={"result": "PASS"},
+            # No declaration keys at all — bypass attempt.
+            # "probe_name" / "name" / "description" would declare a subject;
+            # omitting them strips the verifier of any audit trail for
+            # what it covers. (We keep "result" as a non-declaration field
+            # so the evidence still has a payload — just not a verifiable one.)
+        )
+
+        claim.evidences.append(ev)
+        report = entailment_report(ev, claim)
+        assert report["entails"] is False, (
+            f"positive empirical evidence without declaration must NOT entail, "
+            f"got entails={report['entails']!r}"
+        )
+        # Reason must be explicit about empirical-positive-without-declaration
+        # so audit trail can't confuse this with the lenient-source case.
+        assert "empirical positive evidence without declaration" in report["reason"], (
+            f"reason must name 'empirical positive evidence without declaration' "
+            f"to be auditable, got {report['reason']!r}"
+        )
+
+        verdict = ConfidenceResolver.resolve(claim)
+        assert verdict["status"] != "supported", (
+            f"bypass must NOT produce SUPPORTED, got {verdict['status']!r}"
+        )
+        assert verdict["status"] != "confirmed", (
+            f"bypass must NOT produce CONFIRMED, got {verdict['status']!r}"
+        )
+
+    # ── Case 2b: lenient-source-without-declaration is allowed ───────
+
+    def test_entailment_gate_lenient_source_without_declaration_is_allowed(self):
+        """SOURCE / HUMAN evidence without declaration uses the
+        LENIENT pass-through (entails=True). Empirical evidence does
+        NOT. This asymmetry is intentional — SOURCE without metadata
+        cannot be audited, but is treated as positive signal because
+        stripping source attestation is harder than skipping test
+        metadata.
+
+        Lock-in: the asymmetry is preserved. If someone removes the
+        asymmetric handling, SRC + high confidence test both go to
+        either branch — that's a regression."""
+        from karma.core.evidence import (
+            Evidence, EvidenceType, entailment_report,
+        )
+        # Pin of the asymmetry: the lenient path applies ONLY to
+        # SOURCE / HUMAN (and to empirical-NEGATIVE evidence). If a
+        # refactor removes this branch, the test below must fail.
+        claim = self._claim("System has documented retry strategy")
+        ev = Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.SOURCE,
+            source="architecture_doc",
+            confidence=0.6,
+            # No declaration keys.
+        )
+
+        claim.evidences.append(ev)
+        report = entailment_report(ev, claim)
+        assert report["entails"] is True, (
+            f"SOURCE without declaration MUST take the lenient path "
+            f"(entails=True), got entails={report['entails']!r} reason={report['reason']!r}"
+        )
+        assert "lenient" in report["reason"].lower(), (
+            f"reason must mention 'lenient' so the asymmetric path is auditable, "
+            f"got {report['reason']!r}"
+        )
+
+    # ── Case 3: legitimate case ──────────────────────────────────────
+
+    def test_entailment_gate_accepts_legitimate_match(self):
+        """Evidence whose declaration matches ALL content-terms of the
+        claim (or at least the head term) MUST entail. This is the
+        positive control: without a working green path, every test
+        might lock into 'always False' and silently block legitimate
+        signals."""
+        from karma.core.evidence import (
+            Evidence, EvidenceType, entailment_report, ConfidenceResolver,
+        )
+        claim = self._claim("Component X is deterministic")
+        # Declaration shares ALL three claim terms: component, x, deterministic.
+        ev = Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.TEST,
+            source="internal_test",
+            confidence=0.9,
+            metadata={"test_name": "test_component_x_deterministic", "result": "PASS"},
+        )
+
+        claim.evidences.append(ev)
+        report = entailment_report(ev, claim)
+        assert report["entails"] is True, (
+            f"legitimate declaration must entail, got entails={report['entails']!r} "
+            f"reason={report['reason']!r} shared={report['shared']!r}"
+        )
+        assert report["reason"] == "covered", (
+            f"legitimate case must report reason='covered', got {report['reason']!r}"
+        )
+
+        verdict = ConfidenceResolver.resolve(claim)
+        # TEST limit is 0.7 → mapped overall confidence at least 0.7 → CONFIRMED.
+        assert verdict["status"] == "confirmed", (
+            f"legitimate entailment must CONFIRM, got {verdict['status']!r}"
+        )
+        assert verdict.get("entailment_rejected") == [], (
+            f"legitimate evidence must NOT be in entailment_rejected, "
+            f"got {verdict.get('entailment_rejected')!r}"
+        )
+
+    # ── Case 4: disjunction ──────────────────────────────────────────
+
+    def test_entailment_gate_rejects_disjoint(self):
+        """Evidence whose declaration shares ZERO content-terms with the
+        claim MUST NOT entail. This is the strongest rejection path:
+        'disjoint (no shared terms)'. Without it, two unrelated areas
+        could accidentally cross-pollute verdicts just because they
+        both happen to be tests."""
+        from karma.core.evidence import (
+            Evidence, EvidenceType, entailment_report, ConfidenceResolver,
+        )
+        claim = self._claim("Authentication via OAuth works in production")
+        # Declaration has zero overlap with 'authentication', 'oauth', 'works',
+        # 'production' — talks entirely about an unrelated component.
+        ev = Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.TEST,
+            source="internal_test",
+            confidence=0.9,
+            metadata={"test_name": "test_database_connection_retry", "result": "PASS"},
+        )
+
+        claim.evidences.append(ev)
+        report = entailment_report(ev, claim)
+        assert report["entails"] is False, (
+            f"disjoint evidence must NOT entail, got entails={report['entails']!r}"
+        )
+        # Reason must explicitly name 'disjoint' so the rejection's strength
+        # is auditable — strong rejections and weak rejections must NOT
+        # collapse into a single bucket.
+        assert report["reason"] == "disjoint (no shared terms)", (
+            f"disjoint reason must be exact so strong-vs-weak rejections don't "
+            f"collapse into a single bucket, got {report['reason']!r}"
+        )
+        assert report["shared"] == [], (
+            f"disjoint evidence must report empty shared list, "
+            f"got {report['shared']!r}"
+        )
+
+        verdict = ConfidenceResolver.resolve(claim)
+        assert verdict["status"] == "unverified", (
+            f"disjoint evidence plus no other support must be unverified, "
+            f"got {verdict['status']!r}"
+        )
+
+
 class TestKnowledgeGraphArchitecture:
 
     """Architectural invariants for Knowledge Graph."""

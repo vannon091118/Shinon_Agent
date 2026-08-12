@@ -63,28 +63,48 @@ def run(target) -> List[Observation]:
         severity=Severity.FAIL,
     ))
 
-    # c) Halbwahrheit → Scope-Abweichung begrenzt; über Budget → User fragen
-    #    Ein Test, der NUR "exists" verifiziert, entailed den Claim nicht →
-    #    rework_scope_deviation = 1.0 (nichts gedeckt) → requires_user_approval.
+    # c) plausible Halbwahrheit → QUALIFIED + benannte fehlende Evidenz.
+    #    Statt "supported" (Lügenpresse) oder nur "unverified" (weiß nicht):
+    #    QUALIFIED markiert "Evidenz ENTAILT (head-term geteilt), aber
+    #    weitere Claim-Terme sind nicht abgedeckt". Entailment braucht den
+    #    Head-Term. Hier teilt die Evidenz den head-Term "database" (also
+    #    entailed), aber "transactional" und "acid" sind nicht abgedeckt
+    #    → Coverage-Lücke muss explizit benannt werden.
     verdict_c = target.resolve_claim(
-        "SQLite supports concurrent writes.",
+        "PostgreSQL is a transactional ACID database.",
         [{
-            "type": "test",
-            "source": "internal_test",
-            "confidence": 0.9,
-            "metadata": {"test_name": "test_component_exists", "result": "PASS"},
+            "type": "source",
+            "source": "documentation",
+            "confidence": 0.85,
+            "metadata": {"verifies": "PostgreSQL is an open-source database"},
         }],
     )
-    # Entailment-Gate dropt das irrelevante Evidence → Claim bleibt unverified,
-    # aber NIE supported/confirmed. Halbwahrheit wird nicht als wahr verkauft.
     status_c = verdict_c.get("status")
-    not_laundered = status_c not in ("supported", "confirmed")
+    missing = verdict_c.get("missing_evidence") or []
+    cov = verdict_c.get("coverage_ratio")
+    has_named_coverage_gap = (
+        status_c == "qualified"
+        and isinstance(missing, list)
+        and len(missing) >= 1
+        # Coverage-Lücke MUSS konkret benannt sein — die zwei Terme
+        # "transactional" und "acid" sind in "open-source database"
+        # definitiv nicht enthalten, also gehören sie in missing_evidence.
+        and ("transactional" in missing or "acid" in missing)
+        # Coverage muss unter 1.0 sein (sonst wäre es nicht halb, sondern
+        # vollständig abgedeckt).
+        and isinstance(cov, float) and cov < 1.0
+    )
     obs.append(Observation(
         attack_id="RT-01", name="False Claim Injection",
-        check="c: Halbwahrheit wird nicht als wahr verkauft (nicht supported/confirmed)",
-        observed=status_c,
-        expected="not in {supported, confirmed}",
-        passed=not_laundered,
+        check="c: Halbwahrheit → QUALIFIED + benannte fehlende Evidenz (kein supported/unverified)",
+        observed={
+            "status": status_c,
+            "missing_evidence": missing,
+            "coverage_ratio": cov,
+        },
+        expected="status=qualified, missing_evidence enthält 'transactional' "
+                 "oder 'acid', coverage_ratio < 1.0",
+        passed=has_named_coverage_gap,
         severity=Severity.FAIL,
     ))
 

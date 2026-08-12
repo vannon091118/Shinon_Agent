@@ -105,6 +105,11 @@ test_*.py
 !karma-main/karma/tests/test_evidence_entailment.py
 !karma-main/karma/tests/test_knowledge_graph_evidence.py
 !tests/test_shinon_engine_annotation_only.py
+!tests/test_chat_router_intent.py
+!tests/test_shinon_db_unification.py
+!tests/test_chat_prosa_routing.py
+!tests/test_cli_task_hint_recognizer.mjs
+!tests/test_evil_twin_helpers_regression.py
 !redteam/attacks/rt05_gate_skipping.py
 !.agents/skills/goal-chain/scripts/test-rt05-gate-skipping.sh
 test_*.json

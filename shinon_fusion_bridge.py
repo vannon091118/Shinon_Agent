@@ -18,6 +18,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -29,7 +31,13 @@ sys.path.insert(0, str(_HERE / "fusion-main"))
 sys.path.insert(0, str(_HERE / "karma-main"))
 sys.path.insert(0, str(_HERE / "limen-main" / "src"))
 
-# ── Logging → stderr only (stdout is JSON channel) ──────────────────────
+# ── Zentrale SHINON_HOME-Pfade (siehe paths.py) ───────────────────────
+# ShinonEngine liest/schreibt die fusion-DBs unter $SHINON_HOME statt der
+# alten fusion-main/data/*-Pfade.  Dadurch sind sie einheitlich unter
+# ~/.shinon/data/shinon/{memory.db, attitudes.db} zentralisiert.
+import paths as P  # noqa: E402
+
+# ── Logging → stderr only (stdout ist JSON channel) ─────────────────
 logging.basicConfig(
     stream=sys.stderr,
     level=logging.WARNING,
@@ -119,6 +127,137 @@ def _extract_model(shinon_output: object) -> str:
     return str(m) if m else "fusion"
 
 
+# Hard-coded chat-path timeout (seconds).  Lower than the Web-UI
+# /api/prosa default (120s) because chat is interactive: a slow CPU
+# must never block the user.  Overridable via SHINON_CHAT_PROSA_TIMEOUT.
+_DEFAULT_CHAT_PROSA_TIMEOUT = 8.0
+
+
+def _resolve_chat_language(message: str) -> str:
+    """Choose ``de`` / ``en`` for the NarrativeSpec.
+
+    Deterministic heuristic: if the message contains common English
+    stopwords ('the', 'is', 'are', 'you', 'can you') AND fewer than
+    the number of German ones ('der', 'die', 'das', 'ist', 'nicht'),
+    treat it as English.  Otherwise default to 'de' (Shinon is
+    German-first).
+    """
+    text = (message or "").lower()
+    if not text.strip():
+        return "de"
+    padded = f" {text} "
+    en_signals = sum(1 for w in (" the ", " is ", " are ", " you ", " i ",
+                                 "can you")
+                     if w in padded)
+    de_signals = sum(1 for w in (" der ", " die ", " das ", " ist ",
+                                 " nicht ", " ich ", " kannst", " du ")
+                     if w in padded)
+    return "en" if en_signals > de_signals else "de"
+
+
+def _resolve_chat_timeout() -> float:
+    """Read SHINON_CHAT_PROSA_TIMEOUT, fall back to default."""
+    raw = os.environ.get("SHINON_CHAT_PROSA_TIMEOUT", "").strip()
+    if not raw:
+        return _DEFAULT_CHAT_PROSA_TIMEOUT
+    try:
+        value = float(raw)
+        if value > 0:
+            return value
+    except ValueError:
+        pass
+    return _DEFAULT_CHAT_PROSA_TIMEOUT
+
+
+def _chat_reply_spec(reply_text: str, *, message: str, mood: str):
+    """Build a NarrativeSpec from chat context (testable in isolation)."""
+    from fusion.shinon.shinon_prosa import NarrativeSpec, normalize_tone
+    return NarrativeSpec(
+        task="CHAT_REPLY",
+        tone=normalize_tone(mood or "neutral"),
+        max_sentences=2,
+        # No ``user_fact``: the raw user message invites the model to
+        # parrot it.  We carry the deterministic textbaustein reply in
+        # ``extra`` for context, and let the model write its own prose.
+        user_fact=None,
+        system_state=None,
+        allowed_actions=(),
+        language=_resolve_chat_language(message),
+        extra=(
+            ("chat_reply", (reply_text or "").strip()[:240] or "-"),
+            ("intent", "chat"),
+        ),
+    )
+
+
+def _route_chat_through_prosa(
+    reply_text: str, *, message: str, mood: str,
+    timeout=None,
+) -> tuple:
+    """Reroute a deterministic chat reply through the Prosa engine.
+
+    Returns ``(final_text, prosa_source)`` where ``prosa_source`` is one of:
+
+        * ``"model"``   -> SmolLM2 produced new prose for this turn.
+        * ``"skipped"`` -> Model / llama-cli not available, render()
+                            raised, or model produced empty text.  We
+                            keep the original textbaustein reply
+                            unchanged; chat path stays 100 % deterministic.
+
+    Note: ``source="fallback"`` from prose-side is *not* promoted to a
+    distinct prosa_source here.  If the model returns empty / fallback,
+    we keep the original textbaustein reply -> silently swapping to
+    ``build_fallback(spec)`` would change user-visible chat output
+    (different textbaustein pool).  The user explicitly required:
+    "Fallback bleibt der Textbaustein-Pool".
+
+    Hard timeout keeps the chat responsive: 8s default (overridable
+    via ``SHINON_CHAT_PROSA_TIMEOUT`` env var).  Long enough for the
+    360M model on a warm CPU; short enough to not block chat on cold start.
+    """
+    timeout = timeout if timeout is not None else _resolve_chat_timeout()
+    try:
+        from model_bootstrap import resolve_model_path, resolve_llama_cli
+    except Exception as exc:  # model_bootstrap missing on exotic installs
+        log.debug("model_bootstrap nicht importierbar: %s", exc)
+        return reply_text, "skipped"
+
+    try:
+        model_path = resolve_model_path()
+        model_present = bool(model_path) and model_path.exists()
+        llama_cli = resolve_llama_cli()
+        llama_present = bool(llama_cli) and Path(str(llama_cli)).exists()
+        if not (model_present and llama_present):
+            return reply_text, "skipped"
+    except (OSError, RuntimeError, ValueError) as exc:
+        log.debug("model/llama-cli resolve schlug fehl: %s", exc)
+        return reply_text, "skipped"
+
+    try:
+        from fusion.shinon.shinon_prosa import render
+        spec = _chat_reply_spec(reply_text, message=message, mood=mood)
+    except (ImportError, TypeError, ValueError) as exc:
+        log.warning("Prosa-Engine nicht importierbar/ungueltige Spec: %s", exc)
+        return reply_text, "skipped"
+
+    try:
+        rendered = render(
+            spec,
+            model_path=str(model_path),
+            llama_cli=str(llama_cli),
+            timeout=timeout,
+        )
+    except (subprocess.TimeoutExpired, OSError, RuntimeError, ValueError) as exc:
+        log.warning(
+            "Prosa-Render schlug fehl (%s) - Textbaustein-Antwort.", exc,
+        )
+        return reply_text, "skipped"
+
+    if rendered.source == "model" and rendered.text:
+        return rendered.text, "model"
+    # Empty output OR explicit prosa fallback -> original textbaustein wins.
+    return reply_text, "skipped"
+
 # ── Chat path (default — no API, deterministic) ────────────────────────
 
 
@@ -137,11 +276,12 @@ async def _run_chat(message: str, session_id: str, history: list, intent: str) -
     try:
         # Gleiche Character-Layer-DBs wie der Task-Pfad (fusion-Schema:
         # personal_facts mit session_id/zone, attitudes mit user_id/dimension).
-        # Die zentrale ~/.shinon/data/shinon/memory.db hat ein Legacy-
-        # key/value-Schema, das ShinonEngine NICHT bedienen kann.
+        # Zentral: ShinonEngine liest/schreibt unter $SHINON_HOME (siehe
+        # fuse-schema in fusion-main/fusion/shinon). Migration (install.py /
+        # fusion.shinon.migrate) befüllt dieselbe DB von Legacy + fusion-main.
         engine = ShinonEngine(
-            memory_db=_HERE / "fusion-main" / "data" / "shinon_memory.db",
-            attitude_db=_HERE / "fusion-main" / "data" / "shinon_attitudes.db",
+            memory_db=P.SHINON_MEM,
+            attitude_db=P.SHINON_ATTITUDES,
         )
         output = engine.process(ShinonInput(
             user_text=message,
@@ -169,10 +309,20 @@ async def _run_chat(message: str, session_id: str, history: list, intent: str) -
 
     mood = character_context.get("emotional_state") or "neutral"
     reply = clarify_reply() if intent == "ambiguous" else chat_reply(message, mood=mood)
+    # Optionaler Prosa-Qualitätslayer: wenn SmolLM2-360M + llama-cli
+    # vorhanden sind, geht die deterministische Antwort ZUSÄTZLICH durch
+    # die Prosa-Engine (render_critique/render).  Die Textbaustein-Antwort
+    # bleibt der Inhalt — das Modell formuliert sie nur natürlicher.
+    # Kein API-Call, keine State-Mutation.  Bei Modell-Fehler oder Timeout
+    # fällt der Textbaustein-Pool zurück (identische Kritik, schärferer Ton).
+    final_reply, prosa_source = _route_chat_through_prosa(
+        reply, message=message, mood=mood,
+    )
     return {
-        "reply": reply,
+        "reply": final_reply,
         "model": "shinon-local",
         "source": "chat",
+        "prosa_source": prosa_source,   # "model" | "fallback" | "skipped"
         "character_context": character_context,
         "claims_count": 0,
         "correlation_id": correlation_id,

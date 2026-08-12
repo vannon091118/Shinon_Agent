@@ -764,10 +764,28 @@ def _save_keys_from_env(env: dict[str, str], *, source: str) -> int:
     return saved
 
 
+def _attitude_adapter():
+    """Central attitudes.db via the canonical fusion adapter (creates the
+    table idempotently if missing). Returns None if fusion is unavailable.
+
+    Since the DB unification, attitudes live in their OWN central DB
+    ($SHINON_HOME/data/shinon/attitudes.db) with the fusion schema
+    (user_id, dimension, score) — NOT in memory.db (legacy key/value
+    layout). The fusion AttitudeAdapter is the single source of truth for
+    that schema, so we reuse it instead of hand-rolling SQL that drifts.
+    """
+    try:
+        sys.path.insert(0, str(P.PROJECT_FUSION_SRC))
+        from fusion.shinon.shinon_attitudes import AttitudeAdapter
+        return AttitudeAdapter(P.SHINON_ATTITUDES)
+    except ImportError:
+        return None
+
+
 def step_3_personality() -> None:
     banner("Schritt 3/4  -  Persoenlichkeit")
-    if not P.SHINON_MEM.exists():
-        warn("Shinon-Memory-DB fehlt")
+    if not P.SHINON_ATTITUDES.exists():
+        warn("Shinon-Attitudes-DB fehlt — bitte 'python install.py' ausfuehren")
         press_enter()
         return
 
@@ -780,20 +798,28 @@ def step_3_personality() -> None:
     ]
     print("  Standard ist kritisch/skeptisch. Diese Werte justieren die Intensitaet.")
     print("  Empfehlung: alle Defaults einfach mit Enter uebernehmen.\n")
+    adapter = _attitude_adapter()
+    if adapter is None:
+        fail("fusion-Attitudes-Adapter nicht verfuegbar — Speichern abgebrochen")
+        press_enter()
+        return
     try:
-        with sqlite3.connect(str(P.SHINON_MEM)) as conn:
-            for label, col, default in dims:
-                val = prompt(label, str(default))
-                try:
-                    v = float(val)
-                    conn.execute(
-                        "UPDATE attitudes SET value=?, updated_at=datetime('now') "
-                        "WHERE dimension=?",
-                        (v, col),
-                    )
-                except ValueError:
-                    pass
-            conn.commit()
+        for label, col, default in dims:
+            val = prompt(label, str(default))
+            try:
+                v = float(val)
+                # Fusion-Schema upsert (gleiche Semantik wie shinon-server.mjs
+                # POST /api/personality): user_id='default' ist die globale
+                # Persoenlichkeitsansicht, die auch das UI liest.
+                adapter.run(
+                    "INSERT INTO attitudes (user_id, dimension, score, updated_at) "
+                    "VALUES (?, ?, ?, datetime('now')) "
+                    "ON CONFLICT(user_id, dimension) DO UPDATE SET "
+                    "score = excluded.score, updated_at = datetime('now')",
+                    ("default", col, v),
+                )
+            except ValueError:
+                pass
         ok("Persoenlichkeit gespeichert")
         tip(f"Anpassbar jederzeit via 'python shinon-setup.py --step 3' "
             f"oder direkt in {P.CONFIG_DIR / 'shinon.toml'}")

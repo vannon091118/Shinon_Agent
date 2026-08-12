@@ -1,5 +1,8 @@
 #!/bin/bash
 # phase-2-debugging.sh
+# Synthese-Schritt nach evil-twin-4: liest result.verdict/result.objections aus
+# evil-twin-4.result.json (STRUKTUR, nicht Prosa). FUNDAMENTAL → Synthese
+# (Kritikpunkte in die Root-Cause-Analyse einarbeiten), OBERFLÄCHLICH → verwerfen.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/tid-helpers.sh"
@@ -15,13 +18,50 @@ INPUT_ARTIFACT=$(task_field "$TID" "input_artifacts")
 GOAL=$(task_field "$TID" "goal")
 SKILL=$(task_field "$TID" "skill_name")
 
-agent_header "$TID" "Phase 2.2 Systematic Debugging"
+# ─── Evil-Twin-Synthese: verdict/points aus .result.json (nicht Prosa) ──
+ET_RESULT=$(evil_twin_result_json "$TID")
+read_evil_twin_result "$ET_RESULT"
+
+if [[ "$ET_VERDICT" == "FUNDAMENTAL" ]]; then
+    ET_DIRECTIVE="## 👯 EVIL-TWIN-SYNTHESE (verdict: FUNDAMENTAL)
+
+Der Böse Zwilling hat FUNDAMENTALE Widersprüche im Plan V2 gefunden.
+Diese MÜSSEN in die Root-Cause-Analyse EINFLIESSEN — nicht ignorieren,
+nicht nur erwähnen. Jeder Kritikpunkt MUSS als eigener Gap-Block auftauchen.
+
+Kritikpunkte (aus ${ET_RESULT}):
+${ET_OBJECTIONS:-(keine konkreten Einwände geliefert — entscheide selbst, ob eine Synthese nötig ist)}
+
+Regel: Jeder Kritikpunkt wird in der Root-Cause-Analyse entweder (a) durch
+eine konkrete Ursachen-Hypothese adressiert ODER (b) explizit begründet
+zurückgewiesen."
+    SYNTH_MODE="FUNDAMENTAL"
+elif [[ "$ET_VERDICT" == "OBERFLÄCHLICH" ]]; then
+    ET_DIRECTIVE="## 👯 EVIL-TWIN-VERWERFUNG (verdict: OBERFLÄCHLICH)
+
+Der Böse Zwilling fand NUR Oberflächliches — kein fundamentaler Widerspruch.
+Kritik VERWERFEN. Root-Cause-Analyse direkt aus Plan V2."
+    SYNTH_MODE="OBERFLÄCHLICH"
+else
+    ET_DIRECTIVE="## 👯 EVIL-TWIN: kein .result.json gefunden
+
+Kein strukturiertes Result vorhanden — Root-Cause-Analyse direkt aus Plan V2."
+    SYNTH_MODE="NONE"
+fi
+
+# Audit-Trail: der Synthese-Schritt loggt den konsumierten Verdict.
+record_decision "$TID" "EVIL_TWIN_SYNTHESIS:debugging" "$SYNTH_MODE" \
+    "debugging liest verdict='${ET_VERDICT:-?}' aus ${ET_RESULT:-<kein result.json>}" "" "" || true
+
+agent_header "$TID" "Phase 2.2 Systematic Debugging (Synthese nach Evil Twin)"
 emit_user_input_start "phase-2-debugging.sh"
 cat <<INSTRUCTION
 
 ## Input Plan V2: $INPUT_ARTIFACT
 ## Goal: $GOAL
 ## Skill: $SKILL
+
+${ET_DIRECTIVE}
 
 ## Aufgabe
 1. Lade systematic-debugging Skill.

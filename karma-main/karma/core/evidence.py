@@ -10,10 +10,14 @@ from typing import List, Dict, Any, Optional, Sequence, Union
 from dataclasses import dataclass, field, asdict
 import datetime
 import json
+import logging
 import re
 import uuid
 
 from karma.core.persistence import PersistenceLayer
+from karma.bus.event_bus import EventType
+
+logger = logging.getLogger(__name__)
 
 
 class EvidenceType(Enum):
@@ -81,7 +85,11 @@ class ClaimStatus(Enum):
     CONFIRMED = "confirmed"
     CONFLICTED = "conflicted"
     DEPRECATED = "deprecated"
-    REFUTED = "refuted"  # aktive Ablehnung: Evidence widerspricht dem Claim
+    REFUTED = "refuted"      # aktive Ablehnung: Evidence widerspricht dem Claim
+    QUALIFIED = "qualified"  # Halbwahrheit: Evidence ENTAILT teilweise,
+                             #   aber mindestens ein Claim-Term ist nicht abgedeckt.
+                             #   missing_evidence[] benennt die Lücke konkret,
+                             #   statt wie UNVERIFIED "weiß nicht" zu sagen.
 
 
 # ─── Entailment (Evidence ≠ Evidence-for-Claim) ─────────────────────
@@ -292,7 +300,13 @@ class ConfidenceResolver:
     weist einen Status zu. Prüft VOR der Aggregation, ob jedes Evidence die
     Behauptung überhaupt ENTAILT (evidence.entails(claim)) — sonst wäre der
     Resolver ein "digitaler Priester" ("Es gibt einen Test, also stimmt es")."""
-    
+
+    # QUALIFIED triggert, wenn coverage_ratio STRENG kleiner als dieser Wert
+    # ist (exklusiv). Bei == 1.0 ist die Coverage vollständig → kein
+    # QUALIFIED, sondern CONFIRMED/SUPPORTED. Konstante hier (nicht im
+    # if-Statement versteckt) macht die Schwelle sichtbar + auditierbar.
+    QUALIFIED_MIN_COVERAGE = 1.0
+
     LIMITS = {
         EvidenceType.SOURCE: 0.4,
         EvidenceType.TEST: 0.7,
@@ -316,6 +330,9 @@ class ConfidenceResolver:
         # irrelevant (weder Stütze noch Widerlegung) und wird aus der
         # Aggregation ausgeschlossen. Der Befund (warum) wird mitgeloggt.
         entailment_rejected: List[Dict[str, Any]] = []
+        # Für QUALIFIED-Erkennung: welche Claim-Terme wurden von entailed
+        # Evidenzen (über deren deklarierte Terme) abgedeckt?
+        entailed_reports: List[Dict[str, Any]] = []
 
         for ev in claim.evidences:
             report = entailment_report(ev, claim.statement)
@@ -330,6 +347,7 @@ class ConfidenceResolver:
                 })
                 continue
 
+            entailed_reports.append(report)
             counts[ev.evidence_type] += 1
             sums[ev.evidence_type] += ev.confidence
             
@@ -359,22 +377,78 @@ class ConfidenceResolver:
         scores["overall"] = round(overall, 4)
         scores["entailment_checked"] = True
         scores["entailment_rejected"] = entailment_rejected
-        
+
+        # QUALIFIED-Erkennung: mindestens ein entailed Evidence mit
+        # EXPLIZITER metadata-Deklaration vorhanden, aber die Vereinigung
+        # der deklarierten Terme deckt nicht alle Content-Terme des Claims
+        # ab. Das ist die ehrliche Halbwahrheit: "die Evidenz DEKLARIERT
+        # worauf sie sich bezieht, und das deckt nur einen Teil — diese
+        # Terme fehlen konkret."
+        #
+        # Wichtig: lenient-pass-through Evidenz (kein metadata = kein
+        # declaration) trägt NICHT zur Coverage bei, sondern wird im
+        # bestehenden SUPPORTED-Pfad weiterhin positiv gezählt. "Wir wissen
+        # nicht was die Evidenz abdeckt" ist NICHT dasselbe wie "die
+        # Evidenz deckt nicht alles" — sonst würde jede
+        # source-ohne-metadata-Evidenz reflexhaft QUALIFIED triggern.
+        claim_terms = _content_terms(claim.statement)
+        covered_terms: set = set()
+        explicit_declarations = 0
+        for r in entailed_reports:
+            declared_terms = [t for t in (r.get("declared_terms") or []) if t]
+            if not declared_terms:
+                continue  # kein declaration = kein Coverage-Beitrag
+            explicit_declarations += 1
+            for t in declared_terms:
+                if t in claim_terms:
+                    covered_terms.add(t)
+        missing_terms = [t for t in claim_terms if t not in covered_terms]
+        coverage_ratio = (
+            round(len(covered_terms) / max(len(claim_terms), 1), 4)
+            if claim_terms else 1.0
+        )
+
         # Determine Status
+        # Pfad-Priorisierung (semantisch wichtig):
+        #   1. CONFLICTED > alles: widersprüchliche Evidenz ist das härteste
+        #      Signal — darf durch Coverage-Lücken NICHT maskiert werden.
+        #   2. REFUTED > Qualifier: aktive Ablehnung vor Halbwahrheit.
+        #   3. QUALIFIED > CONFIRMED/SUPPORTED/UNVERIFIED: ehrliche Lücke vor
+        #      Lügenpresse, denn "supported" mit ungedeckten Termen wäre ein
+        #      partieller Wahrheitsverkauf.
+        #   4. CONFIRMED > SUPPORTED > UNVERIFIED.
+        #
+        # Schwellwert: ein Evidence gilt als Coverage-Contributor NUR wenn
+        # es eine EXPLIZITE metadata-Deklaration trägt (zuverlässig). Lenient
+        # pass-through Evidenz ohne declaration weiß nicht was sie abdeckt
+        # und zählt NICHT zur Coverage-Analyse. QUALIFIED_MIN_COVERAGE ist
+        # exklusiv: < 1.0 triggert QUALIFIED; == 1.0 nicht (echte Coverage).
         status = ClaimStatus.UNVERIFIED
-        
-        # Active rejection: evidence contradicts the claim (negative runtime/
-        # test OR negative source evidence) and NOTHING supports it → REFUTED.
+
         if (has_positive_source and has_negative_runtime) or (has_positive_runtime and has_negative_runtime):
             status = ClaimStatus.CONFLICTED
         elif (has_negative_runtime or has_negative_source) and not (has_positive_runtime or has_positive_source):
             status = ClaimStatus.REFUTED
+        elif (missing_terms and explicit_declarations > 0
+              and coverage_ratio < ConfidenceResolver.QUALIFIED_MIN_COVERAGE):
+            status = ClaimStatus.QUALIFIED
         elif has_positive_runtime and overall >= 0.7:
             status = ClaimStatus.CONFIRMED
         elif has_positive_source and overall > 0.0:
             status = ClaimStatus.SUPPORTED
-            
+
         scores["status"] = status.value
+
+        # Coverage-Diagnostik IMMER in den Score-Output schreiben — nicht
+        # nur wenn status == QUALIFIED. Konsumenten (Dashboards, Rework-Loops)
+        # können so unter allen Verdict-Klassen die Coverage-Information
+        # konsumieren, ohne zwei API-Pfade parallel prüfen zu müssen. Bei
+        # voller Coverage ist missing_evidence=[] harmlos und informativ.
+        scores["coverage_ratio"] = coverage_ratio
+        scores["claim_terms"] = sorted(claim_terms)
+        scores["covered_terms"] = sorted(covered_terms)
+        scores["missing_evidence"] = missing_terms
+        scores["explicit_declarations"] = explicit_declarations
 
         # Rework-Direktive: statt hart abzulehnen → zurück in den Loop mit
         # angepasstem Scope. Abweichung > X → User fragen (kein stiller Drift).
@@ -395,6 +469,58 @@ class ConfidenceResolver:
                 "requires_user_approval": dev > budget,
             }
         return scores
+
+
+def emit_entailment_rejections(
+    persistence: PersistenceLayer,
+    project: str,
+    verdict: Dict[str, Any],
+    claim_id: Optional[str] = None,
+    correlation_id: Optional[str] = None,
+) -> int:
+    """Emit the rejections from a ``resolve()`` verdict into the audit trail.
+
+    ``ConfidenceResolver.resolve()`` keeps its return value pure (no side
+    effects). This helper is the explicit side-effecting bridge: it turns
+    the verdict's ``entailment_rejected`` list into one hash-chained
+    ``evidence.rejected`` event per dropped evidence, carrying the
+    structural reason (``declared_terms`` vs ``claim_terms`` + ``reason``)
+    so dashboards and ``karma-audit.py`` can see WHY evidence was dropped,
+    not just that it was dropped.
+
+    The event type is the single source of truth from
+    ``EventType.EVIDENCE_REJECTED`` (no parallel literal to drift).
+
+    BEST-EFFORT by design: the audit trail must never be able to fail the
+    governance turn. A failed event write is logged and skipped, so a
+    rejection-log error cannot roll back the surrounding transaction.
+
+    Returns the number of events emitted (0 when nothing was rejected).
+    """
+    rejected = verdict.get("entailment_rejected") or []
+    emitted = 0
+    for entry in rejected:
+        try:
+            persistence.emit_event(
+                event_type=EventType.EVIDENCE_REJECTED.value,
+                project=project,
+                payload={
+                    "claim_id": claim_id,
+                    "evidence_id": entry.get("evidence_id"),
+                    "source": entry.get("source"),
+                    "reason": entry.get("reason"),
+                    "declared_terms": entry.get("declared_terms") or [],
+                    "claim_terms": entry.get("claim_terms") or [],
+                    "shared": entry.get("shared") or [],
+                },
+                correlation_id=correlation_id,
+            )
+            emitted += 1
+        except Exception as exc:  # noqa: BLE001 — audit trail is best-effort
+            logger.warning(
+                "emit_entailment_rejections: event write skipped (%s)", exc
+            )
+    return emitted
 
 
 class EvidenceStore:

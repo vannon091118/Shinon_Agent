@@ -7,7 +7,7 @@
 #   • Uses project-relative ./data/ paths (NEVER $HOME or %USERPROFILE%)
 #   • Uses single unified ./venv (NOT limen-main/.venv)
 #   • Sets LIMEN_CONFIG=$PROJECT/config/limen.toml env-var for LIMEN
-#   • Sets SHINON_DATA_DIR=$PROJECT/data/shinon for the front-end
+#   • Sets SHINON_DATA_DIR=$SHINON_HOME/data/shinon for the front-end
 #   • Works identically on Windows, Linux, macOS
 #
 # Commands:
@@ -221,13 +221,14 @@ def component_env() -> dict:
     - SHINON_HOME    points to ~/.shinon (single source of truth for state)
     - LIMEN_CONFIG   points to $SHINON_HOME/config/limen.toml
     - SHINON_CONFIG  points to $SHINON_HOME/config/shinon.toml
-    - SHINON_DATA_DIR  alias for $SHINON_HOME/data
+    - SHINON_DATA_DIR  $SHINON_HOME/data/shinon — the dir CONTAINING
+        memory.db + attitudes.db (shinon-server.mjs joins filenames onto it)
     - SHINON_PROJECT_ROOT points back at the source directory (venv, modules)
     - LIMEN_KEY_STORE points to $SHINON_HOME/keys.json (LIMEN's key-store)
     """
     env = os.environ.copy()
     env["SHINON_HOME"] = str(P.SHINON_HOME)
-    env["SHINON_DATA_DIR"] = str(P.DATA_DIR)
+    env["SHINON_DATA_DIR"] = str(P.SHINON_DIR)
     env["SHINON_CONFIG"] = str(SHINON_CONFIG)
     env["LIMEN_CONFIG"] = str(LIMEN_CONFIG)
     env["SHINON_PROJECT_ROOT"] = str(PROJECT_ROOT)

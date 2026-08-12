@@ -52,6 +52,13 @@ from typing import Callable, List, Optional, Tuple
 import paths as P  # canonical layout — see paths.py
 from sqlite_health import check_sqlite
 
+# fusion-main/ muss auf sys.path, damit `from fusion.shinon.migrate import …`
+# funktioniert (install.py läuft aus dem Projekt-Root; das fusion-Paket liegt
+# in fusion-main/). Gleiche Bootstrap-Logik wie shinon_fusion_bridge.py und
+# render_prosa.py — ohne diesen Eintrag schlägt die Shinon-DB-Migration mit
+# "No module named 'fusion'" fehl und auch der Tabellen-Fallback scheitert.
+sys.path.insert(0, str(P.PROJECT_FUSION_SRC))
+
 PROJECT_ROOT = P.PROJECT_ROOT
 PROJECT_NAME = "Shinon Control Plane"
 PROJECT_VERSION = "1.0.0"
@@ -762,35 +769,39 @@ def init_all_databases(console: Console) -> None:
         );
     """, console, f"KARMA @ {_short(KARMA_DB)}")
 
-    # Shinon-Memory  (auch Attitude-Tabelle, weil das fusion-main sie hier pflegt)
-    init_database(SHINON_MEM, """
-        CREATE TABLE IF NOT EXISTS personal_facts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key TEXT NOT NULL UNIQUE,
-            value TEXT NOT NULL,
-            confidence REAL DEFAULT 0.5,
-            source TEXT DEFAULT 'user',
-            evidence TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
-        );
-        CREATE TABLE IF NOT EXISTS patterns (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pattern_type TEXT NOT NULL,
-            pattern_text TEXT NOT NULL,
-            confidence REAL DEFAULT 0.5,
-            occurrences INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
-        CREATE TABLE IF NOT EXISTS attitudes (
-            dimension TEXT PRIMARY KEY,
-            value REAL NOT NULL DEFAULT 0,
-            updated_at TEXT DEFAULT (datetime('now'))
-        );
-        INSERT OR IGNORE INTO attitudes (dimension, value) VALUES
-            ('skepticism', 5.0), ('helpfulness', 3.0),
-            ('directness', 7.0), ('patience', 4.0), ('curiosity', 6.0);
-    """, console, f"Shinon-Memory @ {_short(SHINON_MEM)}")
+    # Shinon-Memory + Shinon-Attitudes — zentral, fusion-schema.
+    # Migration zuerst: alle Quellen (legacy key/value in der zentralen
+    # memory.db + fusion-main/data/shinon_*.db) werden in die zentralen
+    # DBs (memory.db, attitudes.db) überführt; danach ensure_schema legt
+    # nur fehlende Tabellen an. Quellen werden per .bak.<ts> gesichert,
+    # also kein Datenverlust.
+    P.SHINON_DIR.mkdir(parents=True, exist_ok=True)
+    # Wenn der Service gerade läuft, hält jede SQLite-Operation kurz den
+    # writer-lock — Install wäre dadurch träge. Dies ist ein Hinweis, kein
+    # Hard-Stop (Service-Stop ist Aufgabe von ctl.py).
+    if PIDS_DIR.exists():
+        live_pids = [p.name for p in PIDS_DIR.glob("*.pid") if p.stat().st_size > 0]
+        if live_pids:
+            console.info(
+                f"  Hinweis: laufender Service erkannt ({', '.join(live_pids)}) — "
+                f"DB-Migration kann kurz warten (busy_timeout=5000ms)."
+            )
+    try:
+        from fusion.shinon.migrate import run_migration
+        run_migration(
+            log=lambda m: console.info(f"  migrate: {m}"),
+            apply=True,
+        )
+        console.ok(f"Shinon-Memory @ {_short(SHINON_MEM)} (fusion-schema, zentral)")
+        console.ok(f"Shinon-Attitudes @ {_short(SHINON_ATTITUDES)} (fusion-schema, zentral)")
+    except ImportError as e:
+        console.warn(f"fusion.shinon.migrate nicht importierbar ({e}). "
+                            f"Lege Tabellen ohne Datenmigration an.")
+        from fusion.shinon.shinon_memory import SqliteMemoryAdapter
+        from fusion.shinon.shinon_attitudes import AttitudeAdapter
+        P.SHINON_MEM.parent.mkdir(parents=True, exist_ok=True)
+        SqliteMemoryAdapter(SHINON_MEM).ensure_schema()
+        AttitudeAdapter(SHINON_ATTITUDES).ensure_schema()
 
     # Goal-chain DB \u2014 call its existing db-init.sh which knows the schema.
     # db-init.sh now honors SHINON_GOALCHAIN_DB and writes CENTRALLY

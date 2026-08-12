@@ -813,6 +813,7 @@ function getEventTypes() {
     { value: 'shinon.output', label: 'Shinon', color: '#8b5cf6' },
     { value: 'promtguard.claims', label: 'Promtguard', color: '#10b981' },
     { value: 'karma.falsified', label: 'KARMA', color: '#ef4444' },
+    { value: 'evidence.rejected', label: '✗ Evidence', color: '#fb7185' },
     { value: 'goal_chain.triggered', label: 'GoalChain', color: '#a78bfa' },
     { value: 'goal_chain.rework', label: 'Rework', color: '#f59e0b' },
     { value: 'runtime.completed', label: 'Completed', color: '#34d399' },

@@ -48,7 +48,7 @@ Kein strukturiertes Result vorhanden — plane direkt aus dem Design."
 fi
 
 # Audit-Trail: der Synthese-Schritt loggt den konsumierten Verdict.
-record_decision "$TID" "EVIL_TWIN_SYNTHESIS" "$SYNTH_MODE" \
+record_decision "$TID" "EVIL_TWIN_SYNTHESIS:writing-plans" "$SYNTH_MODE" \
     "writing-plans liest verdict='${ET_VERDICT:-?}' aus ${ET_RESULT:-<kein result.json>}" "" "" || true
 
 agent_header "$TID" "Phase 1.2 Writing Plans (Synthese nach Evil Twin)"

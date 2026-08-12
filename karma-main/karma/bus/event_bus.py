@@ -57,6 +57,13 @@ class EventType(str, Enum):
     GATE_FAILED         = "gate.failed"
     PROBE_RESULT        = "gate.probe_result"
 
+    # Evidence / Entailment-Gate
+    # Emitted by karma.core.evidence.emit_entailment_rejections() — one
+    # event per evidence that failed the structural entailment check, with
+    # declared_terms vs claim_terms so the audit trail shows WHY it was
+    # dropped, not just that it was dropped.
+    EVIDENCE_REJECTED   = "evidence.rejected"
+
     # Reflection
     REFLECTION_STARTED  = "reflection.started"
     REFLECTION_DONE     = "reflection.done"
