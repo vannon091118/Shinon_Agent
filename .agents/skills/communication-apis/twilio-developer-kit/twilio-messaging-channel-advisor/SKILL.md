@@ -1,6 +1,6 @@
 ---
 name: twilio-messaging-channel-advisor
-description: >
+description: "Use when: messaging channel, pick channel. See communication-apis/twilio-developer-kit/twilio-messaging-channel-advisor."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

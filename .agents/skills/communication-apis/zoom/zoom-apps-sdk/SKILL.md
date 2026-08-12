@@ -1,6 +1,6 @@
 ---
 name: zoom-apps-sdk
-description:  "[codex:zoom] Use when using Apps SDK."
+description: "Build Zoom Apps with the Zoom Apps SDK: UI toolkit, in-meeting panels, and app lifecycle integration."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

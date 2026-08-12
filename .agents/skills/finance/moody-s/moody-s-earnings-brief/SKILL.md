@@ -1,6 +1,6 @@
 ---
 name: moody-s-earnings-brief
-description: >
+description: "Use when: Moody's earnings brief. See finance/moody-s/moody-s-earnings-brief."
 category: finance
 stack: LOGISCH + GOVERNANCE
 risk: high
@@ -8,7 +8,6 @@ side_effects: data_analysis
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:moody-s] 
 ---
 
 # Earnings Brief Skill

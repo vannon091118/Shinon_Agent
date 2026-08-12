@@ -1,6 +1,6 @@
 ---
 name: vdr-index-setup
-description: >
+description: "Use when: VDR index setup, virtual data room. See finance/datasite/vdr-index-setup."
 stack: GOVERNANCE + AUTONOM
 risk: high
 side_effects: data_analysis
@@ -13,7 +13,6 @@ version: 1.0.0
 mcp-server: datasite
 category: deal-management
 tags: "[datasite, vdr, m&a, index, folder-structure, setup]"
-
 ---
 # VDR Index Setup
 

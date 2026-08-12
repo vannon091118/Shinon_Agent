@@ -1,6 +1,6 @@
 ---
 name: draft-long-form-memo
-description: >-
+description: "Draft long-form legal memoranda: structure, citations, and arguments suitable for court filings."
 category: productivity
 stack: MEMORY + GOVERNANCE
 risk: medium

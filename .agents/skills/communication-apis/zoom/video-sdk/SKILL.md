@@ -1,6 +1,6 @@
 ---
 name: build-zoom-video-sdk-app
-description:  "[codex:zoom] Use when using Video SDK."
+description: "Build custom video apps with the Zoom Video SDK: real-time video sessions, screen share, and platform support."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

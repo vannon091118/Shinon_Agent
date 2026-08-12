@@ -1,6 +1,6 @@
 ---
 name: desktop-automation
-description: >-
+description: "Steuere native Desktop-Apps durch Automation (click, type, scroll, drag, screenshots). Verwende wenn der User eine Desktop-App bedienen, native Dialoge ausfüllen, Datei-Dialoge steuern oder Browser-Chrome automatisieren möchte."
 category: media
 stack: KREATIV + GOVERNANCE
 risk: medium
@@ -8,9 +8,6 @@ side_effects: network_calls
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Steuere native Desktop-Apps durch Automation (click, type, scroll, drag, screenshots).
-  Verwende wenn der User eine Desktop-App bedienen, native Dialoge ausfüllen, 
-  Datei-Dialoge steuern oder Browser-Chrome automatisieren möchte.
 ---
 
 # Desktop Automation

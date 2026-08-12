@@ -1,6 +1,6 @@
 ---
 name: debug-zoom
-description:  "[codex:zoom] Use when debugging issues."
+description: "Debug Zoom integrations: OAuth errors, webhook delivery, SDK connection issues, and common API failures."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

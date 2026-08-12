@@ -1,6 +1,6 @@
 ---
 name: twilio-ai-agent-architect
-description: >
+description: "Use when: AI agent architect, build AI agent Twilio. See communication-apis/twilio-developer-kit/twilio-ai-agent-architect."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

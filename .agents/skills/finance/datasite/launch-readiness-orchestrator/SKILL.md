@@ -1,6 +1,6 @@
 ---
 name: launch-readiness-orchestrator
-description: >
+description: "Use when: launch readiness, VDR launch. See finance/datasite/launch-readiness-orchestrator."
 stack: GOVERNANCE + AUTONOM
 risk: high
 side_effects: data_analysis
@@ -13,7 +13,6 @@ version: 1.0.0
 mcp-server: datasite
 category: deal-management
 tags: "[datasite, vdr, m&a, launch, readiness, orchestration]"
-
 ---
 # Launch Readiness Orchestrator
 

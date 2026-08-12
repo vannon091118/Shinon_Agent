@@ -1,6 +1,6 @@
 ---
 name: build-zoom-bot
-description:  "[codex:zoom] Use when building bots."
+description: "Build a Zoom bot: app setup, OAuth, meeting/webinar events, and bot endpoints for automated Zoom agents."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

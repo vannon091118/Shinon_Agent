@@ -1,6 +1,6 @@
 ---
 name: probe-sdk
-description:  "[codex:zoom] Use when using Probe SDK."
+description: "Use the Zoom Probe SDK: connectivity diagnostics, network quality checks, and pre-meeting health verification."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

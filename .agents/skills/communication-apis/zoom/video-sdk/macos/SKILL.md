@@ -1,6 +1,6 @@
 ---
 name: zoom-video-sdk-macos
-description: |
+description: "Zoom Video SDK for macOS native desktop apps. Use when building custom macOS video sessions with native UI control, tokenized join, and desktop-oriented media/device workflows."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,8 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  Zoom Video SDK for macOS native desktop apps. Use when building custom macOS video sessions
-  with native UI control, tokenized join, and desktop-oriented media/device workflows.
 ---
 
 # Zoom Video SDK (macOS)

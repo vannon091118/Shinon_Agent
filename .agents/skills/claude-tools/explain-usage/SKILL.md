@@ -1,6 +1,6 @@
 ---
 name: explain-usage
-description: >-
+description: "Explain where this session's tokens went, with one simple chart in plain language. Use when the user says things like \\\"explain my usage\\\", \\\"where did my tokens go\\\", or asks for a usage breakdown.\""
 category: claude-tools
 stack: MEMORY + AUTONOM
 risk: low
@@ -8,7 +8,6 @@ side_effects: file_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  [claude] Explain where this session's tokens went, with one simple chart in plain language. Use when the user says things like \"explain my usage\", \"where did my tokens go\", or asks for a usage breakdown."
 
 ---
 Show me where this session's tokens went.

@@ -1,6 +1,6 @@
 ---
 name: building-mcp-server-on-cloudflare
-description: |
+description: "Use when: Cloudflare MCP server. See cloud-platforms/cloudflare/building-mcp-server-on-cloudflare."
 category: cloud-platforms
 stack: AUTONOM + GOVERNANCE
 risk: high
@@ -8,7 +8,6 @@ side_effects: deploy_changes
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:cloudflare] 
 ---
 
 # Building MCP Servers on Cloudflare

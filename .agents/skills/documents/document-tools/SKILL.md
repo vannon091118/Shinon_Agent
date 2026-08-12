@@ -1,6 +1,6 @@
 ---
 name: document-tools
-description: >-
+description: "Arbeite mit Word-Dokumenten (.docx). Erstelle, bearbeite, review und verifiziere professionelle Dokumente. Nutze python-docx für Struktur-Edits und native Read/Replace-Tools für schnelle Text-Änderungen."
 category: documents
 stack: LOGISCH + GOVERNANCE
 risk: low
@@ -8,9 +8,6 @@ side_effects: file_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Arbeite mit Word-Dokumenten (.docx). Erstelle, bearbeite, review und 
-  verifiziere professionelle Dokumente. Nutze python-docx für Struktur-Edits
-  und native Read/Replace-Tools für schnelle Text-Änderungen.
 ---
 
 # Document Tools (Word .docx)

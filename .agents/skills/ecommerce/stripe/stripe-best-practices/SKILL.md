@@ -1,6 +1,6 @@
 ---
 name: stripe-best-practices
-description: >-
+description: "Use when building, modifying, or reviewing any Stripe integration, including accepting payments, building marketplaces, setting up subscriptions, collecting sales tax/VAT/GST, creating connected accounts, or implementing secure key handling. Guides decisions across API selection (Checkout Sessions vs PaymentIntents), Connect platform setup (Accounts v2), billing, Stripe Tax, Treasury, and security best practices."
 category: ecommerce
 stack: GOVERNANCE + AUTONOM
 risk: critical
@@ -8,13 +8,6 @@ side_effects: money_movement
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  Use when building, modifying, or reviewing any Stripe integration, including
-  accepting payments, building marketplaces, setting up subscriptions,
-  collecting sales tax/VAT/GST, creating connected accounts, or implementing
-  secure key handling. Guides decisions across API selection (Checkout Sessions
-  vs PaymentIntents), Connect platform setup (Accounts v2), billing, Stripe
-  Tax, Treasury, and security best practices.
-
 ---
 
 Latest Stripe API version: **2026-07-29.dahlia**. Always use the latest API version and SDK unless the user specifies otherwise.

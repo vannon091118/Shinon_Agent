@@ -1,7 +1,7 @@
 ---
 version: "3.1.0 # x-release-please-version"
 name: heygen-video
-description: |
+description: "Generate HeyGen videos with digital humans: script, voice, avatar selection, and video rendering via the HeyGen API."
 category: media
 stack: KREATIV + GOVERNANCE
 risk: medium
@@ -11,7 +11,6 @@ last_verified: 2026-08-11
   [codex:heygen] 
 argument-hint: "[topic_or_script] [--avatar avatar_id]"
 homepage: "https://developers.heygen.com/docs/quick-start"
-
 ---
 # HeyGen Video Producer
 

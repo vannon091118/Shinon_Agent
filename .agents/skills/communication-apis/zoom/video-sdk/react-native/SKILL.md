@@ -1,6 +1,6 @@
 ---
 name: zoom-video-sdk-react-native
-description: |
+description: "Zoom Video SDK for React Native. Use when building custom mobile video session experiences with @zoom/react-native-videosdk, event listeners, helper-based APIs, and backend JWT token flows."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,8 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  Zoom Video SDK for React Native. Use when building custom mobile video session experiences
-  with @zoom/react-native-videosdk, event listeners, helper-based APIs, and backend JWT token flows.
 ---
 
 # Zoom Video SDK (React Native)

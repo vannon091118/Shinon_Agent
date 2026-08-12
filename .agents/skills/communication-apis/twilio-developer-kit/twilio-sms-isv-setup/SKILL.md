@@ -1,6 +1,6 @@
 ---
 name: twilio-isv-sms-best-practices
-description: >
+description: "ISVs face unique challenges when building SMS into their platforms: each customer needs their own number registration, sender pool management, compliance isolation, and usage tracking. This skill consolidates the architectural patterns and operational knowledge specific to multi-tenant SMS platforms."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:twilio-developer-kit] 
 ---
 
 ## Overview

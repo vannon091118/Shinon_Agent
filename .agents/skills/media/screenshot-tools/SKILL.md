@@ -1,6 +1,6 @@
 ---
 name: screenshot-tools
-description: >-
+description: "Erstelle Desktop-Screenshots (Vollbild, bestimmtes Fenster, Pixel-Bereich). Nutze OS-native Capture-Tools für schnelle Bildschirmaufnahmen wenn tool-spezifische Captures nicht verfügbar sind."
 category: media
 stack: KREATIV + GOVERNANCE
 risk: medium
@@ -8,9 +8,6 @@ side_effects: network_calls
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Erstelle Desktop-Screenshots (Vollbild, bestimmtes Fenster, Pixel-Bereich).
-  Nutze OS-native Capture-Tools für schnelle Bildschirmaufnahmen wenn 
-  tool-spezifische Captures nicht verfügbar sind.
 ---
 
 # Screenshot Tools

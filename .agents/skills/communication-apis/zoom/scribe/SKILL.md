@@ -1,6 +1,6 @@
 ---
 name: scribe
-description:  "[codex:zoom] Use when using Scribe."
+description: "Use Zoom Scribe: real-time transcription and intelligent meeting notes for Zoom sessions."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

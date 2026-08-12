@@ -1,6 +1,6 @@
 ---
 name: presentation-tools
-description: >-
+description: "Erstelle und bearbeite PowerPoint-Präsentationen (.pptx). Baue visuell anspruchsvolle Slide-Decks mit python-pptx oder Artifact-Tool. Nutze Charts, Shapes und Layout-Systeme für professionelle Ergebnisse."
 category: documents
 stack: LOGISCH + GOVERNANCE
 risk: low
@@ -8,9 +8,6 @@ side_effects: file_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Erstelle und bearbeite PowerPoint-Präsentationen (.pptx). Baue visuell 
-  anspruchsvolle Slide-Decks mit python-pptx oder Artifact-Tool. 
-  Nutze Charts, Shapes und Layout-Systeme für professionelle Ergebnisse.
 ---
 
 # Presentation Tools (PowerPoint .pptx)

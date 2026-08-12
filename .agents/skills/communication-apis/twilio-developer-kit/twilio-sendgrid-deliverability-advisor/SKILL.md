@@ -1,6 +1,6 @@
 ---
 name: twilio-sendgrid-deliverability-advisor
-description: >
+description: "Use when: SendGrid deliverability, email deliverability. See communication-apis/twilio-developer-kit/twilio-sendgrid-deliverability-advisor."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

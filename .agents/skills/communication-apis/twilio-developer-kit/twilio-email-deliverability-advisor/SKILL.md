@@ -1,6 +1,6 @@
 ---
 name: twilio-email-deliverability-advisor
-description: >
+description: "Use when: email deliverability. See communication-apis/twilio-developer-kit/twilio-email-deliverability-advisor."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

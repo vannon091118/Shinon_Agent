@@ -1,6 +1,6 @@
 ---
 name: twilio-sendgrid-email-send
-description: >
+description: "All email sending goes through POST /v3/mail/send. This endpoint returns 202 Accepted (queued) — NOT 200 OK (delivered). Delivery confirmation comes asynchronously via Event Webhook. See twilio-sendgrid-webhooks."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:twilio-developer-kit] 
 ---
 
 ## Overview

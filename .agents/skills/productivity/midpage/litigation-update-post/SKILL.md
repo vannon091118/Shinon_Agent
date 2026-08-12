@@ -1,6 +1,6 @@
 ---
 name: litigation-update-post
-description: >-
+description: "Write litigation update posts summarizing case status, filings, and next steps for stakeholders."
 category: productivity
 stack: MEMORY + GOVERNANCE
 risk: medium

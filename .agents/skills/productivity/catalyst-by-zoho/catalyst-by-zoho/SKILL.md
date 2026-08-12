@@ -1,6 +1,6 @@
 ---
 name: catalyst-by-zoho
-description: >
+description: "Build business apps and workflows on the Zoho Catalyst platform: cloud functions, data store, and REST APIs."
 category: productivity
 stack: MEMORY + GOVERNANCE
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:catalyst-by-zoho] 
 ---
 
 # 🛑 STOP — Read this before doing ANYTHING

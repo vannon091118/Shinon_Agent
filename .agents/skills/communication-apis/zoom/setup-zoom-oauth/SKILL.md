@@ -1,6 +1,6 @@
 ---
 name: setup-zoom-oauth
-description:  "[codex:zoom] Use when setting up OAuth."
+description: "Set up Zoom OAuth: app registration, scopes, refresh tokens, and secure token storage for Zoom API access."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

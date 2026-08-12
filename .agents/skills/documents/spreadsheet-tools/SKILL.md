@@ -1,6 +1,6 @@
 ---
 name: spreadsheet-tools
-description: >-
+description: "Arbeite mit Excel-Dateien (.xlsx, .xls, .csv, .tsv). Erstelle, bearbeite, auditiere und analysiere Spreadsheets. Nutze openpyxl für reichhaltige Workbooks, pandas für Datenanalyse, und native Lese/Schreib-Tools für schnelle Edits."
 category: documents
 stack: LOGISCH + GOVERNANCE
 risk: low
@@ -8,9 +8,6 @@ side_effects: file_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Arbeite mit Excel-Dateien (.xlsx, .xls, .csv, .tsv). Erstelle, bearbeite, 
-  auditiere und analysiere Spreadsheets. Nutze openpyxl für reichhaltige Workbooks,
-  pandas für Datenanalyse, und native Lese/Schreib-Tools für schnelle Edits.
 ---
 
 # Spreadsheet Tools

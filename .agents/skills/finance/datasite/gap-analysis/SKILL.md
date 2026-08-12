@@ -1,6 +1,6 @@
 ---
 name: gap-analysis
-description: >
+description: "Use when: gap analysis, datasite gap. See finance/datasite/gap-analysis."
 stack: GOVERNANCE + AUTONOM
 risk: high
 side_effects: data_analysis
@@ -13,7 +13,6 @@ version: 1.0.0
 mcp-server: datasite
 category: deal-management
 tags: "[datasite, vdr, m&a, gap-analysis, completeness, blueflame]"
-
 ---
 # Data Room Gap Analysis
 

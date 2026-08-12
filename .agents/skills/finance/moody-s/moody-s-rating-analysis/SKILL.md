@@ -1,6 +1,6 @@
 ---
 name: moody-s-rating-analysis
-description: >
+description: "Use when: Moody's rating analysis, credit rating. See finance/moody-s/moody-s-rating-analysis."
 category: finance
 stack: LOGISCH + GOVERNANCE
 risk: high
@@ -8,7 +8,6 @@ side_effects: data_analysis
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:moody-s] 
 ---
 
 # Rating Pitch Skill

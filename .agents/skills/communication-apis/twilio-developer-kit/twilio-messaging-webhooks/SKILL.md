@@ -1,6 +1,6 @@
 ---
 name: twilio-messaging-webhooks
-description: >
+description: "Use when: messaging webhooks, message webhooks. See communication-apis/twilio-developer-kit/twilio-messaging-webhooks."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:twilio-developer-kit] 
 ---
 
 ## Overview

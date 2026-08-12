@@ -1,6 +1,6 @@
 ---
 name: twilio-whatsapp-send-message
-description: >
+description: "Use when: send WhatsApp, WhatsApp message, WhatsApp senden. See communication-apis/twilio-developer-kit/twilio-whatsapp-send-message."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:twilio-developer-kit] 
 ---
 
 ## Overview

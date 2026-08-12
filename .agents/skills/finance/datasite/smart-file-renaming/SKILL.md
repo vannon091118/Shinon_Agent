@@ -1,6 +1,6 @@
 ---
 name: smart-file-renaming
-description: >
+description: "Use when: smart file renaming, VDR rename. See finance/datasite/smart-file-renaming."
 stack: GOVERNANCE + AUTONOM
 risk: high
 side_effects: data_analysis
@@ -13,7 +13,6 @@ version: 1.0.0
 mcp-server: datasite
 category: deal-management
 tags: "[datasite, vdr, m&a, renaming, file-management, blueflame]"
-
 ---
 # Smart File Renaming
 

@@ -1,6 +1,6 @@
 ---
 name: schedule
-description: >-
+description: "Create or update a scheduled task that runs automatically. Use when the user says things like \\\"every day\\\", \\\"each morning\\\", \\\"remind me in an hour\\\", \\\"run this at noon\\\", or wants to reschedule an existing task.\""
 category: claude-tools
 stack: MEMORY + AUTONOM
 risk: low
@@ -8,7 +8,6 @@ side_effects: file_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  [claude] Create or update a scheduled task that runs automatically. Use when the user says things like \"every day\", \"each morning\", \"remind me in an hour\", \"run this at noon\", or wants to reschedule an existing task."
 
 ---
 First, decide whether the user wants to **create a new** scheduled task or **change an existing** one.

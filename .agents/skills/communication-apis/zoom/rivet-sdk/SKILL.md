@@ -1,6 +1,6 @@
 ---
 name: rivet-sdk
-description:  "[codex:zoom] Use when using Rivet SDK."
+description: "Use the Zoom Rivet SDK: lightweight event-driven integrations and streaming data from Zoom meetings."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

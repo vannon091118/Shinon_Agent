@@ -1,6 +1,6 @@
 ---
 name: zoom-meeting-sdk-electron
-description: |
+description: "Zoom Meeting SDK for Electron desktop applications. Use when embedding Zoom meetings in an Electron app with the Node addon wrapper, JWT auth, join/start flows, settings controllers, and raw data integration."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,8 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  Zoom Meeting SDK for Electron desktop applications. Use when embedding Zoom meetings in an Electron app
-  with the Node addon wrapper, JWT auth, join/start flows, settings controllers, and raw data integration.
 ---
 
 # Zoom Meeting SDK (Electron)

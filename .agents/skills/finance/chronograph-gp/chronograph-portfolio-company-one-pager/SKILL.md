@@ -1,6 +1,6 @@
 ---
 name: chronograph-gp-portfolio-company-one-pager
-description: >
+description: "Generates a fully styled, self-contained HTML investor report for a named portfolio company."
 category: finance
 stack: LOGISCH + GOVERNANCE
 risk: high
@@ -8,7 +8,6 @@ side_effects: data_analysis
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:chronograph-gp] 
 ---
 
 # GP Report Builder

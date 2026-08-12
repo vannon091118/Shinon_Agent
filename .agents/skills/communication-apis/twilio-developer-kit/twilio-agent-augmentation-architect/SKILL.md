@@ -1,6 +1,6 @@
 ---
 name: twilio-agent-augmentation-architect
-description: >
+description: "Use when: agent augmentation, augment agent. See communication-apis/twilio-developer-kit/twilio-agent-augmentation-architect."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

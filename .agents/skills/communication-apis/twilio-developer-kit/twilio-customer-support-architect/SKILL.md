@@ -1,6 +1,6 @@
 ---
 name: twilio-customer-support-architect
-description: >
+description: "Use when: customer support, support architect. See communication-apis/twilio-developer-kit/twilio-customer-support-architect."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

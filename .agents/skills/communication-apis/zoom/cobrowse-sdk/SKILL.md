@@ -1,6 +1,6 @@
 ---
 name: zoom-cobrowse-sdk
-description:  "[codex:zoom] Use when using Cobrowse."
+description: "Integrate Zoom Cobrowse SDK: co-browsing sessions, agent handoff, and UI controls for live customer support."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

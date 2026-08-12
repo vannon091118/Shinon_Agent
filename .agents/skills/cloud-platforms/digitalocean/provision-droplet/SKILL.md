@@ -1,6 +1,6 @@
 ---
 name: provision-droplet
-description: >
+description: "Use when: DigitalOcean Droplet, DO droplet, provision droplet. See cloud-platforms/digitalocean/provision-droplet."
 category: cloud-platforms
 stack: AUTONOM + GOVERNANCE
 risk: high
@@ -8,7 +8,6 @@ side_effects: deploy_changes
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:digitalocean] 
 ---
 
 # Provision a DigitalOcean droplet as a Codex remote workspace

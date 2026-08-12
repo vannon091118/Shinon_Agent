@@ -1,6 +1,6 @@
 ---
 name: twilio-reliability-patterns
-description: >
+description: "Use when: reliability patterns, Twilio patterns. See communication-apis/twilio-developer-kit/twilio-reliability-patterns."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:twilio-developer-kit] 
 ---
 
 ## Overview

@@ -1,6 +1,6 @@
 ---
 name: chronograph-gp-meeting-prep
-description: >
+description: "Use when: GP meeting prep, LP meeting prep. See finance/chronograph-lp/chronograph-gp-meeting-prep."
 category: finance
 stack: LOGISCH + GOVERNANCE
 risk: high
@@ -8,7 +8,6 @@ side_effects: data_analysis
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:chronograph-lp] 
 ---
 
 # Chronograph GP Meeting Prep

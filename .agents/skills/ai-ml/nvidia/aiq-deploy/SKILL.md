@@ -1,6 +1,6 @@
 ---
 name: aiq-deploy
-description: |
+description: "Use when: NVIDIA AIQ deploy, AIQ inference. See ai-ml/nvidia/aiq-deploy."
 category: ai-ml
 stack: LOGISCH + SELF-IMPROVE
 risk: medium

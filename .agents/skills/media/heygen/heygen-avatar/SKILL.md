@@ -1,7 +1,7 @@
 ---
 version: "3.1.0 # x-release-please-version"
 name: heygen-avatar
-description: |
+description: "Create HeyGen digital human avatars: upload source footage, train identity, and manage avatar assets for video generation."
 category: media
 stack: KREATIV + GOVERNANCE
 risk: medium
@@ -10,7 +10,6 @@ requires_approval: false
 last_verified: 2026-08-11
   [codex:heygen] 
 argument-hint: "[name_or_description]"
-
 ---
 # HeyGen Avatar Designer
 

@@ -1,6 +1,6 @@
 ---
 name: ucp
-description: >-
+description: "Use when: UCP, UCP CLI, product comparison Shopify. See ecommerce/shopify/ucp."
 category: ecommerce
 stack: GOVERNANCE + AUTONOM
 risk: high
@@ -14,7 +14,6 @@ command: ucp
 metadata: 
 author: Shopify
 version: "1.9.1"
-
 ---
 # ucp
 

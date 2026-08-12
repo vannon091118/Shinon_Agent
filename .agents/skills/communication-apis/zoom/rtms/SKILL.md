@@ -1,6 +1,6 @@
 ---
 name: zoom-rtms
-description:  "[codex:zoom] Use when using RTMS."
+description: "Use Zoom RTMS: real-time media streaming, transcription, and audio/video processing from live meetings."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

@@ -1,6 +1,6 @@
 ---
 name: twilio-identity-verification-advisor
-description: >
+description: "Use when: identity verification, verify advisor. See communication-apis/twilio-developer-kit/twilio-identity-verification-advisor."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

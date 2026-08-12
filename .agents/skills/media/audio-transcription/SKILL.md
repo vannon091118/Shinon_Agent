@@ -1,6 +1,6 @@
 ---
 name: audio-transcription
-description: >-
+description: "Transkribiere Audio-Dateien lokal ohne Cloud-API-Keys. Nutze lokale Whisper-Modelle für schnelle, private Transkription von Sprache aus Audio- und Video-Dateien."
 category: media
 stack: KREATIV + GOVERNANCE
 risk: medium
@@ -8,9 +8,6 @@ side_effects: network_calls
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Transkribiere Audio-Dateien lokal ohne Cloud-API-Keys. Nutze lokale
-  Whisper-Modelle für schnelle, private Transkription von Sprache aus
-  Audio- und Video-Dateien.
 ---
 
 # Audio Transcription

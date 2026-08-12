@@ -1,6 +1,6 @@
 ---
 name: bulk-qa-answers
-description: >
+description: "Use when: bulk QA answers, QA bulk. See finance/datasite/bulk-qa-answers."
 stack: GOVERNANCE + AUTONOM
 risk: high
 side_effects: data_analysis
@@ -13,7 +13,6 @@ version: 1.0.0
 mcp-server: datasite
 category: deal-management
 tags: "[datasite, vdr, m&a, q-and-a, due-diligence, blueflame]"
-
 ---
 # Bulk Q&A Answers
 

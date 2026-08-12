@@ -1,6 +1,6 @@
 ---
 name: website-to-hyperframes
-description: |
+description: "Use when: website to Hyperframes, convert to Hyperframes. See design-tools/hyperframes/website-to-hyperframes."
 category: design-tools
 stack: KREATIV + GOVERNANCE
 risk: low
@@ -8,7 +8,6 @@ side_effects: file_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:hyperframes] 
 ---
 
 # Website to HyperFrames

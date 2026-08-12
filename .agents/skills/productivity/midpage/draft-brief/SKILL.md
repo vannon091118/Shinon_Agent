@@ -1,6 +1,6 @@
 ---
 name: draft-brief
-description: >-
+description: "Draft and format a court-ready filing and hand back the .docx. Briefs, motions, memoranda of"
 category: productivity
 stack: MEMORY + GOVERNANCE
 risk: medium

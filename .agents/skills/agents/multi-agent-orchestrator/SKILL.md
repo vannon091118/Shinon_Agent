@@ -1,6 +1,6 @@
 ---
 name: multi-agent-orchestrator
-description: >-
+description: "Orchestriere Multi-Agent-Workflows mit definierten Rollen, Gates und Preflight-Checks. Nutze bei komplexen Tasks, die mehrere spezialisierte Agent-Rollen erfordern (Task-Orchestrator, Arbiter-Coder, Protocol-Enforcer, Architecture-Guardian). Aus LifeGameLab Agent-System extrahiert."
 category: agents
 stack: AUTONOM + GOVERNANCE
 risk: high
@@ -8,10 +8,6 @@ side_effects: code_changes
 requires_approval: false
 version: 1.0.0
 last_verified: 2026-08-11
-  Orchestriere Multi-Agent-Workflows mit definierten Rollen, Gates und 
-  Preflight-Checks. Nutze bei komplexen Tasks, die mehrere spezialisierte
-  Agent-Rollen erfordern (Task-Orchestrator, Arbiter-Coder, Protocol-Enforcer,
-  Architecture-Guardian). Aus LifeGameLab Agent-System extrahiert.
 ---
 
 # Multi-Agent Orchestrator

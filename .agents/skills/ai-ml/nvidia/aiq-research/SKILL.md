@@ -1,6 +1,6 @@
 ---
 name: aiq-research
-description: |
+description: "Use when: NVIDIA AIQ research, AIQ research. See ai-ml/nvidia/aiq-research."
 category: ai-ml
 stack: LOGISCH + SELF-IMPROVE
 risk: medium

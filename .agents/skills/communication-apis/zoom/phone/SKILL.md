@@ -1,6 +1,6 @@
 ---
 name: build-zoom-phone-integration
-description:  "[codex:zoom] Use when building Phone."
+description: "Build Zoom Phone integrations: call control, voicemail, call queues, and PSTN features via the Zoom Phone API."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium

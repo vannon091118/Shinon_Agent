@@ -1,6 +1,6 @@
 ---
 name: twilio-conversations-classic-api
-description: >
+description: "Use when: conversations API, classic conversations. See communication-apis/twilio-developer-kit/twilio-conversations-classic-api."
 category: communication-apis
 stack: GOVERNANCE + AUTONOM
 risk: medium
@@ -8,7 +8,6 @@ side_effects: network_calls
 requires_approval: true
 version: 1.0.0
 last_verified: 2026-08-11
-  [codex:twilio-developer-kit] 
 ---
 
 ## Overview
