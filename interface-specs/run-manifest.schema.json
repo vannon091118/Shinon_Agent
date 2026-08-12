@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/run-manifest-v1.json",
+  "title": "Run Manifest — Cross-Component Contract",
+  "description": "Shared session document that ties Shinon → Promtguard → KARMA → goal-chain → LIMEN together during a single pipeline run. Append-only, immutable audit trail. Every component reads from and writes to this manifest.",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "pipeline_run_id",
+    "created_at",
+    "components",
+    "artifacts",
+    "handoffs",
+    "claims",
+    "errors"
+  ],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version of this manifest"
+    },
+    "pipeline_run_id": {
+      "type": "string",
+      "pattern": "^RUN-[A-Z0-9]{3,5}-\\d{8}-\\d{6}$",
+      "description": "Unique run identifier: RUN-{PROJECT_PREFIX}-{YYYYMMDD}-{HHMMSS}",
+      "examples": ["RUN-PZ-20260812-025921"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of pipeline start"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of last modification"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["INIT", "IN_PROGRESS", "COMPLETED", "FAILED", "ABORTED"],
+      "description": "Overall pipeline status"
+    },
+    "goal": {
+      "type": "string",
+      "description": "The original user goal that triggered this pipeline run"
+    },
+    "components": {
+      "type": "object",
+      "description": "Runtime state of each component in the pipeline",
+      "properties": {
+        "shinon": {
+          "$ref": "#/$defs/componentState"
+        },
+        "promtguard": {
+          "$ref": "#/$defs/componentState"
+        },
+        "karma": {
+          "$ref": "#/$defs/componentState"
+        },
+        "goalchain": {
+          "$ref": "#/$defs/componentState"
+        },
+        "limen": {
+          "$ref": "#/$defs/componentState"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "All artifacts produced during this run, cross-referenced by component and type",
+      "items": {
+        "$ref": "#/$defs/artifactRef"
+      }
+    },
+    "handoffs": {
+      "type": "array",
+      "description": "Handoff events between components. Append-only.",
+      "items": {
+        "$ref": "#/$defs/handoffEvent"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "description": "Claims registered during this run. Cross-referenced with Promtguard CLAIM-IDs.",
+      "items": {
+        "$ref": "#/$defs/claimRef"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Errors encountered. Append-only.",
+      "items": {
+        "$ref": "#/$defs/errorEvent"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Aggregated metrics computed post-run",
+      "properties": {
+        "total_tokens": { "type": "integer" },
+        "total_cost_usd": { "type": "number" },
+        "total_duration_ms": { "type": "integer" },
+        "api_calls": { "type": "integer" },
+        "retries": { "type": "integer" },
+        "claims_verified": { "type": "integer" },
+        "claims_refuted": { "type": "integer" },
+        "falsification_gates_passed": { "type": "integer" },
+        "falsification_gates_failed": { "type": "integer" }
+      }
+    }
+  },
+  "$defs": {
+    "componentState": {
+      "type": "object",
+      "required": ["status", "version"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "ACTIVE", "COMPLETED", "FAILED", "SKIPPED"],
+          "description": "Component execution status"
+        },
+        "version": {
+          "type": "string",
+          "description": "Component version used in this run"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "input_artifact_id": {
+          "type": "string",
+          "description": "Artifact ID consumed as input"
+        },
+        "output_artifact_id": {
+          "type": "string",
+          "description": "Artifact ID produced as output"
+        },
+        "error_count": {
+          "type": "integer",
+          "default": 0
+        },
+        "retry_count": {
+          "type": "integer",
+          "default": 0
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Component-specific metadata"
+        }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "required": ["artifact_id", "component", "type", "path"],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^ART-[A-Z0-9]{3,5}-\\d{4}$",
+          "description": "Unique artifact identifier: ART-{PREFIX}-{SEQ}",
+          "examples": ["ART-PZ-0001"]
+        },
+        "component": {
+          "type": "string",
+          "enum": ["shinon", "promtguard", "karma", "goalchain", "limen"],
+          "description": "Component that produced this artifact"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "character_context", "reply",
+            "research_prompt", "handoff", "claim", "decision", "context_token", "task_prompt",
+            "experience", "reward", "falsification_result", "knowledge_graph_snapshot",
+            "tid_output", "gate_result", "evil_twin", "plan", "architecture_report",
+            "api_response", "key_state_snapshot", "audit_entry", "routing_decision"
+          ],
+          "description": "Artifact type"
+        },
+        "path": {
+          "type": "string",
+          "description": "Relative path to the artifact file"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 content hash for integrity verification"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "size_bytes": {
+          "type": "integer"
+        }
+      }
+    },
+    "handoffEvent": {
+      "type": "object",
+      "required": ["handoff_id", "from_component", "to_component", "timestamp"],
+      "properties": {
+        "handoff_id": {
+          "type": "string",
+          "pattern": "^HOFF-\\d{4}$",
+          "description": "Sequential handoff identifier"
+        },
+        "from_component": {
+          "type": "string",
+          "enum": ["user", "shinon", "promtguard", "karma", "goalchain", "limen"]
+        },
+        "to_component": {
+          "type": "string",
+          "enum": ["shinon", "promtguard", "karma", "goalchain", "limen", "user"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "artifact_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Artifacts transferred in this handoff"
+        },
+        "claim_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Claims relevant to this handoff"
+        },
+        "note": {
+          "type": "string",
+          "description": "Human-readable handoff summary"
+        },
+        "requires_falsification": {
+          "type": "boolean",
+          "description": "Whether the receiving component must falsify the handoff content"
+        }
+      }
+    },
+    "claimRef": {
+      "type": "object",
+      "required": ["claim_id", "source_component", "status"],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^CLAIM-[A-Z]{3,5}-\\d{3}$",
+          "description": "Promtguard-compatible claim identifier"
+        },
+        "source_component": {
+          "type": "string",
+          "enum": ["promtguard", "karma"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["unverified", "supported", "confirmed", "refuted", "conflicted"],
+          "description": "Current verification status (KARMA-native statuses)"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Artifact IDs that serve as evidence"
+        },
+        "verified_by_component": {
+          "type": "string",
+          "enum": ["karma", "promtguard"]
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "errorEvent": {
+      "type": "object",
+      "required": ["error_id", "component", "timestamp", "message"],
+      "properties": {
+        "error_id": {
+          "type": "string",
+          "pattern": "^ERR-\\d{4}$"
+        },
+        "component": {
+          "type": "string",
+          "enum": ["shinon", "promtguard", "karma", "goalchain", "limen", "limen:429", "limen:key_exhausted"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["WARNING", "ERROR", "FATAL"]
+        },
+        "code": {
+          "type": "string",
+          "description": "Component-specific error code"
+        },
+        "message": {
+          "type": "string"
+        },
+        "recoverable": {
+          "type": "boolean"
+        },
+        "retry_after_ms": {
+          "type": "integer",
+          "description": "Cooldown duration if rate-limited (LIMEN-specific)"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": ["retry", "fallback", "skip", "abort", "manual"]
+        }
+      }
+    }
+  }
+}

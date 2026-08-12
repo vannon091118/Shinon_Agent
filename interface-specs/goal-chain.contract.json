@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/goal-chain-v1.json",
+  "title": "goal-chain — Component Contract",
+  "description": "TID-based skill orchestration with SQLite state management. The 'Tool Belt' — KARMA triggers skills, goal-chain executes them as runtime-dependent chains. Evil Twin Protocol for adversarial verification.",
+  "component": {
+    "name": "goal-chain",
+    "version": "3.0.0",
+    "language": "Bash + Python",
+    "role": "orchestration_layer",
+    "position": 2,
+    "parent": "karma",
+    "description": "KARMA's extended arm. Receives skill triggers, resolves TID dependencies, dispatches chain scripts, runs Evil Twin verification, manages gates. Runs parallel to KARMA, not between KARMA and LIMEN."
+  },
+
+  "input": {
+    "title": "goal-chain Input Contract",
+    "description": "Receives skill trigger from KARMA. Runs are seeded via seed_tids.py with project + goal.",
+    "required": ["trigger_source", "run_id"],
+    "properties": {
+      "trigger_source": {
+        "type": "string",
+        "enum": ["karma", "manual", "chain_autorun"],
+        "description": "Who triggered this run"
+      },
+      "run_id": {
+        "type": "string",
+        "pattern": "^R\\d{8}-\\d{6}$",
+        "description": "goal-chain run identifier"
+      },
+      "project": {
+        "type": "string",
+        "description": "Project prefix (3-5 chars)"
+      },
+      "goal": {
+        "type": "string",
+        "description": "The goal that seeds all TIDs"
+      },
+      "karma_context": {
+        "type": "object",
+        "description": "Additional context from KARMA (skill list, priorities, constraints)"
+      }
+    }
+  },
+
+  "output": {
+    "title": "goal-chain Output Contract",
+    "description": "TID execution results, gate decisions, dispatcher decisions, and skill artifacts.",
+    "required": ["run_id", "tid_results", "gate_results"],
+    "properties": {
+      "run_id": { "type": "string" },
+      "status": {
+        "type": "string",
+        "enum": ["IN_PROGRESS", "PASS", "FAIL", "STALLED"],
+        "description": "Overall run status"
+      },
+      "tid_results": {
+        "type": "array",
+        "description": "Results per executed TID",
+        "items": {
+          "type": "object",
+          "properties": {
+            "tid": { "type": "string" },
+            "phase": { "type": "string", "enum": ["P1", "P2", "P3", "P4", "G1-2", "G2-3", "STACK"] },
+            "phase_section": { "type": "string" },
+            "status": { "type": "string", "enum": ["DONE", "FAILED", "SKIPPED", "PENDING"] },
+            "skill_name": { "type": "string" },
+            "output_artifact": { "type": "string" },
+            "completed_at": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "gate_results": {
+        "type": "object",
+        "description": "Gate 1→2 and Gate 2→3 decisions",
+        "properties": {
+          "gate_1_2": {
+            "type": "object",
+            "properties": {
+              "result": { "type": "string", "enum": ["PASS", "FAIL"] },
+              "gap_count": { "type": "integer" },
+              "gaps": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "gate_2_3": {
+            "type": "object",
+            "properties": {
+              "result": { "type": "string", "enum": ["PASS", "FAIL"] },
+              "gap_count": { "type": "integer" },
+              "gaps": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "dispatcher_decisions": {
+        "type": "array",
+        "description": "All dispatcher routing decisions",
+        "items": {
+          "type": "object",
+          "properties": {
+            "tid": { "type": "string" },
+            "decision_type": { "type": "string" },
+            "decision_value": { "type": "string" },
+            "rationale": { "type": "string" }
+          }
+        }
+      },
+      "evil_twin_results": {
+        "type": "array",
+        "description": "Evil Twin Protocol outcomes",
+        "items": {
+          "type": "object",
+          "properties": {
+            "tid": { "type": "string" },
+            "rating": { "type": "string", "enum": ["FUNDAMENTAL", "OBERFLÄCHLICH"] },
+            "contradictions": { "type": "array", "items": { "type": "string" } },
+            "synthesis_needed": { "type": "boolean" }
+          }
+        }
+      },
+      "run_dir": {
+        "type": "string",
+        "description": "Path to run artifacts: .goal/{RUN_ID}-{slug}/"
+      }
+    }
+  },
+
+  "state": {
+    "title": "goal-chain Persisted State",
+    "description": "SQLite database with TID state, decisions, follow skills, alternative paths, user decisions, template markers.",
+    "storage": {
+      "type": "SQLite (WAL mode)",
+      "namespace": "goalchain",
+      "location": ".agents/skills/goal-chain/db/tid-state.db",
+      "tables": [
+        "tasks",
+        "pre_tasks",
+        "dispatcher_decisions",
+        "follow_skill",
+        "alternative_paths",
+        "user_decisions",
+        "template_markers"
+      ]
+    },
+    "run_artifacts": {
+      "location": ".goal/{RUN_ID}-{slug}/",
+      "contents": ["docs/", "wiki/", "learnings/", "design.md", "plan.md", "plan_v2.md", "evil-twin-*.md", "gate-*-result.txt", "architecture-report.html"]
+    }
+  },
+
+  "phases": {
+    "title": "Phase Structure (20 TIDs per run)",
+    "phases": [
+      {
+        "phase": "P1",
+        "name": "Planen",
+        "sequence": [1, 6],
+        "steps": ["brainstorming", "evil-twin-1", "writing-plans", "evil-twin-2", "architecture", "evil-twin-3"]
+      },
+      {
+        "phase": "G1-2",
+        "name": "Gate 1→2 Falsifikation",
+        "sequence": [7],
+        "steps": ["verification-before-completion"]
+      },
+      {
+        "phase": "P2",
+        "name": "Planung abschließen",
+        "sequence": [8, 11],
+        "steps": ["writing-plans-v2", "evil-twin-4", "systematic-debugging", "evil-twin-5"]
+      },
+      {
+        "phase": "G2-3",
+        "name": "Gate 2→3 Falsifikation",
+        "sequence": [12],
+        "steps": ["verification (2. Durchlauf)"]
+      },
+      {
+        "phase": "P3",
+        "name": "Ausführen",
+        "sequence": [13, 16],
+        "steps": ["subagent-dev", "evil-twin-6", "reviewer", "finishing"]
+      },
+      {
+        "phase": "P4",
+        "name": "Dokumentation",
+        "sequence": [17, 20],
+        "steps": ["documentation-writer", "wiki-system", "self-improvement", "evil-twin-7"]
+      },
+      {
+        "phase": "STACK",
+        "name": "Tool Chain",
+        "sequence": [21, 63],
+        "steps": ["43 chain scripts for media, design, testing, security, documents, etc."]
+      }
+    ]
+  },
+
+  "evil_twin_protocol": {
+    "title": "Evil Twin Protocol",
+    "description": "After every thinker step: spawn mirror thinker with identical data + adversarial prompting → WIDERSPRUCH.md → if FUNDAMENTAL: synthesis needed.",
+    "implementation": ".agents/skills/evil-twin-protocol/SKILL.md",
+    "metrics": {
+      "expected_fundamental_rate": "15-30%",
+      "token_overhead": "30-50%",
+      "false_positive_target": "<10%"
+    }
+  },
+
+  "changelog": {
+    "title": "See CHANGELOG.md for fix history",
+    "latest": "3.0.0 (2026-08-11)",
+    "fixes_applied": ["P0-1: verify-template before tid_done", "P0-2: Gate file evaluation with phase-skip", "P0-3: MARKER_LINE regex with grep -E"]
+  },
+
+  "implementation_status": {
+    "overall": "PARTIAL (P0-Bugs behoben, erster erfolgreicher Run steht bevor)",
+    "sections": {
+      "tid_state_machine": "IMPLEMENTED (SQLite, WAL mode)",
+      "dispatcher": "IMPLEMENTED",
+      "gates": "IMPLEMENTED (P0-2 fix: Gate-Auswertung aktiv)",
+      "evil_twin_protocol": "IMPLEMENTED (7 TIDs pro Run)",
+      "template_verification": "IMPLEMENTED (P0-3 fix: grep -E korrigiert)",
+      "multi_way_paths": "IMPLEMENTED",
+      "user_checkpoints": "IMPLEMENTED",
+      "chain_scripts": "43 Chain-Scripts vorhanden, ungetestet",
+      "seed_tids": "IMPLEMENTED (63 TIDs pro Run)",
+      "pipeline_completion": "NOT_VERIFIED — 0 Runs jemals vollständig abgeschlossen (2026-08-12)"
+    },
+    "last_verified_against_code": "2026-08-12",
+    "known_gaps": [
+      "0 DONE TIDs vor P0-Fixes (189 PENDING über 3 Runs)",
+      "Kein einziger vollständiger Run abgeschlossen — End-to-End-Test steht aus",
+      "Chain-Scripts ungetestet — nur Schema und TID-Struktur verifiziert",
+      "Drei P0-Bugs am 2026-08-12 behoben — erste Ausführung steht bevor"
+    ]
+  }
+}

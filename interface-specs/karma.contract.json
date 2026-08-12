@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/karma-v1.json",
+  "title": "KARMA — Component Contract",
+  "description": "CLI, State Machine, FalsificationGate, Learning Engine. The evidence-first layer that validates outputs as evidence producers, not finished truths. Asks 'Is it true?'",
+  "component": {
+    "name": "KARMA",
+    "version": "0.4.0",
+    "language": "Python",
+    "role": "cognition_layer",
+    "position": 2,
+    "description": "Empfängt Handoff von Promtguard. FalsificationGate validiert Outputs. Experience Store speichert immutable. Reward Model bewertet. Learning Engine verbessert. Orchestriert goal-chain als Tool Belt."
+  },
+
+  "input": {
+    "title": "KARMA Input Contract",
+    "description": "Receives structured handoff from Promtguard. Every input is treated as evidence to be falsified, not truth to be accepted.",
+    "required": ["handoff", "claims"],
+    "properties": {
+      "handoff": {
+        "type": "object",
+        "description": "Promtguard R04 handoff including task context and agent routing",
+        "required": ["from", "to", "task_id"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "task_id": { "type": "string" },
+          "task_prompt": { "type": "string" },
+          "context_token_id": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      },
+      "claims": {
+        "type": "array",
+        "description": "Claims to be falsified by the FalsificationGate",
+        "items": {
+          "type": "object",
+          "required": ["claim_id", "claim", "status"],
+          "properties": {
+            "claim_id": { "type": "string" },
+            "claim": { "type": "string" },
+            "status": { "type": "string" },
+            "evidence": { "type": "string" }
+          }
+        }
+      },
+      "run_manifest_ref": {
+        "type": "string",
+        "description": "Reference to the shared Run Manifest (session.json) pipeline_run_id"
+      }
+    }
+  },
+
+  "output": {
+    "title": "KARMA Output Contract",
+    "description": "Falsification results, experience records, reward scores, and goal-chain triggers.",
+    "required": ["falsification_results", "experience_records"],
+    "properties": {
+      "falsification_results": {
+        "type": "array",
+        "description": "Results of the FalsificationGate for each claim",
+        "items": {
+          "type": "object",
+          "required": ["claim_id", "result", "evidence"],
+          "properties": {
+            "claim_id": { "type": "string" },
+            "result": { "type": "string", "enum": ["supported", "confirmed", "refuted", "conflicted", "unverified"] },
+            "evidence": { "type": "array", "items": { "type": "string" } },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "gate_version": { "type": "string" }
+          }
+        }
+      },
+      "experience_records": {
+        "type": "array",
+        "description": "Immutable experience entries in the Experience Store",
+        "items": {
+          "type": "object",
+          "required": ["experience_id", "action", "outcome", "reward"],
+          "properties": {
+            "experience_id": { "type": "string" },
+            "action": { "type": "string" },
+            "outcome": { "type": "string" },
+            "reward": { "type": "number" },
+            "context_snapshot": { "type": "object" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "reward_report": {
+        "type": "object",
+        "description": "Reward Model evaluation for this turn",
+        "properties": {
+          "total_reward": { "type": "number" },
+          "components": { "type": "object" },
+          "motivation": { "type": "number", "minimum": 0, "maximum": 1 },
+          "should_continue": { "type": "boolean" }
+        }
+      },
+      "goalchain_triggers": {
+        "type": "array",
+        "description": "Skills/TIDs triggered via goal-chain Tool Belt",
+        "items": {
+          "type": "object",
+          "properties": {
+            "skill_name": { "type": "string" },
+            "tid": { "type": "string" },
+            "trigger_reason": { "type": "string" }
+          }
+        }
+      },
+      "knowledge_graph_update": {
+        "type": "object",
+        "description": "Updates to the Knowledge Graph based on new evidence",
+        "properties": {
+          "new_nodes": { "type": "integer" },
+          "new_edges": { "type": "integer" },
+          "contradictions_found": { "type": "integer" }
+        }
+      }
+    }
+  },
+
+  "state": {
+    "title": "KARMA Persisted State",
+    "description": "Schema-versioned SQLite with migrations. Immutable Experience Store enables replay.",
+    "storage": {
+      "type": "SQLite (schema-versioned)",
+      "namespace": "karma",
+      "tables": [
+        "karma_facts",
+        "karma_executions",
+        "karma_cascade",
+        "karma_knowledge_graph",
+        "karma_events"
+      ]
+    },
+    "replay_capability": {
+      "description": "Immutable Experience Store: wenn das Reward-Modell sich ändert, können alle historischen Erfahrungen durch die neuen Regeln laufen. Auditierbar. Enterprise-Grade.",
+      "status": "IMPLEMENTED"
+    }
+  },
+
+  "falsification_gate": {
+    "title": "FalsificationGate — Core Primitive",
+    "description": "Treats outputs as evidence producers, not finished truths. Claims exist with status lifecycle: unverified → supported → confirmed | conflicted. The gate is a Grundbedingung, not a plugin.",
+    "implementation": "karma/core/falsification_gate.py",
+    "status_lifecycle": {
+      "states": ["unverified", "supported", "confirmed", "refuted", "conflicted"],
+      "transitions": {
+        "unverified": ["supported", "refuted"],
+        "supported": ["confirmed", "conflicted"],
+        "confirmed": [],
+        "refuted": [],
+        "conflicted": ["supported", "refuted"]
+      }
+    }
+  },
+
+  "needs_engine": {
+    "title": "Needs Engine — Safety Stop",
+    "description": "Motivation < 0.3 → 'Nicht anfassen'. Agent stops when consistently performing poorly. 3x Reward < 0.20 triggers safety stop.",
+    "implementation": "karma/ml/reward_model.py"
+  },
+
+  "implementation_status": {
+    "overall": "PARTIAL",
+    "sections": {
+      "cli": "IMPLEMENTED (36 Tests grün)",
+      "falsification_gate": "IMPLEMENTED (Schema v4)",
+      "experience_store": "IMPLEMENTED (immutable, replay-fähig)",
+      "reward_model": "IMPLEMENTED",
+      "knowledge_graph": "PARTIAL (Domänen-System 4.3-4.6 offen)",
+      "needs_engine": "IMPLEMENTED",
+      "orchestrator": "IMPLEMENTED",
+      "turn_kernel": "IMPLEMENTED",
+      "karma_facts": "IMPLEMENTED",
+      "falsification_gate_integration": "NOT_VERIFIED — 0 Claims über Promtguard→KARMA Grenze gewandert"
+    },
+    "last_verified_against_code": "2026-07-17",
+    "known_gaps": [
+      "Knowledge Graph: Domänen 4.3-4.6 nicht implementiert",
+      "Cross-Component: Noch nie Claims von Promtguard empfangen und falsifiziert",
+      "goal-chain Integration: Skill-Trigger definiert, aber noch nie End-to-End gelaufen"
+    ]
+  }
+}

@@ -1,0 +1,138 @@
+#!/bin/bash
+# ═══════════════════════════════════════════════════════════════════
+# complete.sh v2 — Multi-Way Pipeline completion
+# After TID writes output → verify-template → user-checkpoint if required
+# ═══════════════════════════════════════════════════════════════════
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/tid-helpers.sh"
+
+TID="${1:?Usage: bash complete.sh TID [RESULT]}"
+RESULT="${2:-DONE}"
+AUTO_FLAG="${3:-}"
+
+ensure_db
+
+echo ""
+echo "══════════════════════════════════════════════════════════"
+echo "  COMPLETE: $TID"
+echo "══════════════════════════════════════════════════════════"
+
+# Get TID details
+OUTPUT_FILE=$(task_field "$TID" "output_artifact")
+REQUIRES_APPROVAL=$(task_field "$TID" "requires_approval")
+RUN_ID=$(task_field "$TID" "run_id")
+
+echo ""
+echo "══════════════════════════════════════════════════════════"
+echo "  COMPLETE: $TID"
+echo "══════════════════════════════════════════════════════════"
+
+# Get TID details
+OUTPUT_FILE=$(task_field "$TID" "output_artifact")
+REQUIRES_APPROVAL=$(task_field "$TID" "requires_approval")
+RUN_ID=$(task_field "$TID" "run_id")
+
+# Final progress for dashboard snapshot
+PROGRESS_SNAPSHOT=$(progress_summary "$RUN_ID")
+
+# Refresh HTML snapshot so /preview reflects new state
+SNAPSHOT_GLOB=$(find ".goal/${RUN_ID}"* -name 'snapshot.html' 2>/dev/null | head -1 || true)
+if [[ -n "$SNAPSHOT_GLOB" && -x "$SCRIPT_DIR/update-snapshot.sh" ]]; then
+    bash "$SCRIPT_DIR/update-snapshot.sh" "$RUN_ID" "TID_${RESULT} · $(progress_summary "$RUN_ID")" > "$SNAPSHOT_GLOB" 2>/dev/null || true
+fi
+
+# 1. Auto-verification (DRIFT DETECTION) — VOR Status-Transition
+#    Bugfix (P0-1): verify-template MUSS VOR tid_done laufen.
+#    Sonst: TID auf DONE, verify schlaegt fehl → Pipeline-Stall.
+GATE_RESULT=""
+if [[ -n "$OUTPUT_FILE" && "$OUTPUT_FILE" != "None" && -f "$OUTPUT_FILE" ]]; then
+    echo ""
+    echo "── DRIFT-VERIFICATION ──────────────────────────────────────"
+    if bash "$SCRIPT_DIR/verify-template.sh" "$TID" "$OUTPUT_FILE"; then
+        echo "  ✅ Drift-Check bestanden"
+    else
+        echo ""
+        echo "❌ DRIFT DETECTED — bitte Output korrigieren oder mit --force überschreiben"
+        if [[ "${4:-}" == "--force" ]]; then
+            echo "  --force flag gesetzt: überschreibe Drift-Detection"
+        else
+            echo "  Hint: bash $SCRIPT_DIR/verify-template.sh $TID $OUTPUT_FILE --explain"
+            exit 1
+        fi
+    fi
+    # Extrahiere Gate-Result (PASS/FAIL) fuer Gate-TIDs
+    TID_PHASE=$(task_field "$TID" "phase")
+    if [[ "$TID_PHASE" == G* ]]; then
+        GATE_RESULT=$(head -1 "$OUTPUT_FILE" 2>/dev/null | grep -oE '^(PASS|FAIL)$' || true)
+        echo "  🔀 Gate-Result: ${GATE_RESULT:-UNBEKANNT}"
+    fi
+fi
+
+# 2. Mark current TID as done (NACH erfolgreicher Verifikation)
+if [[ "$RESULT" == "DONE" ]]; then
+    tid_done "$TID"
+elif [[ "$RESULT" == "ROOT_CAUSE" ]]; then
+    # Agent hat Root-Cause-Analyse durchgeführt statt blind zu skippen
+    local rc_reason="${4:-Gate verified: no gap to fill}"
+    tid_root_cause_done "$TID" "$rc_reason"
+elif [[ "$RESULT" == "FAIL" ]]; then
+    tid_fail "$TID" "Agent reported failure"
+fi
+
+# Notify live dashboard
+notify_dashboard "TID_${RESULT}" "$TID" "$PROGRESS_SNAPSHOT"
+
+# Record decision (inkl. Gate-Result fuer Gate-TIDs)
+record_decision "$TID" "GATE_RESULT" "${GATE_RESULT:-$RESULT}" "Agent completed TID" "" ""
+
+# 3. Gate-Phase-Skip (Bugfix P0-2): MUSS VOR user-checkpoint laufen,
+#    da user-checkpoint mit exit 0 beendet und die Gate-Logik sonst nie erreicht wird.
+TID_PHASE=$(task_field "$TID" "phase")
+if [[ "$TID_PHASE" == G* && -n "$GATE_RESULT" ]]; then
+    _GATE_NEXT=$(next_pending_tid_after_gate "$RUN_ID" "$TID_PHASE" "$GATE_RESULT" "$OUTPUT_FILE")
+    echo "  🔀 Gate-Routing: ${GATE_RESULT} → next=${_GATE_NEXT:-NONE}"
+fi
+
+# 4. User Checkpoint (if this TID requires approval)
+if [[ "$REQUIRES_APPROVAL" == "1" ]]; then
+    echo ""
+    echo "🛑 USER APPROVAL REQUIRED — rufe user-checkpoint.sh"
+    echo ""
+    bash "$SCRIPT_DIR/user-checkpoint.sh" "$TID" "$AUTO_FLAG"
+    exit 0
+fi
+
+# 5. Find next TID (default linear — gate-skip already applied above)
+NEXT_TID=$(next_pending_tid "$RUN_ID")
+
+if [[ -z "$NEXT_TID" ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  🎉 ALLE TIDs ABGESCHLOSSEN!                           ║"
+    echo "║  Run $RUN_ID ist komplett.                              ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    exit 0
+fi
+
+NEXT_SCRIPT=$(script_for_tid "$NEXT_TID")
+echo ""
+echo "────────────────────────────────────────────────────────"
+echo "  ✅ $TID → $RESULT"
+echo "  ▶ NÄCHSTER TID (linear): $NEXT_TID"
+echo "────────────────────────────────────────────────────────"
+echo ""
+
+cat <<NEXTEOF
+
+╔══════════════════════════════════════════════════════════════╗
+║  🤖 AGENT: FÜHRE AUS                                       ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  Befehl:                                                   ║
+║    bash $NEXT_SCRIPT $RUN_ID $NEXT_TID                     ║
+║                                                            ║
+╚══════════════════════════════════════════════════════════════╝
+
+NEXTEOF

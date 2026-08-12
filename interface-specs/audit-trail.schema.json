@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/audit-trail-v1.json",
+  "title": "Audit Trail — Immutable Event Log",
+  "description": "Append-only JSONL event log. Every handoff, error, and state transition is recorded as an immutable line. Never modified, never deleted. Replay-fähig. Promtguard-kompatibel (gleiches Format wie context-log.jsonl und decision-journal.jsonl).",
+  "type": "object",
+  "required": ["event_id", "pipeline_run_id", "timestamp", "event_type"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^EVT-\\d{6}$",
+      "description": "Sequential event identifier: EVT-{000001..999999}"
+    },
+    "pipeline_run_id": {
+      "type": "string",
+      "pattern": "^RUN-[A-Z0-9]{3,5}-\\d{8}-\\d{6}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "pipeline.start",
+        "pipeline.complete",
+        "pipeline.abort",
+        "component.start",
+        "component.complete",
+        "component.fail",
+        "component.skip",
+        "handoff",
+        "claim.created",
+        "claim.verified",
+        "claim.refuted",
+        "error",
+        "retry",
+        "gate.pass",
+        "gate.fail",
+        "metric.snapshot"
+      ]
+    },
+    "component": {
+      "type": "string",
+      "enum": ["shinon", "promtguard", "karma", "goalchain", "limen", null]
+    },
+    "from_component": {
+      "type": "string",
+      "enum": ["user", "shinon", "promtguard", "karma", "goalchain", "limen", null]
+    },
+    "to_component": {
+      "type": "string",
+      "enum": ["shinon", "promtguard", "karma", "goalchain", "limen", "user", null]
+    },
+    "artifact_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "claim_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "note": {
+      "type": "string",
+      "description": "Human-readable event description (handoff note, error message, etc.)"
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["WARNING", "ERROR", "FATAL"]
+    },
+    "duration_ms": {
+      "type": "integer"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Event-type-specific extra data"
+    }
+  }
+}

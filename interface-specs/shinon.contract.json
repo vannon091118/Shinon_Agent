@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/shinon-v1.json",
+  "title": "ShinonLLM — Component Contract",
+  "description": "User-facing personality layer. Sits between the user and Promtguard. Character-first: attitude tracking (-10..+10), two-tier memory (Hot→Mid→Cold), Contract Gates, Replay Gates. Asks 'How does it sound?'",
+  "component": {
+    "name": "ShinonLLM",
+    "version": "0.3.0-alpha",
+    "language": "TypeScript",
+    "runtime": "Node.js 18+",
+    "role": "character_layer",
+    "position": 0,
+    "description": "Erste Schicht die der User sieht. Persönlichkeit, Ton, Attitude-State. Übergibt aufbereiteten Input an Promtguard."
+  },
+
+  "input": {
+    "title": "Shinon Input Contract",
+    "description": "Raw user input with conversation context. Shinon receives this and produces character-contextualized output.",
+    "required": ["user_text", "session_id"],
+    "properties": {
+      "user_text": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The raw user message"
+      },
+      "session_id": {
+        "type": "string",
+        "description": "Session identifier for memory and attitude persistence"
+      },
+      "conversation_id": {
+        "type": "string",
+        "description": "Conversation thread identifier"
+      },
+      "history": {
+        "type": "array",
+        "description": "Recent conversation history (last N turns)",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": { "type": "string", "enum": ["system", "user", "assistant"] },
+            "content": { "type": "string" }
+          }
+        }
+      },
+      "memory_context": {
+        "type": "object",
+        "description": "Additional memory context (backend preferences, model hints, etc.)"
+      }
+    }
+  },
+
+  "output": {
+    "title": "Shinon Output Contract",
+    "description": "Character-contextualized output ready for Promtguard handoff.",
+    "required": ["reply", "character_context", "handoff_to_promtguard"],
+    "properties": {
+      "reply": {
+        "type": "string",
+        "description": "The character-generated reply to the user (may be displayed or internal)"
+      },
+      "character_context": {
+        "type": "object",
+        "description": "Character-injected context for downstream components",
+        "properties": {
+          "attitudes": {
+            "type": "object",
+            "description": "Current attitude state (-10..+10 per dimension)",
+            "properties": {
+              "warmth": { "type": "number", "minimum": -10, "maximum": 10 },
+              "respect": { "type": "number", "minimum": -10, "maximum": 10 },
+              "patience": { "type": "number", "minimum": -10, "maximum": 10 },
+              "trust": { "type": "number", "minimum": -10, "maximum": 10 }
+            }
+          },
+          "emotional_state": {
+            "type": "string",
+            "enum": ["neutral", "amused", "annoyed", "concerned", "curious", "confrontational"]
+          },
+          "patterns": {
+            "type": "array",
+            "description": "Recognized behavioral patterns",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "enum": ["preference", "commitment", "relationship", "contradiction"] },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                "anchor": { "type": "string" }
+              }
+            }
+          },
+          "facts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Known facts from cold memory"
+          },
+          "should_confront": {
+            "type": "boolean",
+            "description": "Whether Shinon detected a contradiction requiring confrontation"
+          },
+          "tone_directive": {
+            "type": "string",
+            "description": "Tone instruction for downstream prompt generation"
+          }
+        }
+      },
+      "handoff_to_promtguard": {
+        "type": "object",
+        "description": "Structured handoff payload for Promtguard ingestion",
+        "required": ["processed_input", "character_annotations"],
+        "properties": {
+          "processed_input": {
+            "type": "string",
+            "description": "User input enriched with character context annotations"
+          },
+          "character_annotations": {
+            "type": "object",
+            "description": "Metadata Promtguard uses for prompt refinement"
+          },
+          "contract_version": {
+            "type": "string",
+            "const": "1.0.0"
+          }
+        }
+      },
+      "model": {
+        "type": "string",
+        "description": "LLM backend used for this turn"
+      },
+      "guardrail_status": {
+        "type": "string",
+        "const": "validated",
+        "description": "Always validated — Shinon fails closed"
+      }
+    }
+  },
+
+  "state": {
+    "title": "Shinon Persisted State",
+    "description": "What Shinon persists between turns. Two-Tier Memory + Attitude + Contract/Replay Gates.",
+    "storage": {
+      "type": "SQLite",
+      "namespace": "shinon",
+      "tables": [
+        "shinon_attitude_state",
+        "shinon_memory_hot",
+        "shinon_memory_mid",
+        "shinon_contract_history",
+        "shinon_replay_log"
+      ]
+    },
+    "cold_memory": {
+      "description": "Shinon COLD memory reads from KARMA Facts (shared truth source). No separate cold table.",
+      "source": "karma_facts",
+      "access": "READ_ONLY"
+    }
+  },
+
+  "contract_gates": {
+    "title": "Contract Gates",
+    "description": "Deterministic validation that runs before Shinon accepts or produces output.",
+    "rules": [
+      {
+        "gate": "input_validation",
+        "description": "Fail-closed: malformed input rejected with error code",
+        "implementation": "character/src/contracts/inputSchema.ts"
+      },
+      {
+        "gate": "output_validation",
+        "description": "Fail-closed: output schema violation prevents handoff",
+        "implementation": "character/src/contracts/outputSchema.ts"
+      },
+      {
+        "gate": "action_allowlist",
+        "description": "Only permitted character actions pass through",
+        "implementation": "character/src/contracts/actionSchema.ts"
+      }
+    ]
+  },
+
+  "replay_gates": {
+    "title": "Replay Gates",
+    "description": "Like KARMA's Replay Engine, but on conversation history. Enables re-evaluating past character decisions with updated attitude rules.",
+    "implementation": "character/src/experience/twoTierMemory.ts"
+  },
+
+  "implementation_status": {
+    "overall": "PARTIAL",
+    "sections": {
+      "input_validation": "IMPLEMENTED",
+      "output_validation": "IMPLEMENTED",
+      "action_allowlist": "IMPLEMENTED",
+      "identity": "IMPLEMENTED",
+      "attitude_tracker": "IMPLEMENTED",
+      "emotional_state": "IMPLEMENTED",
+      "pattern_engine": "STUB — extractPatternsFromInput returns empty array",
+      "two_tier_memory": "STUB — queryCharacterMemory returns {facts:[], patterns:[]}",
+      "sqlite_adapter": "STUB — evaluateAttitudes returns neutral defaults",
+      "handoff_to_promtguard": "NOT_IMPLEMENTED"
+    },
+    "last_verified_against_code": null,
+    "known_gaps": [
+      "Pattern Engine expects PersonalFact objects — userText conversion not implemented",
+      "Two-Tier Memory requires SQLite adapter — currently stub returning empty results",
+      "Attitude persistence via SQLite — stub returns neutral state",
+      "Handoff to Promtguard: interface defined but no runtime integration"
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+# ─── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# ─── Node ──────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+.next/
+
+# ─── Environment & Secrets ─────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.toml.bak.*
+*.env.bak.*
+
+# ─── SQLite ────────────────────────────────────────────────────
+*.db-shm
+*.db-wal
+*.sqlite3
+
+# ─── IDE & Editor ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Build Artifacts ───────────────────────────────────────────
+/tmp/
+*.log
+!phase3_finish.log
+!.goal/**/*.log
+
+# ─── Freebuff / Workspace ──────────────────────────────────────
+.freebuff/preview-*.log
+.freebuff/desktop-v2.db
+.freebuff/run.md
+.promtset/state/claim-log.jsonl
+
+# ─── Large Archives ────────────────────────────────────────────
+*.7z
+*.zip
+!assets/*.zip
+
+# ─── Data directories (keep schema, ignore runtime data) ──────
+karma-main/state/
+karma-main/data/
+fusion-main/data/
+.promtset/state/*.jsonl
+!.promtset/state/*.md
+
+# ─── Test residue ──────────────────────────────────────────────
+/goal-chain-test-*.db
+.test_*

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>🔗 GOAL-CHAIN LIVE · WebSocket-Free</title>
+<style>
+    :root {
+      --bg: #0f172a; --bg-card: #1e293b; --bg-card-light: #334155;
+      --fg: #f1f5f9; --fg-dim: #cbd5e1; --accent: #3b82f6;
+      --accent-glow: rgba(59,130,246,.15); --success: #10b981;
+      --warn: #f59e0b; --danger: #ef4444; --muted: #6b7280;
+      --border: #334155; --shadow: rgba(0,0,0,.3);
+      --header-bg: linear-gradient(135deg, #1e293b, #334155);
+      --skill-tile-bg: #334155;
+      --skill-tile-hover-shadow: 0 4px 12px rgba(0,0,0,.3);
+      --phase-hover: rgba(59,130,246,.15);
+      --settings-bg: #1e293b;
+      --settings-border: #334155;
+      --toggle-bg: #334155;
+      --toggle-knob: #f1f5f9;
+      --toggle-active-bg: #3b82f6;
+      --input-bg: #0f172a;
+      --input-border: #334155;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc; --bg-card: #ffffff; --bg-card-light: #e2e8f0;
+      --fg: #0f172a; --fg-dim: #475569; --accent: #2563eb;
+      --accent-glow: rgba(37,99,235,.1); --success: #059669;
+      --warn: #d97706; --danger: #dc2626; --muted: #94a3b8;
+      --border: #cbd5e1; --shadow: rgba(0,0,0,.08);
+      --header-bg: linear-gradient(135deg, #ffffff, #f1f5f9);
+      --skill-tile-bg: #f1f5f9;
+      --skill-tile-hover-shadow: 0 4px 12px rgba(0,0,0,.08);
+      --phase-hover: rgba(37,99,235,.08);
+      --settings-bg: #ffffff;
+      --settings-border: #cbd5e1;
+      --toggle-bg: #cbd5e1;
+      --toggle-knob: #ffffff;
+      --toggle-active-bg: #2563eb;
+      --input-bg: #f1f5f9;
+      --input-border: #cbd5e1;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: -apple-system,BlinkMacSystemFont,"SF Mono",Menlo,monospace;
+      background: var(--bg); color: var(--fg); font-size: 13px;
+      transition: background .35s ease, color .35s ease;
+    }
+    .container { padding: 14px; max-width: 1400px; margin: 0 auto; }
+    .header {
+      background: var(--header-bg);
+      border: 1px solid var(--accent); border-radius: 8px;
+      padding: 14px 20px; margin-bottom: 14px;
+      box-shadow: 0 0 30px var(--accent-glow);
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .header-right-group { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .header-left { flex: 1; }
+    .title { font-size: 18px; font-weight: 700; color: var(--accent); }
+    .subtitle { color: var(--fg-dim); font-size: 11px; margin-top: 3px; }
+    .live-pill {
+      background: var(--accent); color: #fff; padding: 5px 12px;
+      border-radius: 10px; font-size: 11px; font-weight: 600;
+      animation: pulse 2s infinite; white-space: nowrap;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;
+      transition: background .35s ease, border-color .35s ease, box-shadow .35s ease;
+    }
+    .progress-num { font-size: 22px; font-weight: 700; color: var(--success); }
+    .bar-wrap {
+      background: var(--bg-card-light); border-radius: 6px;
+      height: 22px; overflow: hidden; margin: 8px 0;
+    }
+    .bar {
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      height: 100%; transition: width .3s ease;
+      box-shadow: 0 0 10px var(--accent-glow);
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-right: 8px; color: #fff; font-weight: 700; font-size: 10px;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+    .stat {
+      background: var(--bg-card-light); border-radius: 5px;
+      padding: 8px 10px; text-align: center;
+    }
+    .stat-num { font-size: 20px; font-weight: 700; }
+    .stat-label { font-size: 9px; color: var(--fg-dim); margin-top: 2px; }
+    .section-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+    .tid-row {
+      display: grid; grid-template-columns: 22px 40px 20px 1fr 100px 80px;
+      gap: 6px; align-items: center; padding: 3px 5px;
+      border-bottom: 1px solid var(--bg-card-light); font-size: 10px;
+    }
+    .tid-active { background: var(--accent-glow); border-left: 3px solid var(--accent); }
+    .eviltwin-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+    .et-card {
+      text-align: center; padding: 7px; background: var(--bg-card-light);
+      border-radius: 4px; font-size: 10px;
+    }
+    .et-active { border: 2px solid var(--accent); background: rgba(59,130,246,.15); }
+    .badge-et { background: var(--danger); color: #fff; padding: 1px 4px; border-radius: 6px; font-size: 8px; font-weight: 700; }
+    .badge-cp { background: var(--warn); color: #000; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .footer { text-align: center; color: var(--muted); font-size: 9px; padding: 12px; }
+    .fade-in { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .conn-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .conn-dot-live { background: var(--success); animation: pulse 2s infinite; }
+    .conn-dot-dead { background: var(--danger); }
+
+    /* --- Skill Tile Styles (inline, no injection) --- */
+    .skills-section {
+      background: linear-gradient(135deg, rgba(16,185,129,.08), var(--bg-card));
+      border: 1px solid rgba(16,185,129,.4);
+    }
+    .skills-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px; margin-top: 8px;
+    }
+    .skill-tile {
+      background: var(--skill-tile-bg); border-radius: 6px; padding: 10px 12px;
+      border-left: 3px solid var(--muted); transition: transform .2s ease, background .35s ease;
+      position: relative;
+    }
+    .skill-tile:hover { transform: translateY(-2px); box-shadow: var(--skill-tile-hover-shadow); }
+    .skill-tile .tile-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .skill-tile .tile-name { font-weight: 700; font-size: 12px; color: var(--fg); }
+    .skill-tile .tile-state { font-size: 10px; padding: 2px 6px; border-radius: 8px; background: var(--bg); }
+    .skill-tile .tile-summary { font-size: 10px; color: var(--fg-dim); margin-top: 5px; line-height: 1.4; }
+    .skill-tile .tile-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+    .skill-tile .tile-tag { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 8px; color: var(--fg-dim); }
+    .skill-tile .tile-meta { font-size: 9px; color: var(--muted); margin-top: 5px; display: flex; justify-content: space-between; }
+    .skill-tile[data-state="connected"] { border-left-color: #10b981; }
+    .skill-tile[data-state="active"]   { border-left-color: #3b82f6; }
+    .skill-tile[data-state="done"]     { border-left-color: #10b981; }
+    .skill-tile[data-state="error"]    { border-left-color: #ef4444; }
+    .skill-tile[data-state="planning"] { border-left-color: #f59e0b; }
+    .skill-tile[data-state="idle"]     { border-left-color: #6b7280; }
+    .dual-role-badge {
+      position: absolute; top: 6px; right: 6px; font-size: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--success));
+      color: #fff; padding: 1px 5px; border-radius: 6px; font-weight: 700;
+    }
+    .registry-tail {
+      font-size: 9px; color: var(--muted); padding: 6px 0;
+      max-height: 80px; overflow-y: auto;
+    }
+    .registry-entry { padding: 2px 0; border-bottom: 1px dotted var(--bg-card-light); }
+
+    /* --- Phase Group Toggle --- */
+    .phase-group { margin-bottom: 6px; }
+    .phase-header {
+      display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+      background: var(--bg-card-light); border-radius: 5px; cursor: pointer;
+      user-select: none; transition: background .15s ease;
+    }
+    .phase-header:hover { background: var(--phase-hover); }
+    .phase-toggle { font-size: 10px; width: 14px; transition: transform .2s ease; }
+    .phase-toggle.open { transform: rotate(90deg); }
+    .phase-label { font-weight: 700; font-size: 12px; }
+    .phase-count { font-size: 9px; color: var(--fg-dim); }
+    .phase-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; font-weight: 600; }
+    .phase-body { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
+    .phase-body.open { max-height: 2000px; }
+    .phase-group[data-phase="P1"] .phase-header { border-left: 3px solid #a78bfa; }
+    .phase-group[data-phase="P2"] .phase-header { border-left: 3px solid #60a5fa; }
+    .phase-group[data-phase="P3"] .phase-header { border-left: 3px solid #34d399; }
+    .phase-group[data-phase="P4"] .phase-header { border-left: 3px solid #fbbf24; }
+    .phase-group[data-phase="G1-2"] .phase-header { border-left: 3px solid #f87171; }
+    .phase-group[data-phase="G2-3"] .phase-header { border-left: 3px solid #fb923c; }
+    .phase-group[data-phase="STACK"] .phase-header { border-left: 3px solid #94a3b8; }
+
+    /* --- Settings Panel --- */
+    .settings-btn {
+      background: var(--bg-card-light); border: 1px solid var(--border);
+      color: var(--fg-dim); width: 32px; height: 32px; border-radius: 8px;
+      cursor: pointer; font-size: 16px; display: flex; align-items: center;
+      justify-content: center; transition: all .2s ease;
+    }
+    .settings-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--phase-hover); }
+    .settings-btn.open { color: var(--accent); border-color: var(--accent); transform: rotate(45deg); }
+    .settings-panel {
+      background: var(--settings-bg); border: 1px solid var(--settings-border);
+      border-radius: 10px; padding: 20px; margin-bottom: 14px;
+      max-height: 0; overflow: hidden; opacity: 0;
+      transition: max-height .4s ease, opacity .3s ease, padding .3s ease, margin .3s ease;
+    }
+    .settings-panel.open { max-height: 400px; opacity: 1; padding: 20px; margin-bottom: 14px; }
+    .settings-panel.closed { padding: 0 20px; margin-bottom: 0; border-width: 0; }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-weight: 600; font-size: 12px; color: var(--fg); }
+    .settings-desc { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
+    .toggle-switch {
+      position: relative; width: 48px; height: 26px; flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--toggle-bg); border-radius: 26px; transition: .3s;
+    }
+    .toggle-slider:before {
+      content: ""; position: absolute; height: 20px; width: 20px;
+      left: 3px; bottom: 3px; background: var(--toggle-knob);
+      border-radius: 50%; transition: .3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    input:checked + .toggle-slider { background: var(--toggle-active-bg); }
+    input:checked + .toggle-slider:before { transform: translateX(22px); }
+    .settings-select {
+      background: var(--input-bg); color: var(--fg); border: 1px solid var(--input-border);
+      border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: inherit;
+      cursor: pointer; outline: none;
+    }
+    .settings-select:focus { border-color: var(--accent); }
+    .theme-icon { font-size: 11px; margin-right: 4px; }
+
+    /* --- API Key Status --- */
+    .keys-section { border-color: rgba(59,130,246,.5) !important; }
+    .keys-summary { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .key-stat-pill {
+      padding: 6px 14px; border-radius: 16px; font-size: 11px; font-weight: 600;
+      background: var(--bg-card-light); display: flex; align-items: center; gap: 6px;
+    }
+    .key-stat-pill .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .key-row {
+      display: grid; grid-template-columns: 90px 70px 70px 1fr 100px;
+      gap: 8px; align-items: center; padding: 6px 8px;
+      border-bottom: 1px solid var(--border); font-size: 10px;
+    }
+    .key-id { font-family: "SF Mono", Menlo, monospace; color: var(--fg-dim); font-size: 9px; }
+    .key-status { font-weight: 700; text-transform: uppercase; font-size: 9px; }
+    .key-gauge {
+      background: var(--bg-card-light); border-radius: 4px; height: 8px;
+      overflow: hidden; position: relative;
+    }
+    .key-gauge-fill {
+      height: 100%; border-radius: 4px; transition: width .5s ease;
+    }
+    .key-gauge-label { font-size: 8px; color: var(--fg-dim); margin-bottom: 2px; }
+    .key-health-bar { width: 100%; height: 6px; background: var(--bg-card-light); border-radius: 3px; overflow: hidden; }
+    .key-health-fill { height: 100%; border-radius: 3px; transition: width .5s ease, background .5s ease; }
+    .keys-empty { text-align: center; color: var(--muted); font-size: 10px; padding: 10px; }
+
+    /* --- Root Cause Expandable Detail --- */
+    .tid-row.rc-clickable { cursor: pointer; transition: background .15s ease; }
+    .tid-row.rc-clickable:hover { background: rgba(167,139,250,.12); }
+    .rc-detail {
+      max-height: 0; overflow: hidden; transition: max-height .3s ease, padding .3s ease;
+      background: rgba(167,139,250,.06); border-left: 2px solid #a78bfa;
+      padding: 0 8px; margin: 0 0 0 8px; font-size: 10px; color: var(--fg-dim);
+      line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+    }
+    .rc-detail.open { max-height: 400px; padding: 6px 8px; margin-bottom: 2px; }
+    .rc-detail .rc-label { font-weight: 700; color: #a78bfa; font-size: 9px; text-transform: uppercase; }
+    .rc-detail .rc-entry { padding: 3px 0; border-bottom: 1px dotted var(--border); }
+    .rc-detail .rc-entry:last-child { border-bottom: none; }
+    .rc-detail .rc-type { font-weight: 700; font-size: 9px; color: var(--accent); }
+    .rc-chevron { display: inline-block; font-size: 8px; margin-left: 3px; transition: transform .2s ease; }
+    .rc-chevron.open { transform: rotate(90deg); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <div class="title">🧬 GOAL-CHAIN LIVE STATUS</div>
+      <div class="subtitle" id="header-run"></div>
+      <div class="subtitle" id="header-goal"></div>
+    </div>
+    <div class="header-right-group">
+      <button class="settings-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙️</button>
+      <div class="live-pill" id="live-pill">● LIVE · --:--:--</div>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="settings-panel closed" id="settings-panel">
+    <div class="settings-row">
+      <div>
+        <div class="settings-label"><span class="theme-icon" id="theme-icon">🌙</span> Dark Mode</div>
+        <div class="settings-desc">Switch between dark and light theme</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">⏱️ Refresh Rate</div>
+        <div class="settings-desc">How often the dashboard polls for updates</div>
+      </div>
+      <select class="settings-select" id="refresh-rate" onchange="updateRefreshRate()">
+        <option value="500">500ms (fast)</option>
+        <option value="1000">1s (normal)</option>
+        <option value="2000">2s (slow)</option>
+        <option value="5000">5s (relaxed)</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">📐 Compact Mode</div>
+        <div class="settings-desc">Reduce padding for denser information display</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="compact-toggle" onchange="toggleCompact()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🔢 Auto-Collapse Phases</div>
+        <div class="settings-desc">Collapse all completed phases on load</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="autocollapse-toggle" onchange="updateAutoCollapse()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:var(--fg-dim);font-size:10px;text-transform:uppercase;">Progress</span>
+      <span class="progress-num" id="prog-num"></span>
+    </div>
+    <div class="bar-wrap"><div class="bar" id="prog-bar"></div></div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-num" style="color:var(--success);" id="stat-done"></div><div class="stat-label">DONE</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--accent);" id="stat-active"></div><div class="stat-label">ACTIVE</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--muted);" id="stat-pending"></div><div class="stat-label">PENDING</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--danger);" id="stat-failed"></div><div class="stat-label">FAILED</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--muted);" id="stat-skipped"></div><div class="stat-label">SKIPPED</div></div>
+      <div class="stat"><div class="stat-num" style="color:#a78bfa;" id="stat-rootcause"></div><div class="stat-label">ROOT CAUSE</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(135deg,rgba(239,68,68,.1),var(--bg-card));border-color:rgba(239,68,68,.4);">
+    <div class="section-title" style="color:var(--danger);">🦇 Evil Twin Activity</div>
+    <div class="eviltwin-grid" id="evil-twins"></div>
+    <div style="margin-top:6px;font-size:9px;color:var(--fg-dim);font-style:italic;">
+      Jedes 🦇 spawned einen Mirror-Thinker. Aufgabe: fundamental widersprechen. FUNDAMENTAL-Rate: 15-30%.
+    </div>
+  </div>
+
+  <!-- LIMEN API Key Status -->
+  <div class="card keys-section">
+    <div class="section-title" style="color:var(--accent);display:flex;justify-content:space-between;align-items:center;">
+      <span>🔑 LIMEN API Key Status</span>
+      <span style="font-size:9px;color:var(--fg-dim);" id="keys-updated"></span>
+    </div>
+    <div class="keys-summary" id="keys-summary"></div>
+    <div id="keys-list"></div>
+    <div class="keys-empty" id="keys-empty" style="display:none;">
+      ⚠️ LIMEN DB nicht gefunden. Starte LIMEN mit <code>python -m limen</code> um die providers-Tabelle zu initialisieren.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📊 All TIDs · Drift-Detection Ready</div>
+    <div id="tid-list"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="section-title">▶ Next TID</div>
+      <div id="next-tid" style="padding:8px 12px;background:rgba(59,130,246,.15);border-radius:6px;color:var(--accent);"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">📋 Recent Decisions</div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px;" id="decisions"></table>
+    </div>
+  </div>
+
+  <!-- Live Skill Registry — single instance -->
+  <div class="card skills-section" style="margin-top:14px;">
+    <div class="section-title" style="color:var(--success);display:flex;justify-content:space-between;align-items:center;">
+      <span>🔌 Live Skill Registry — Jeder Skill = UPDATER + Token-Artefakt</span>
+      <span style="font-size:9px;color:var(--fg-dim);">Live-Updates via SSE · Refresh: 500ms</span>
+    </div>
+    <div class="skills-grid" id="skills-grid"></div>
+    <div style="margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:4px;font-size:9px;color:var(--fg-dim);font-style:italic;">
+      🔋 Tokenersparnis: Re-Aktivierung liest nur diesen ~25-Zeilen-Snapshot statt voller SKILL.md (~300 Zeilen).
+      Verzeichnis: <code>.agents/skills/live/</code> · API: <code>/api/skills</code>, <code>/api/skill/&lt;name&gt;</code>
+    </div>
+    <div class="registry-tail" id="registry-tail"></div>
+  </div>
+
+  <div class="footer">
+    <span class="conn-dot conn-dot-live" id="conn-dot"></span>
+    <span id="conn-status">🔌 Connected · Live SSE</span> ·
+    DB: <code>.agents/skills/goal-chain/db/tid-state.db</code> ·
+    Poll: 500ms
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// THEME & SETTINGS — localStorage-persisted
+// ═══════════════════════════════════════════════════════════════
+const SETTINGS_KEY = 'goal-chain-dashboard-settings';
+let settings = loadSettings();
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { theme:'dark', refreshRate:500, compact:false, autoCollapse:false };
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function applyTheme() {
+  const isDark = settings.theme === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-toggle').checked = !isDark; // checked = light mode on
+  document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  // Update adjacent label text
+  const label = document.getElementById('theme-icon').nextSibling;
+  if (label) label.textContent = isDark ? ' Dark Mode' : ' Light Mode';
+}
+
+function toggleTheme() {
+  settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+  saveSettings();
+  applyTheme();
+}
+
+function updateRefreshRate() {
+  settings.refreshRate = parseInt(document.getElementById('refresh-rate').value);
+  saveSettings();
+}
+
+function toggleCompact() {
+  settings.compact = document.getElementById('compact-toggle').checked;
+  saveSettings();
+  applyCompact();
+}
+
+function applyCompact() {
+  document.documentElement.style.setProperty('--compact-padding', settings.compact ? '6px' : '14px');
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.padding = settings.compact ? '8px 12px' : '';
+  });
+  document.querySelector('.container').style.padding = settings.compact ? '6px' : '';
+}
+
+function updateAutoCollapse() {
+  settings.autoCollapse = document.getElementById('autocollapse-toggle').checked;
+  saveSettings();
+}
+
+// Settings panel toggle
+function initSettingsPanel() {
+  const btn = document.getElementById('settings-btn');
+  const panel = document.getElementById('settings-panel');
+  btn.addEventListener('click', () => {
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+      panel.classList.remove('open');
+      panel.classList.add('closed');
+      btn.classList.remove('open');
+    } else {
+      panel.classList.remove('closed');
+      panel.classList.add('open');
+      btn.classList.add('open');
+    }
+  });
+}
+
+// Restore settings UI state
+function restoreSettingsUI() {
+  document.getElementById('theme-toggle').checked = settings.theme === 'light';
+  document.getElementById('refresh-rate').value = settings.refreshRate;
+  document.getElementById('compact-toggle').checked = settings.compact;
+  document.getElementById('autocollapse-toggle').checked = settings.autoCollapse;
+  applyCompact();
+}
+
+// Initialize on load
+applyTheme();
+restoreSettingsUI();
+initSettingsPanel();
+
+function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+const STATUS_ICONS = {DONE:'✅',IN_PROGRESS:'🔄',FAILED:'❌',SKIPPED:'⏭️',ROOT_CAUSE_DONE:'🎯',PENDING:'⏳'};
+const STATUS_COLORS = {DONE:'var(--success)',IN_PROGRESS:'var(--accent)',FAILED:'var(--danger)',SKIPPED:'var(--muted)',ROOT_CAUSE_DONE:'#a78bfa',PENDING:'var(--muted)'};
+const PHASE_ICONS = {P1:'🧠',P2:'🔧',P3:'⚙️',P4:'📝','G1-2':'🚪','G2-3':'🚪',STACK:'🔧'};
+
+const SKILL_STATE_COLOR = {connected:'#10b981',active:'#3b82f6',done:'#10b981',error:'#ef4444',planning:'#f59e0b',idle:'#6b7280',pending:'#9ca3af'};
+const SKILL_STATE_ICON  = {connected:'🔌',active:'🔄',done:'✅',error:'❌',planning:'🧠',idle:'⏸️',pending:'⏳'};
+
+const evtSource = new EventSource("/events");
+let lastUpdate = 0;
+
+evtSource.onmessage = function(event) {
+  const state = JSON.parse(event.data);
+  const now = Date.now();
+  if (now - lastUpdate < 200) return;
+  lastUpdate = now;
+  render(state);
+};
+
+evtSource.onerror = function() {
+  document.getElementById('conn-dot').className = 'conn-dot conn-dot-dead';
+  document.getElementById('conn-status').textContent = 'Reconnecting...';
+};
+
+evtSource.onopen = function() {
+  document.getElementById('conn-dot').className = 'conn-dot conn-dot-live';
+  document.getElementById('conn-status').textContent = '🔌 Connected · Live SSE';
+};
+
+function renderSkills(skills) {
+  if (!skills || !skills.length) {
+    document.getElementById('skills-grid').innerHTML = '<div style="color:var(--muted);font-size:10px;padding:6px;">⚠️ Keine Skill-Snapshots. Run: <code>bash .agents/skills/goal-chain/scripts/activate-all-skills.sh</code></div>';
+    return;
+  }
+  let html = '';
+  for (const s of skills) {
+    // Show "connected" for existing snapshots instead of "idle"
+    const displayState = (s.state === 'idle' || s.state === 'pending') ? 'connected' : (s.state || 'connected');
+    const icon = SKILL_STATE_ICON[displayState] || '🔌';
+    const color = SKILL_STATE_COLOR[displayState] || '#10b981';
+    const last = (s.last_activation || '').substring(11, 19) || '—';
+    const tags = (s.tags || []).map(t => '<span class="tile-tag">'+t+'</span>').join('');
+    const sizeKb = s.size_bytes ? Math.round(s.size_bytes/1024*10)/10 : 0;
+    const cnt = (typeof s.activation_count === 'number') ? s.activation_count : (parseInt(s.activation_count) || 0);
+    html += '<div class="skill-tile" data-state="'+displayState+'" title="'+s.skill+' · '+cnt+' activations">'+
+            '<div class="dual-role-badge">⚡ UPDATER</div>'+
+            '<div class="tile-header">'+
+              '<div class="tile-name">'+icon+' '+s.skill+'</div>'+
+              '<div class="tile-state" style="color:'+color+';font-weight:700;">'+displayState.toUpperCase()+'</div>'+
+            '</div>'+
+            '<div class="tile-summary">'+(s.summary || '(no summary)')+'</div>'+
+            '<div class="tile-tags">'+tags+'</div>'+
+            '<div class="tile-meta"><span>catalog</span><span>count='+cnt+'</span><span>'+last+'</span><span>'+sizeKb+' KB</span></div>'+
+            '</div>';
+  }
+  document.getElementById('skills-grid').innerHTML = html;
+}
+
+function renderRegistry(entries) {
+  if (!entries || !entries.length) {
+    document.getElementById('registry-tail').innerHTML = '<div style="color:var(--muted);text-align:center;">No registry entries yet</div>';
+    return;
+  }
+  let html = '<div style="color:var(--fg-dim);font-size:9px;margin-bottom:4px;">📜 Recent Registry (last ' + entries.length + ' activations):</div>';
+  for (const e of entries.slice(0, 8)) {
+    const icon = SKILL_STATE_ICON[e.state] || '🔌';
+    const ts = (e.ts || '').substring(11, 19) || '—';
+    const skill = e.skill || '?';
+    const tags = (e.tags || []).slice(0,3).map(t => typeof t === 'string' ? t : JSON.stringify(t)).join(', ');
+    html += '<div class="registry-entry">'+icon+' <strong>'+skill+'</strong> → '+(e.state||'connected')+' · '+ts+' '+(tags?'['+tags+']':'')+'</div>';
+  }
+  document.getElementById('registry-tail').innerHTML = html;
+}
+
+function render(s) {
+  document.getElementById('header-run').textContent = 'Run: ' + (s.run_id||'N/A') + ' · Projekt: ' + (s.projekt||'N/A');
+  document.getElementById('header-goal').textContent = 'Goal: ' + (s.goal||'N/A');
+  document.getElementById('live-pill').innerHTML = '● LIVE · ' + (s.time||'--:--:--');
+  document.getElementById('prog-num').innerHTML = (s.done||0) + ' / ' + (s.total||0) + ' TIDs&nbsp;&nbsp;<span style="font-size:14px;color:var(--accent);">' + (s.pct||0) + '%</span>';
+  document.getElementById('prog-bar').style.width = (s.pct||0) + '%';
+  document.getElementById('prog-bar').textContent = (s.pct||0) + '%';
+  document.getElementById('stat-done').textContent = '✔ ' + (s.done||0);
+  document.getElementById('stat-active').textContent = '🗂 ' + (s.inprog||0);
+  document.getElementById('stat-pending').textContent = '⏳ ' + (s.pending||0);
+  document.getElementById('stat-failed').textContent = '❌ ' + (s.failed||0);
+  document.getElementById('stat-skipped').textContent = '⏭ ' + (s.skipped||0);
+  var rcStat = document.getElementById('stat-rootcause');
+  if (rcStat) rcStat.textContent = '🎯 ' + ((s.root_cause_done||0)+(s.skipped||0)); // show legacy + new together
+
+  // Evil twins
+  let ethtml = '';
+  const etLabels = ['brainstorm','w-plans','arch','w-v2','debug','impl-6','docs-7'];
+  const etSections = ['evil-twin-1','evil-twin-2','evil-twin-3','evil-twin-4','evil-twin-5','evil-twin-6','evil-twin-7'];
+  for (let i = 0; i < etLabels.length; i++) {
+    const found = (s.evil_twins||[]).find(e => e.section === etSections[i]);
+    const st = found ? found.status : 'PENDING';
+    const cls = st === 'IN_PROGRESS' ? 'et-card et-active' : 'et-card';
+    const opacity = st === 'PENDING' ? 'opacity:.5;' : '';
+    ethtml += '<div class="' + cls + '" style="' + opacity + '"><div style="font-size:14px;">🦇</div><div style="font-size:8px;color:var(--fg-dim);">' + etLabels[i] + '</div><div style="font-size:10px;font-weight:700;color:' + (STATUS_COLORS[st]||'var(--muted)') + ';">' + st + '</div></div>';
+  }
+  document.getElementById('evil-twins').innerHTML = ethtml;
+
+  // TID rows — phase-grouped with accordion toggle
+  const PHASE_ORDER = ['P1','G1-2','P2','G2-3','P3','P4','STACK'];
+  const PHASE_NAMES = {P1:'Phase 1: Planen', 'G1-2':'Gate 1→2', P2:'Phase 2: Abschließen', 'G2-3':'Gate 2→3', P3:'Phase 3: Ausführen', P4:'Phase 4: Doku', STACK:'Stack-Tools'};
+  const PHASE_BADGE_COLORS = {P1:'#a78bfa','G1-2':'#f87171',P2:'#60a5fa','G2-3':'#fb923c',P3:'#34d399',P4:'#fbbf24',STACK:'#94a3b8'};
+
+  // Group TIDs by phase, preserving phase_seq order
+  const groups = {};
+  for (const t of (s.tids||[])) {
+    const ph = t.phase || '?';
+    if (!groups[ph]) groups[ph] = [];
+    groups[ph].push(t);
+  }
+
+  let tidhtml = '';
+  let anyOpen = false;
+  for (const ph of PHASE_ORDER) {
+    const tids = groups[ph] || [];
+    if (!tids.length) continue;
+
+    // Count statuses
+    const done = tids.filter(t => t.status === 'DONE').length;
+    const pending = tids.filter(t => t.status === 'PENDING').length;
+    const active = tids.filter(t => t.status === 'IN_PROGRESS').length;
+    const skipped = tids.filter(t => t.status === 'SKIPPED').length;
+    const rootCause = tids.filter(t => t.status === 'ROOT_CAUSE_DONE').length;
+    const failed = tids.filter(t => t.status === 'FAILED').length;
+    const badgeColor = PHASE_BADGE_COLORS[ph] || '#6b7280';
+
+    // Auto-open phases with active or pending TIDs; first such phase stays open
+    // Respect autoCollapse setting: collapse completed phases
+    const allDone = (done + rootCause + skipped + failed) === tids.length;
+    const hasAction = active > 0 || (pending > 0 && !anyOpen && !settings.autoCollapse);
+    const openClass = (hasAction || (!settings.autoCollapse && !allDone)) ? ' open' : '';
+    if (hasAction) anyOpen = true;
+
+    tidhtml += '<div class="phase-group" data-phase="'+ph+'">';
+    tidhtml += '<div class="phase-header" data-toggle>';
+    tidhtml += '<span class="phase-toggle'+openClass+'">▶</span>';
+    tidhtml += '<span class="phase-label">'+PHASE_ICONS[ph]+' '+PHASE_NAMES[ph]+'</span>';
+    tidhtml += '<span class="phase-count">'+tids.length+' TIDs</span>';
+    tidhtml += '<span class="phase-badge" style="background:'+badgeColor+'22;color:'+badgeColor+';">✓'+done+'</span>';
+    if (active) tidhtml += '<span class="phase-badge" style="background:rgba(59,130,246,.2);color:#3b82f6;">🔄'+active+'</span>';
+    if (pending) tidhtml += '<span class="phase-badge" style="background:rgba(156,163,175,.2);color:#9ca3af;">⏳'+pending+'</span>';
+    if (skipped) tidhtml += '<span class="phase-badge" style="background:rgba(107,114,128,.2);color:#6b7280;">⏭'+skipped+'</span>';
+    if (rootCause) tidhtml += '<span class="phase-badge" style="background:rgba(167,139,250,.2);color:#a78bfa;">🎯'+rootCause+'</span>';
+    if (failed) tidhtml += '<span class="phase-badge" style="background:rgba(239,68,68,.2);color:#ef4444;">❌'+failed+'</span>';
+    tidhtml += '</div>';
+    tidhtml += '<div class="phase-body'+openClass+'">';
+
+    for (const t of tids) {
+      const icon = STATUS_ICONS[t.status] || '?';
+      const color = STATUS_COLORS[t.status] || 'gray';
+      const cls = t.status === 'IN_PROGRESS' ? 'tid-row tid-active' : 'tid-row';
+      const etBadge = (t.section||'').includes('evil-twin') ? ' <span class="badge-et">🦇 EVIL TWIN</span>' : '';
+      const cpBadge = t.checkpoint ? ' <span class="badge-cp">🛑 CP</span>' : '';
+      const isRc = t.status === 'ROOT_CAUSE_DONE';
+      const rcClass = isRc ? ' rc-clickable' : '';
+      const rcAttr = isRc ? ' data-rc-tid="'+t.tid+'"' : '';
+      const rcChevron = isRc ? '<span class="rc-chevron">▶</span>' : '';
+      tidhtml += '<div class="'+cls+rcClass+'"'+rcAttr+'><span>'+icon+rcChevron+'</span><span></span><span style="color:'+color+';font-weight:700;font-size:9px;">'+t.status+'</span><span>'+((t.section||'').substring(0,28))+etBadge+cpBadge+'</span><span style="color:var(--fg-dim);font-size:9px;">'+((t.skill||'').substring(0,20))+'</span><span style="background:var(--bg-card-light);padding:1px 4px;border-radius:3px;font-size:8px;">'+((t.template||'—').substring(0,14))+'</span></div>';
+      if (isRc) {
+        tidhtml += '<div class="rc-detail" data-rc-tid="'+t.tid+'">';
+        const entries = (s.root_causes||{})[t.tid] || [];
+        if (entries.length) {
+          for (const rc of entries) {
+            tidhtml += '<div class="rc-entry"><span class="rc-label">'+escapeHtml(rc.type||'ROOT_CAUSE')+':</span> '+escapeHtml(rc.value||'(no value)')+'</div>';
+            if (rc.rationale) tidhtml += '<div style="font-size:9px;color:var(--muted);padding-left:12px;">'+escapeHtml(rc.rationale)+'</div>';
+          }
+        } else {
+          tidhtml += '<div class="rc-entry"><span class="rc-label">ROOT_CAUSE:</span> Root cause analysis recorded — check dispatcher_decisions for full details</div>';
+        }
+        tidhtml += '</div>';
+      }
+    }
+
+    tidhtml += '</div></div>';
+  }
+  document.getElementById('tid-list').innerHTML = tidhtml;
+
+  // Next TID
+  document.getElementById('next-tid').textContent = s.next_tid || '🎉 ALL TIDs COMPLETE';
+
+  // Decisions
+  let dechtml = '<tr><th style="color:var(--fg-dim);font-size:9px;">TID</th><th style="color:var(--fg-dim);font-size:9px;">Decision</th><th style="color:var(--fg-dim);font-size:9px;">Value</th></tr>';
+  for (const d of (s.decisions||[])) {
+    dechtml += '<tr><td>' + (d.tid||'') + '</td><td>' + (d.type||'') + '</td><td style="color:var(--accent);">' + (d.value||'') + '</td></tr>';
+  }
+  document.getElementById('decisions').innerHTML = dechtml || '<tr><td colspan="3" style="color:var(--muted);text-align:center;">No decisions</td></tr>';
+
+  // ── Root cause detail toggle (ROOT_CAUSE_DONE rows) ──
+  document.querySelectorAll('.tid-row.rc-clickable[data-rc-tid]').forEach(row => {
+    row.addEventListener('click', function(e) {
+      // Don't toggle if clicking a link or other interactive element
+      if (e.target.closest('a, button, input')) return;
+      const tid = this.getAttribute('data-rc-tid');
+      const detail = document.querySelector('.rc-detail[data-rc-tid="'+tid+'"]');
+      const chevron = this.querySelector('.rc-chevron');
+      if (detail) { detail.classList.toggle('open'); }
+      if (chevron) { chevron.classList.toggle('open'); }
+    });
+  });
+
+  // Phase toggle delegation (after innerHTML)
+  document.querySelectorAll('.phase-header[data-toggle]').forEach(h => {
+    h.addEventListener('click', function() {
+      const body = this.nextElementSibling;
+      const toggle = this.querySelector('.phase-toggle');
+      body.classList.toggle('open');
+      toggle.classList.toggle('open');
+    });
+  });
+
+  // Skills & Registry (integrated in main render)
+  renderSkills(s.skills || []);
+  renderRegistry(s.recent_registry || []);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API KEY STATUS — fetch from /api/keys every 2s
+// ═══════════════════════════════════════════════════════════════
+function fetchKeyStatus() {
+  fetch('/api/keys')
+    .then(r => r.json())
+    .then(data => renderKeys(data))
+    .catch(() => {
+      document.getElementById('keys-empty').style.display = 'block';
+      document.getElementById('keys-empty').textContent = '⚠️ /api/keys endpoint not available — server may need restart';
+    });
+}
+
+function renderKeys(data) {
+  var summary = data.summary || {};
+  var keys = data.keys || [];
+
+  // Update timestamp
+  var now = new Date();
+  document.getElementById('keys-updated').textContent = 'updated ' + now.toLocaleTimeString();
+
+  // Summary pills
+  var sumHtml = '';
+  if (data.available) {
+    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#10b981;"></span> ' + (summary.active||0) + ' active</div>';
+    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#f59e0b;"></span> ' + (summary.cooldown||0) + ' cooldown</div>';
+    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#ef4444;"></span> ' + (summary.dead||0) + ' dead</div>';
+    sumHtml += '<div class="key-stat-pill"><span class="dot" style="background:#6b7280;"></span> ' + (summary.total||0) + ' total</div>';
+  }
+  document.getElementById('keys-summary').innerHTML = sumHtml || '<span style="color:var(--muted);font-size:10px;">No keys configured</span>';
+
+  // Key rows
+  if (!keys.length) {
+    document.getElementById('keys-empty').style.display = 'block';
+    document.getElementById('keys-list').innerHTML = '';
+    return;
+  }
+  document.getElementById('keys-empty').style.display = 'none';
+
+  var listHtml = '<div style="margin-top:8px;">';
+  listHtml += '<div class="key-row" style="color:var(--fg-dim);font-size:9px;border-bottom:2px solid var(--border);">' +
+    '<span>PROVIDER</span><span>STATUS</span><span>HEALTH</span><span>TOKENS / REQUESTS</span><span>LAST USED</span></div>';
+
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var statusColors = {active:'#10b981', cooldown:'#f59e0b', dead:'#ef4444'};
+    var sc = statusColors[k.status] || '#6b7280';
+
+    // Health bar
+    var hc = k.health_color || '#10b981';
+    var hp = k.health_pct || 100;
+
+    // Token gauge
+    var tp = k.token_pct || 0;
+    var tcolor = tp > 90 ? '#ef4444' : tp > 70 ? '#f59e0b' : '#10b981';
+
+    // Request gauge
+    var rp = k.request_pct || 0;
+    var rcolor = rp > 90 ? '#ef4444' : rp > 70 ? '#f59e0b' : '#10b981';
+
+    var cooldownInfo = '';
+    if (k.status === 'cooldown' && k.cooldown_until) {
+      cooldownInfo = ' until ' + (k.cooldown_until || '').substring(11, 19);
+    }
+
+    listHtml += '<div class="key-row">' +
+      '<div><span style="font-weight:700;">' + (k.provider||'?') + '</span><br><span class="key-id">' + (k.id||'?') + '</span></div>' +
+      '<div class="key-status" style="color:' + sc + ';">' + k.status + cooldownInfo + '</div>' +
+      '<div><div class="key-health-bar"><div class="key-health-fill" style="width:' + hp + '%;background:' + hc + ';"></div></div><span style="font-size:8px;color:var(--fg-dim);">' + hp + '%</span></div>' +
+      '<div>' +
+        '<div class="key-gauge-label">Tokens: ' + (k.tokens_used||0).toLocaleString() + ' / ' + (k.tokens_max||0).toLocaleString() + ' (' + tp + '%)</div>' +
+        '<div class="key-gauge"><div class="key-gauge-fill" style="width:' + tp + '%;background:' + tcolor + ';"></div></div>' +
+        '<div class="key-gauge-label" style="margin-top:4px;">Requests: ' + (k.requests_used||0) + ' / ' + (k.requests_max||0) + ' (' + rp + '%)</div>' +
+        '<div class="key-gauge"><div class="key-gauge-fill" style="width:' + rp + '%;background:' + rcolor + ';"></div></div>' +
+      '</div>' +
+      '<span style="color:var(--fg-dim);font-size:9px;">' + (k.last_used || '—') + '</span>' +
+      '</div>';
+  }
+  listHtml += '</div>';
+  document.getElementById('keys-list').innerHTML = listHtml;
+}
+
+// Poll key status every 2 seconds
+setInterval(fetchKeyStatus, 2000);
+fetchKeyStatus();
+</script>
+
+</body>
+</html>

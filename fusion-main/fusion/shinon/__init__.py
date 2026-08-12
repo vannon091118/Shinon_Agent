@@ -1,0 +1,80 @@
+"""
+Shinon Engine — Full Character Layer (Python, ported from TypeScript v0.3.0)
+
+Components:
+  - shinon_patterns.py   — Pattern Engine: regex-based extraction, contradictions, confidence
+  - shinon_memory.py     — Two-Tier Memory: SQLite-backed facts (T1) + patterns (T2)
+  - shinon_attitudes.py  — Attitude Tracker: -10..+10 dimensions, update rules, tone directives
+  - shinon_emotional.py  — Emotional State Machine: 6 states, transitions, tone modifiers
+  - shinon_engine.py     — Main Engine: wires all components, replaces passthrough stub
+
+Ported from:
+  ShinonLLM-main/character/src/experience/patterns.ts
+  ShinonLLM-main/character/src/experience/twoTierMemory.ts
+  ShinonLLM-main/character/src/attitudes/tracker.ts
+  ShinonLLM-main/character/src/state/emotional.ts
+  ShinonLLM-main/character/src/core/identity.ts
+"""
+
+from fusion.shinon.shinon_patterns import (
+    Pattern,
+    PersonalFact,
+    PatternType,
+    extract_pattern,
+    find_contradictions,
+    score_confidence,
+)
+from fusion.shinon.shinon_memory import (
+    TwoTierMemory,
+    TwoTierMemoryConfig,
+    MemoryAdapter,
+    SqliteMemoryAdapter,
+)
+from fusion.shinon.shinon_attitudes import (
+    AttitudeState,
+    AttitudeDimension,
+    AttitudeUpdateRule,
+    ATTITUDE_UPDATE_RULES,
+    load_attitude_state,
+    save_attitude_state,
+    create_attitude_state,
+    update_attitude,
+    apply_attitude_rules,
+    should_confront,
+    get_tone_directive,
+    format_attitude_for_prompt,
+)
+from fusion.shinon.shinon_emotional import (
+    EmotionalState,
+    SessionEmotionalContext,
+    create_emotional_context,
+    transition_state,
+    get_tone_modifier,
+)
+from fusion.shinon.shinon_engine import (
+    ShinonEngine,
+    ShinonInput,
+    ShinonOutput,
+    CharacterContext,
+    ShinonIdentity,
+    DEFAULT_IDENTITY,
+)
+
+__all__ = [
+    # Patterns
+    "Pattern", "PersonalFact", "PatternType",
+    "extract_pattern", "find_contradictions", "score_confidence",
+    # Memory
+    "TwoTierMemory", "TwoTierMemoryConfig", "MemoryAdapter", "SqliteMemoryAdapter",
+    # Attitudes
+    "AttitudeState", "AttitudeDimension", "AttitudeUpdateRule",
+    "ATTITUDE_UPDATE_RULES", "load_attitude_state", "save_attitude_state",
+    "create_attitude_state", "update_attitude", "apply_attitude_rules",
+    "should_confront", "get_tone_directive", "format_attitude_for_prompt",
+    # Emotional
+    "EmotionalState", "SessionEmotionalContext",
+    "create_emotional_context", "transition_state", "get_tone_modifier",
+    # Engine
+    "ShinonEngine", "ShinonInput", "ShinonOutput", "CharacterContext",
+    "ShinonIdentity", "DEFAULT_IDENTITY",
+]

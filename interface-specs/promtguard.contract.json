@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/promtguard-v1.json",
+  "title": "Promtguard — Component Contract",
+  "description": "Prompt generation, handoffs, self-improvement, and claim management. Transforms raw intent into structured, atomar task prompts. Asks 'What is the task?'",
+  "component": {
+    "name": "Promtguard",
+    "version": "2.0.0",
+    "language": "Python",
+    "role": "prompt_layer",
+    "position": 1,
+    "description": "Empfängt aufbereiteten Input von Shinon, erzeugt Research-Prompts, ingestiert Research-Ergebnisse, baut atomare Task-Prompts, managed Handoffs zwischen Agenten, extrahiert und verfolgt Claims."
+  },
+
+  "input": {
+    "title": "Promtguard Input Contract",
+    "description": "Receives enriched input from Shinon (or raw input if Shinon is bypassed).",
+    "required": ["prompt_text", "source"],
+    "properties": {
+      "prompt_text": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The prompt to process (raw or character-annotated)"
+      },
+      "source": {
+        "type": "string",
+        "enum": ["shinon", "user_direct", "karma"],
+        "description": "Where the input came from"
+      },
+      "character_context": {
+        "type": "object",
+        "description": "If source=shinon: character annotations from Shinon's output"
+      },
+      "project": {
+        "type": "string",
+        "description": "Project identifier for context scoping"
+      },
+      "constraints": {
+        "type": "object",
+        "description": "Project-level constraints (from constraints.json)"
+      }
+    }
+  },
+
+  "output": {
+    "title": "Promtguard Output Contract",
+    "description": "Structured handoff containing task prompts, claims, decisions, and context tokens.",
+    "required": ["handoff", "claims", "context_token_id"],
+    "properties": {
+      "handoff": {
+        "type": "object",
+        "description": "R04-compliant handoff to KARMA or the next agent",
+        "required": ["handoff_version", "from", "to", "timestamp", "note"],
+        "properties": {
+          "handoff_version": { "type": "string", "const": "1.0" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "note": { "type": "string" },
+          "task_id": { "type": "string" },
+          "promtset_version": { "type": "string" }
+        }
+      },
+      "task_prompt": {
+        "type": "object",
+        "description": "The final atomic task prompt (R03/R09/R11 compliant)",
+        "properties": {
+          "task_id": { "type": "string" },
+          "instruction": { "type": "string" },
+          "scope_in": { "type": "string" },
+          "scope_out": { "type": "array", "items": { "type": "string" } },
+          "target_agent": { "type": "string" },
+          "roadmap_phase": { "type": "string" }
+        }
+      },
+      "context_token_id": {
+        "type": "string",
+        "pattern": "^CTX-[A-Z]{3,5}-[A-Z]+-\\d{3}$",
+        "description": "Persisted context token reference"
+      },
+      "claims": {
+        "type": "array",
+        "description": "R13 Claims extracted or verified during this cycle",
+        "items": {
+          "type": "object",
+          "required": ["claim_id", "claim", "status"],
+          "properties": {
+            "claim_id": { "type": "string", "pattern": "^CLAIM-[A-Z]{3,5}-\\d{3}$" },
+            "claim": { "type": "string" },
+            "status": { "type": "string", "enum": ["unverified", "verified", "refuted", "refined"] },
+            "evidence": { "type": "string" },
+            "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+            "source_res": { "type": "string" }
+          }
+        }
+      },
+      "decisions": {
+        "type": "array",
+        "description": "R05 Decisions made during this cycle",
+        "items": {
+          "type": "object",
+          "properties": {
+            "what": { "type": "string" },
+            "why": { "type": "string" },
+            "evidence": { "type": "string" },
+            "confidence": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+
+  "state": {
+    "title": "Promtguard Persisted State",
+    "description": "Append-only JSONL state files. Never deleted, only appended.",
+    "storage": {
+      "type": "JSONL (append-only)",
+      "location": ".promtset/state/",
+      "files": {
+        "context_log": {
+          "path": "context-log.jsonl",
+          "description": "Context tokens (CTX-IDs) — full research context snapshots"
+        },
+        "decision_journal": {
+          "path": "decision-journal.jsonl",
+          "description": "Every agent decision: what, why, evidence, confidence"
+        },
+        "claim_log": {
+          "path": "claim-log.jsonl",
+          "description": "R13 Claims: lifecycle (unverified→verified→refuted), latest-wins per ID"
+        },
+        "handoffs": {
+          "path": "handoffs.jsonl",
+          "description": "R04 Handoff events between agents"
+        },
+        "task_index": {
+          "path": "task-index.json",
+          "description": "Task registry (overwritten, not append-only)"
+        },
+        "projects": {
+          "path": "projects.json",
+          "description": "Project metadata"
+        }
+      }
+    },
+    "migration_note": {
+      "description": "JSONL → zentrale SQLite-Migration geplant. claim-log.jsonl migriert in karma_facts Namespace. context-log und decision-journal bleiben Promtguard-eigen.",
+      "status": "PLANNED"
+    }
+  },
+
+  "pipeline": {
+    "title": "Promtguard Internal Pipeline",
+    "steps": [
+      {
+        "step": 1,
+        "command": "research",
+        "description": "Roh-Prompt → Read-only Research-Auftrag (JSON-Schema researcher-context/v2)",
+        "produces": "research_prompt"
+      },
+      {
+        "step": 2,
+        "command": "ingest",
+        "description": "Research-JSON einlesen, validieren, Context-Token persistieren, Claims extrahieren",
+        "produces": "context_token + decisions + claims"
+      },
+      {
+        "step": 3,
+        "command": "build",
+        "description": "Aus Context-Token + Roh-Prompt finalen atomaren Task-Prompt erzeugen",
+        "produces": "task_prompt"
+      },
+      {
+        "step": 4,
+        "command": "task-done",
+        "description": "Task abschließen: Context-Token + Task-Index + Decisions + Handoff",
+        "produces": "context_token_update + handoff"
+      },
+      {
+        "step": 5,
+        "command": "self-improve",
+        "description": "R07: Genetische Prompt-Verbesserung aus Erfolgsmustern",
+        "produces": "improved_template"
+      }
+    ],
+    "verification": {
+      "title": "R06 Validation Gate",
+      "description": "Konsistenz-Check vor Task-Build + Abschluss-Check vor completed",
+      "gates": [
+        "Schema validation (researcher-context/v1 or /v2)",
+        "Required fields check",
+        "Claim extraction completeness",
+        "Handoff field completeness"
+      ]
+    }
+  },
+
+  "implementation_status": {
+    "overall": "IMPLEMENTED",
+    "sections": {
+      "research": "IMPLEMENTED",
+      "ingest": "IMPLEMENTED",
+      "build": "IMPLEMENTED",
+      "task_done": "IMPLEMENTED",
+      "resume": "IMPLEMENTED",
+      "handoff": "IMPLEMENTED",
+      "self_improve": "IMPLEMENTED",
+      "claim_management": "IMPLEMENTED",
+      "context_persistence": "IMPLEMENTED",
+      "decision_journal": "IMPLEMENTED",
+      "claim_log": "IMPLEMENTED (0 verified, 25 unverified, 11 refuted as of 2026-07-28)"
+    },
+    "last_verified_against_code": "2026-08-12",
+    "known_gaps": [
+      "Verification loop (unverified → confirmed) nie vollständig durchgelaufen: 0 verified Claims von 36",
+      "Handoff zu KARMA: Contract definiert, Runtime-Integration fehlt",
+      "JSONL → SQLite Migration für zentrale Persistenz geplant"
+    ]
+  }
+}

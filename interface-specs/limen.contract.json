@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://control-plane.local/interface-specs/limen-v1.json",
+  "title": "LIMEN — Component Contract",
+  "description": "OpenAI-compatible forward proxy with capability-matrix routing, key rotation, retry budgets, and intelligent 429 handling (TPM/RPD/RPM/day/month). Asks 'Which key is free?'",
+  "component": {
+    "name": "LIMEN",
+    "version": "0.0.17",
+    "language": "Python",
+    "role": "infrastructure_layer",
+    "position": 3,
+    "description": "Router, Key-Pool, 429-Intelligenz, Cooldown-Berechnung, Retry-Budget, Queue, Audit. Jeder API-Call aus dem gesamten Stack geht durch LIMEN."
+  },
+
+  "input": {
+    "title": "LIMEN Input Contract",
+    "description": "OpenAI-compatible ChatCompletion request. Received from goal-chain scripts, KARMA, or any other component making API calls.",
+    "required": ["model", "messages"],
+    "properties": {
+      "model": {
+        "type": "string",
+        "description": "Requested model identifier"
+      },
+      "messages": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": { "type": "string", "enum": ["system", "user", "assistant", "tool"] },
+            "content": { "type": "string" }
+          }
+        }
+      },
+      "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+      "max_tokens": { "type": "integer" },
+      "stream": { "type": "boolean" },
+      "caller_component": {
+        "type": "string",
+        "enum": ["shinon", "promtguard", "karma", "goalchain", "manual"],
+        "description": "Which component initiated this API call (for audit)"
+      },
+      "caller_tid": {
+        "type": "string",
+        "description": "goal-chain TID if called from a chain script"
+      },
+      "priority": {
+        "type": "string",
+        "enum": ["realtime", "batch", "background"],
+        "default": "realtime"
+      }
+    }
+  },
+
+  "output": {
+    "title": "LIMEN Output Contract",
+    "description": "OpenAI-compatible ChatCompletion response with routing metadata.",
+    "required": ["response", "routing_metadata"],
+    "properties": {
+      "response": {
+        "type": "object",
+        "description": "Standard ChatCompletion response"
+      },
+      "routing_metadata": {
+        "type": "object",
+        "required": ["provider", "deployment", "model_used", "upstream_status"],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider that served the request (e.g., openai, groq, deepinfra, openrouter)"
+          },
+          "deployment": {
+            "type": "string",
+            "description": "Specific deployment/key alias used"
+          },
+          "model_used": {
+            "type": "string",
+            "description": "Actual model that responded (may differ from requested if capability-routed)"
+          },
+          "upstream_status": {
+            "type": "integer",
+            "description": "HTTP status from upstream provider"
+          },
+          "retry_count": {
+            "type": "integer",
+            "description": "Number of retries before success"
+          },
+          "latency_ms": {
+            "type": "integer"
+          },
+          "tokens_used": {
+            "type": "object",
+            "properties": {
+              "prompt": { "type": "integer" },
+              "completion": { "type": "integer" },
+              "total": { "type": "integer" }
+            }
+          },
+          "cost_estimate_usd": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+
+  "state": {
+    "title": "LIMEN Persisted State",
+    "description": "SQLite WAL database with key states, audit events, leases, and queue items.",
+    "storage": {
+      "type": "SQLite (WAL mode)",
+      "namespace": "limen",
+      "tables": [
+        "limen_queue",
+        "limen_key_state",
+        "limen_audit_events",
+        "limen_leases"
+      ]
+    }
+  },
+
+  "intelligence": {
+    "title": "429 Intelligence — Rate Limit Detection",
+    "description": "When a 429 is received, LIMEN classifies the rate limit type and computes cooldown.",
+    "classifier": {
+      "implementation": "limen/resilience/classifier.py",
+      "rate_limit_types": {
+        "TPM": {
+          "name": "Tokens Per Minute",
+          "detection": "429 + 'tokens' in message body or x-ratelimit-reset-tokens header",
+          "cooldown": "Until next minute boundary (calculate from Retry-After or header)",
+          "strategy": "Rotate to next key with TPM budget remaining"
+        },
+        "RPD": {
+          "name": "Requests Per Day",
+          "detection": "429 + 'day' in message or x-ratelimit-reset-requests header",
+          "cooldown": "Until next UTC day (or Retry-After)",
+          "strategy": "Rotate key, queue if all exhausted"
+        },
+        "RPM": {
+          "name": "Requests Per Minute",
+          "detection": "429 + 'minute' or generic rate limit without token info",
+          "cooldown": "60 seconds or Retry-After",
+          "strategy": "Rotate key, short wait"
+        },
+        "MONTHLY": {
+          "name": "Monthly Quota Exceeded",
+          "detection": "429 + 'quota' or 'billing' in message",
+          "cooldown": "Until next month or manual reset",
+          "strategy": "Mark key exhausted, alert"
+        },
+        "CONCURRENT": {
+          "name": "Concurrent Request Limit",
+          "detection": "429 + 'concurrent' or 'parallel'",
+          "cooldown": "Exponential backoff (1s→2s→4s→8s max 30s)",
+          "strategy": "Retry with backoff on same key"
+        }
+      }
+    }
+  },
+
+  "key_pool": {
+    "title": "Key Pool — Capability Matrix Routing",
+    "description": "Keys are organized by provider, deployment, and capability. Routing selects the best key based on model requirements, rate limit state, and cost.",
+    "implementation": "limen/routing/key_pool.py",
+    "selection_criteria": [
+      "Capability match (model family, context window, tool support)",
+      "Rate limit state (current TPM/RPD/RPM usage vs. limits)",
+      "Cost priority (cheapest capable key first)",
+      "Health (recent error rate, latency percentile)",
+      "Affinity (sticky routing for streaming sessions)"
+    ]
+  },
+
+  "retry_budget": {
+    "title": "Retry Budget",
+    "description": "Per-request retry budget with exponential backoff and jitter.",
+    "implementation": "limen/resilience/classifier.py",
+    "defaults": {
+      "max_retries": 3,
+      "base_delay_ms": 1000,
+      "max_delay_ms": 30000,
+      "jitter_factor": 0.1
+    }
+  },
+
+  "provenance": {
+    "title": "Provenance Policy",
+    "description": "LIMEN re-architected concepts from KARMA and Promtguard rather than importing them. This preserves layer isolation.",
+    "policy": "Source projects are not named. Concepts are re-implemented for infrastructure context.",
+    "audit_trail": "Every API call is recorded in limen_audit_events with caller_component, TID, routing decision, and result."
+  },
+
+  "implementation_status": {
+    "overall": "IMPLEMENTED",
+    "sections": {
+      "router": "IMPLEMENTED (Phases 0-5 abgeschlossen)",
+      "key_pool": "IMPLEMENTED (Capability-Matrix-Routing)",
+      "dispatcher": "IMPLEMENTED",
+      "queue": "IMPLEMENTED",
+      "retry_budget": "IMPLEMENTED",
+      "audit": "IMPLEMENTED",
+      "429_classifier": "IMPLEMENTED (TPM/RPD/RPM/MONTHLY/CONCURRENT)",
+      "cooldown_calculation": "IMPLEMENTED",
+      "adapter_base": "IMPLEMENTED",
+      "tests": "207 Tests behauptet, Testumgebung nicht reproduziert"
+    },
+    "last_verified_against_code": "2026-08-08",
+    "known_gaps": [
+      "207 behauptete Tests — Reproduktion in aktueller Umgebung steht aus",
+      "Keine Cross-Component-Integration: LIMEN routet noch keine goal-chain API-Calls",
+      "Key-State nicht an goal-chains TID-State gebunden (Rate-Limit → TID-FAIL → Gate)"
+    ]
+  }
+}
