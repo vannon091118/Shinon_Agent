@@ -343,8 +343,87 @@ class TestEvidenceArchitecture:
         result = ConfidenceResolver.resolve(claim)
         assert result["status"] == "conflicted", f"SOURCE+RUNTIME conflict should be CONFLICTED, got {result['status']}"
 
+    def test_refuted_verdict_exists(self):
+        """ClaimStatus must have an active REFUTED verdict (not only passive unverified)."""
+        from karma.core.evidence import ClaimStatus
+        assert hasattr(ClaimStatus, "REFUTED"), "ClaimStatus must expose REFUTED"
+        assert ClaimStatus.REFUTED.value == "refuted"
+
+    def test_negative_runtime_without_support_is_refuted(self):
+        """Negative runtime evidence with NO positive support → REFUTED (active rejection)."""
+        from karma.core.evidence import Claim, Evidence, EvidenceType, ConfidenceResolver
+
+        claim = Claim.create("test", "The adapter is transactional", "runtime")
+        claim.evidences.append(Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.RUNTIME,
+            source="integration_test",
+            confidence=0.0,  # FAILED
+            metadata={"probe_name": "test_adapter_transactional", "result": "FAIL"},
+        ))
+
+        result = ConfidenceResolver.resolve(claim)
+        assert result["status"] == "refuted", f"Expected REFUTED, got {result['status']}"
+
+    def test_refuted_produces_rework_with_scope_budget(self):
+        """Refuted claims must return a rework directive with a scope-deviation budget.
+
+        Kein Hard-Reject: der Rework trägt scope_deviation, max_scope_deviation,
+        within_budget und requires_user_approval.
+        """
+        from karma.core.evidence import Claim, Evidence, EvidenceType, ConfidenceResolver
+
+        claim = Claim.create("test", "The adapter is transactional", "runtime")
+        claim.evidences.append(Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.RUNTIME,
+            source="integration_test",
+            confidence=0.0,
+            metadata={"probe_name": "test_adapter_transactional", "result": "FAIL"},
+        ))
+
+        result = ConfidenceResolver.resolve(claim)
+        rework = result.get("rework")
+        assert rework is not None, "Refuted claim must carry a rework directive"
+        assert rework["required"] is True
+        assert isinstance(rework["scope_deviation"], float)
+        assert isinstance(rework["max_scope_deviation"], float)
+        assert isinstance(rework["within_budget"], bool)
+        assert isinstance(rework["requires_user_approval"], bool)
+
+    def test_scope_deviation_over_budget_requires_user(self):
+        """Scope deviation beyond budget must require user approval (no silent drift)."""
+        from karma.core.evidence import (
+            Claim, Evidence, EvidenceType, ConfidenceResolver,
+            scope_deviation, DEFAULT_MAX_SCOPE_DEVIATION,
+        )
+
+        # Der einzige RUNTIME-Test deckt NICHTS vom Claim ab (disjunkt) →
+        # rework_scope_deviation = 1.0 > Budget → requires_user_approval.
+        claim = Claim.create("test", "The adapter is transactional", "runtime")
+        claim.evidences.append(Evidence.create(
+            claim_id=claim.claim_id,
+            evidence_type=EvidenceType.RUNTIME,
+            source="integration_test",
+            confidence=0.0,
+            metadata={"probe_name": "test_adapter_transactional", "result": "FAIL"},
+        ))
+
+        result = ConfidenceResolver.resolve(claim)
+        assert result["status"] == "refuted", f"Expected REFUTED, got {result['status']}"
+        rework = result["rework"]
+        assert rework["requires_user_approval"] is True, \
+            f"Full scope loss must require user approval, got {rework}"
+        assert rework["within_budget"] is False
+        assert rework["scope_deviation"] > DEFAULT_MAX_SCOPE_DEVIATION
+
+        # scope_deviation ist deterministisch: identisch → 0.0, disjunkt → 1.0
+        assert scope_deviation("abc def", "abc def") == 0.0
+        assert scope_deviation("abc def", "xyz qrs") == 1.0
+
 
 class TestKnowledgeGraphArchitecture:
+
     """Architectural invariants for Knowledge Graph."""
 
     def test_edges_require_evidence_ids(self):

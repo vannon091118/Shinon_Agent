@@ -466,7 +466,7 @@ class FalsificationGate:
         
         last_hash = self.persistence.get_fact(self.project, "idempotency", fact_key)
         if last_hash is None:
-            self.persistence.set_fact(self.project, "idempotency", fact_key, current_hash)
+            self.persistence.set_internal_fact(self.project, "idempotency", fact_key, current_hash)
             return FalsificationResult(
                 "idempotency", "Step execution is deterministic/idempotent", EvidenceType.RUNTIME, True, True, 0.9,
                 "First execution: output hash registered for future idempotency checks.",
@@ -599,22 +599,43 @@ def run_falsification_gate(
 
 
 if __name__ == "__main__":
-    # CLI for manual testing
-    if len(sys.argv) < 5:
-        print("Usage: falsification_gate.py <project> <step> <skill> <output_file>")
+    # CLI for manual testing and goal-chain completion.
+    # ``--json`` is deliberately additive: existing four-argument callers
+    # retain the human-readable output, while complete.sh can persist the
+    # complete probe log without parsing prose.
+    json_output = "--json" in sys.argv[1:]
+    cli_args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    if len(cli_args) < 4:
+        print("Usage: falsification_gate.py <project> <step> <skill> <output_file> [--json]")
         sys.exit(1)
 
-    project, step, skill, output = sys.argv[1:5]
+    project, step, skill, output = cli_args[:4]
     p = create_persistence()
     state = p.load_cascade(project)
 
     passed, results = run_falsification_gate(p, project, step, skill, output, state)
 
-    print(f"\n{'='*60}")
-    print(f"FALSIFICATION GATE: {'PASSED' if passed else 'FAILED'}")
-    print(f"{'='*60}")
-    for r in results:
-        status = "✅" if r.passed else "❌"
-        print(f"  {status} {r.probe_name}: {r.evidence}")
+    if json_output:
+        print(json.dumps({
+            "gate": "FalsificationGate",
+            "version": "1.0.0",
+            "project": project,
+            "step": step,
+            "skill": skill,
+            "output_file": output,
+            "passed": passed,
+            "critical_failures": [
+                r.probe_name for r, probe in zip(results, FalsificationGate(p, project).probes)
+                if not r.passed and getattr(probe, "severity", "critical") == "critical"
+            ],
+            "results": [r.to_dict() for r in results],
+        }, ensure_ascii=False, indent=2))
+    else:
+        print(f"\n{'='*60}")
+        print(f"FALSIFICATION GATE: {'PASSED' if passed else 'FAILED'}")
+        print(f"{'='*60}")
+        for r in results:
+            status = "✅" if r.passed else "❌"
+            print(f"  {status} {r.probe_name}: {r.evidence}")
 
     sys.exit(0 if passed else 1)

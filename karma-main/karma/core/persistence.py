@@ -79,7 +79,7 @@ class SQLiteConnectionManager:
         """Initial schema creation."""
         conn.executescript("""
             -- Projects table
-            CREATE TABLE projects (
+            CREATE TABLE IF NOT EXISTS projects (
                 name TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
@@ -87,7 +87,7 @@ class SQLiteConnectionManager:
             );
             
             -- Facts table: project + domain + key = unique fact
-            CREATE TABLE facts (
+            CREATE TABLE IF NOT EXISTS facts (
                 project TEXT NOT NULL,
                 domain TEXT NOT NULL,
                 key TEXT NOT NULL,
@@ -99,11 +99,11 @@ class SQLiteConnectionManager:
             );
             
             -- Index for token budget queries
-            CREATE INDEX idx_facts_project_domain ON facts(project, domain);
-            CREATE INDEX idx_facts_updated ON facts(updated_at);
+            CREATE INDEX IF NOT EXISTS idx_facts_project_domain ON facts(project, domain);
+            CREATE INDEX IF NOT EXISTS idx_facts_updated ON facts(updated_at);
             
             -- Execution log
-            CREATE TABLE execution_log (
+            CREATE TABLE IF NOT EXISTS execution_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project TEXT NOT NULL,
                 agent TEXT NOT NULL,
@@ -114,11 +114,11 @@ class SQLiteConnectionManager:
                 timestamp TEXT NOT NULL,
                 metadata TEXT DEFAULT '{}'
             );
-            CREATE INDEX idx_log_project_time ON execution_log(project, timestamp);
-            CREATE INDEX idx_log_agent ON execution_log(agent);
+            CREATE INDEX IF NOT EXISTS idx_log_project_time ON execution_log(project, timestamp);
+            CREATE INDEX IF NOT EXISTS idx_log_agent ON execution_log(agent);
             
             -- Cascade state
-            CREATE TABLE cascade_state (
+            CREATE TABLE IF NOT EXISTS cascade_state (
                 project TEXT PRIMARY KEY,
                 template TEXT NOT NULL,
                 description TEXT,
@@ -130,7 +130,7 @@ class SQLiteConnectionManager:
             );
             
             -- Skill state per project
-            CREATE TABLE skill_state (
+            CREATE TABLE IF NOT EXISTS skill_state (
                 project TEXT NOT NULL,
                 skill_name TEXT NOT NULL,
                 loaded_at TEXT NOT NULL,
@@ -140,7 +140,7 @@ class SQLiteConnectionManager:
             );
             
             -- Cross-project references
-            CREATE TABLE cross_references (
+            CREATE TABLE IF NOT EXISTS cross_references (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 source_project TEXT NOT NULL,
                 source_domain TEXT NOT NULL,
@@ -151,11 +151,11 @@ class SQLiteConnectionManager:
                 relation_type TEXT NOT NULL,   -- references, derives_from, conflicts_with
                 created_at TEXT NOT NULL
             );
-            CREATE INDEX idx_xref_source ON cross_references(source_project, source_domain, source_key);
-            CREATE INDEX idx_xref_target ON cross_references(target_project, target_domain, target_key);
+            CREATE INDEX IF NOT EXISTS idx_xref_source ON cross_references(source_project, source_domain, source_key);
+            CREATE INDEX IF NOT EXISTS idx_xref_target ON cross_references(target_project, target_domain, target_key);
             
             -- Idempotency keys
-            CREATE TABLE idempotency_keys (
+            CREATE TABLE IF NOT EXISTS idempotency_keys (
                 key TEXT PRIMARY KEY,
                 project TEXT NOT NULL,
                 operation TEXT NOT NULL,       -- complete_step, fail_step, etc.
@@ -163,10 +163,10 @@ class SQLiteConnectionManager:
                 expires_at TEXT NOT NULL,
                 result TEXT                    -- JSON serialized result
             );
-            CREATE INDEX idx_idempotency_expires ON idempotency_keys(expires_at);
+            CREATE INDEX IF NOT EXISTS idx_idempotency_expires ON idempotency_keys(expires_at);
             
             -- Events (for audit/replay) — v5: hash chain for tamper detection
-            CREATE TABLE events (
+            CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_type TEXT NOT NULL,
                 project TEXT,
@@ -176,13 +176,13 @@ class SQLiteConnectionManager:
                 event_hash TEXT,               -- SHA-256 of this event (v5)
                 prev_event_hash TEXT           -- SHA-256 of previous event in chain (v5)
             );
-            CREATE INDEX idx_events_project_time ON events(project, timestamp);
-            CREATE INDEX idx_events_type ON events(event_type);
-            CREATE INDEX idx_events_correlation ON events(correlation_id);
-            CREATE INDEX idx_events_hash ON events(event_hash);
+            CREATE INDEX IF NOT EXISTS idx_events_project_time ON events(project, timestamp);
+            CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
+            CREATE INDEX IF NOT EXISTS idx_events_correlation ON events(correlation_id);
+            CREATE INDEX IF NOT EXISTS idx_events_hash ON events(event_hash);
             
             -- Schema metadata
-            CREATE TABLE schema_meta (
+            CREATE TABLE IF NOT EXISTS schema_meta (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
@@ -265,7 +265,7 @@ class SQLiteConnectionManager:
 @dataclass
 class PersistenceConfig:
     framework_dir: Path
-    db_filename: str = "middleware.db"
+    db_filename: str = "karma.db"
     
     @property
     def db_path(self) -> Path:
@@ -434,6 +434,24 @@ class PersistenceLayer:
         return None
     
     def set_fact(self, project: str, domain: str, key: str, value: Any) -> None:
+        """Persist a user/knowledge fact with the strict provenance contract."""
+        from karma.core.fact_validation import validate_persisted_value
+        validate_persisted_value(domain, value)
+        self._write_fact(project, domain, key, value)
+
+    def set_internal_fact(self, project: str, domain: str, key: str, value: Any) -> None:
+        """Persist allow-listed runtime state, never user knowledge.
+
+        Internal state has a module-specific schema and is deliberately kept
+        out of ``set_fact`` so a raw config/ML object cannot masquerade as a
+        verified fact merely by choosing a system domain.
+        """
+        from karma.core.fact_validation import is_system_domain
+        if not is_system_domain(domain):
+            raise ValueError(f"Internal state domain is not allow-listed: {domain!r}")
+        self._write_fact(project, domain, key, value)
+
+    def _write_fact(self, project: str, domain: str, key: str, value: Any) -> None:
         now = datetime.now(timezone.utc).isoformat()
         value_json = json.dumps(value, ensure_ascii=False)
         tokens = max(1, len(value_json) // 3)
@@ -890,6 +908,65 @@ class PersistenceLayer:
         except Exception:
             return None  # Pre-v5 DB, no hash column
     
+    # ─── Health / SQLite access ──────────────────────────────────────────
+
+    def health_check(self) -> Dict[str, Any]:
+        """Check SQLite access, integrity, foreign keys, and write locking.
+
+        The write probe uses ``BEGIN IMMEDIATE`` followed by ``ROLLBACK``: it
+        verifies that the runtime can acquire its normal writer lock without
+        changing user data. This is the same boundary used by persistence
+        writes and is safe to run from Doctor/CI. A second connection is also
+        opened to prove that the database remains readable across handles.
+        """
+        conn = self.manager.get_connection()
+        result: Dict[str, Any] = {
+            "path": str(self.config.db_path),
+            "readable": False,
+            "writable": False,
+            "journal_mode": None,
+            "concurrent_readable": False,
+            "integrity": "error",
+            "foreign_keys": "error",
+            "schema_version": None,
+        }
+        try:
+            conn.execute("SELECT 1").fetchone()
+            result["readable"] = True
+            result["journal_mode"] = str(
+                conn.execute("PRAGMA journal_mode").fetchone()[0]
+            ).lower()
+            result["schema_version"] = conn.execute(
+                "PRAGMA user_version"
+            ).fetchone()[0]
+            result["integrity"] = conn.execute(
+                "PRAGMA integrity_check"
+            ).fetchone()[0]
+            result["foreign_keys"] = "ok" if not conn.execute(
+                "PRAGMA foreign_key_check"
+            ).fetchall() else "violations"
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("ROLLBACK")
+            result["writable"] = True
+            with sqlite3.connect(str(self.config.db_path), timeout=5.0) as probe:
+                probe.execute("PRAGMA busy_timeout=5000")
+                probe.execute("SELECT 1").fetchone()
+            result["concurrent_readable"] = True
+        except sqlite3.DatabaseError as exc:
+            result["error"] = str(exc)
+            try:
+                if conn.in_transaction:
+                    conn.execute("ROLLBACK")
+            except sqlite3.DatabaseError:
+                pass
+        result["ok"] = bool(
+            result["readable"] and result["writable"]
+            and result["concurrent_readable"]
+            and result["integrity"] == "ok"
+            and result["foreign_keys"] == "ok"
+        )
+        return result
+
     # ─── Maintenance ─────────────────────────────────────────────────────
     
     def vacuum(self) -> None:
@@ -932,7 +1009,9 @@ def migrate_from_json(persistence: PersistenceLayer, json_projects_dir: Path) ->
                     for key, value in dom_data.items():
                         if key.startswith("_"):
                             continue
-                        persistence.set_fact(project, domain, key, value)
+                        from karma.core.fact_validation import is_system_domain
+                        writer = persistence.set_internal_fact if is_system_domain(domain) else persistence.set_fact
+                        writer(project, domain, key, value)
             except (json.JSONDecodeError, OSError):
                 pass
         
@@ -1004,10 +1083,10 @@ def create_persistence(framework_dir: Optional[Path | str] = None) -> Persistenc
     if framework_dir is None:
         framework_dir = os.environ.get(
             "LLM_MIDDLEWARE_ROOT",
-            str(Path.home() / ".karma")
+            str(Path(os.environ.get("SHINON_HOME", str(Path.home() / ".shinon"))) / "data" / "karma")
         )
     fw_path = Path(framework_dir).resolve()
-    db_path = fw_path / "middleware.db"
+    db_path = fw_path / "karma.db"
     cache_key = str(db_path)
     
     with _persistence_lock:
@@ -1032,7 +1111,7 @@ def create_project_persistence(project: str = "default") -> PersistenceLayer:
     projects_dir = Path(
         os.environ.get(
             "LLM_MIDDLEWARE_ROOT",
-            str(Path.home() / ".karma"),
+            str(Path(os.environ.get("SHINON_HOME", str(Path.home() / ".shinon"))) / "data" / "karma"),
         )
     ) / "projects"
     projects_dir.mkdir(parents=True, exist_ok=True)

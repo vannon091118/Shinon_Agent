@@ -13,21 +13,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from karma.core.persistence import create_persistence, create_project_persistence
-
-REQUIRED_FACT_KEYS = {"fact", "source", "confidence", "verified_by"}
-CONFIDENCE_LEVELS = {"high", "medium", "low"}
-
-
-def _validate_fact(value: Any) -> None:
-    if not isinstance(value, dict):
-        raise ValueError("Facts must be JSON objects.")
-    if "fact" not in value:
-        return  # Allow raw config objects
-    missing = REQUIRED_FACT_KEYS - value.keys()
-    if missing:
-        raise ValueError(f"Fact missing required keys: {missing}")
-    if value["confidence"] not in CONFIDENCE_LEVELS:
-        raise ValueError(f"Invalid confidence '{value['confidence']}'. Valid: {CONFIDENCE_LEVELS}")
+from karma.core.fact_validation import (
+    CONFIDENCE_LEVELS,
+    REQUIRED_FACT_KEYS,
+    _validate_fact,
+)
 
 
 # ─── Public API: MemoryBus Class ────────────────────────────────────────────
@@ -50,27 +40,39 @@ class MemoryBus:
         return self.persistence.get_fact(self.project, domain, key)
     
     def set(self, domain: str, value: Any, key: Optional[str] = None) -> None:
-        _validate_fact(value)
         if key is None:
             if not isinstance(value, dict):
                 raise ValueError("Value must be a dict when key is None")
-            # Overwrite entire domain
+            # Validate every stored member before deleting the old domain. This
+            # keeps an invalid bulk write atomic from the caller's perspective.
+            for k, v in value.items():
+                if not k.startswith("_"):
+                    _validate_fact(v, domain=domain)
             self.persistence.delete_fact(self.project, domain)
             for k, v in value.items():
                 if k.startswith("_"):
                     continue
                 self.persistence.set_fact(self.project, domain, k, v)
         else:
+            _validate_fact(value, domain=domain)
             self.persistence.set_fact(self.project, domain, key, value)
     
     def update(self, domain: str, key: str, value: Any) -> None:
-        _validate_fact(value)
+        """Merge a partial patch, then validate the complete fact.
+
+        Updates may intentionally contain only changed fields. Validation must
+        happen after the merge; validating the patch itself would reject the
+        documented ``confidence``/``verified_by`` update path while still
+        allowing an invalid final record in less direct callers.
+        """
         existing = self.persistence.get_fact(self.project, domain, key)
         if isinstance(existing, dict) and isinstance(value, dict):
             merged = dict(existing)
             merged.update(value)
+            _validate_fact(merged, domain=domain)
             self.persistence.set_fact(self.project, domain, key, merged)
         else:
+            _validate_fact(value, domain=domain)
             self.persistence.set_fact(self.project, domain, key, value)
     
     def delete(self, domain: str, key: Optional[str] = None) -> None:
@@ -101,7 +103,7 @@ class MemoryBus:
         projects_dir = Path(
             os.environ.get(
                 "LLM_MIDDLEWARE_ROOT",
-                str(Path.home() / ".karma"),
+                str(Path(os.environ.get("SHINON_HOME", str(Path.home() / ".shinon"))) / "data" / "karma"),
             )
         ) / "projects"
         if not projects_dir.exists():
