@@ -318,6 +318,22 @@
       font-size: 8px; font-weight: 800; text-transform: uppercase;
       padding: 2px 6px; border-radius: 8px;
     }
+    /* ── Sparkline Charts ── */
+    .sparkline-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 6px; padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+    .sparkline-label {
+      font-size: 8px; color: var(--fg-dim); width: 55px; text-align: right; flex-shrink: 0;
+    }
+    .sparkline-svg { flex: 1; height: 28px; }
+    .sparkline-legend {
+      display: flex; gap: 10px; font-size: 7px; color: var(--fg-dim); margin-top: 2px;
+    }
+    .sparkline-legend span { display: flex; align-items: center; gap: 3px; }
+    .sparkline-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+
 
     /* --- Root Cause Expandable Detail --- */
     .tid-row.rc-clickable { cursor: pointer; transition: background .15s ease; }
@@ -1196,6 +1212,65 @@ function fetchKeyStatus() {
 
 var lastKeyData = null;
 
+
+// ── Sparkline Chart Renderer ─────────────────────────────────────
+function renderSparkline(history, maxTokens, maxRequests) {
+  // SVG sparkline for TPM (blue) and RPM (green) over last 60s
+  if (!history || history.length < 2) return '<div class="sparkline-row"><span class="sparkline-label">Sparkline</span><span style="color:var(--muted);font-size:9px;">waiting for data...</span></div>';
+  
+  var W = 160, H = 28, pad = 3;
+  var tokens = history.map(function(e){return e.tokens;});
+  var requests = history.map(function(e){return e.requests;});
+  
+  var tMax = Math.max.apply(null, tokens) || maxTokens || 1;
+  var rMax = Math.max.apply(null, requests) || maxRequests || 1;
+  if (maxTokens && tMax < maxTokens * 0.3) tMax = maxTokens * 0.3; // Show room to grow
+  
+  // Scale functions
+  var scaleY = function(v, max) { return H - pad - (v / max) * (H - pad*2); };
+  
+  // Token polyline (blue)
+  var tPoints = tokens.map(function(v, i) {
+    var x = pad + (i / (tokens.length - 1)) * (W - pad*2);
+    var y = scaleY(v, tMax);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  
+  // Request polyline (green)
+  var rPoints = requests.map(function(v, i) {
+    var x = pad + (i / (requests.length - 1)) * (W - pad*2);
+    var y = scaleY(v, rMax);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  
+  // Current value labels
+  var lastT = tokens[tokens.length-1];
+  var lastR = requests[requests.length-1];
+  var tLabel = lastT > 1000000 ? (lastT/1000000).toFixed(1)+'M' : lastT > 1000 ? (lastT/1000).toFixed(0)+'k' : lastT;
+  var rLabel = lastR;
+  
+  // Time labels (first and last)
+  var times = history.map(function(e){return e.ts;});
+  
+  var html = '<div class="sparkline-row">' +
+    '<span class="sparkline-label">TPM/RPM</span>' +
+    '<svg class="sparkline-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+    '<polyline points="' + tPoints + '" fill="none" stroke="#3b82f6" stroke-width="1.5" vector-effect="non-scaling-stroke"/>' +
+    '<polyline points="' + rPoints + '" fill="none" stroke="#10b981" stroke-width="1.5" vector-effect="non-scaling-stroke"/>' +
+    '</svg>' +
+    '<div style="font-size:8px;color:var(--fg-dim);text-align:right;flex-shrink:0;">' +
+    '<span style="color:#3b82f6;">' + tLabel + '</span> ' +
+    '<span style="color:#10b981;">' + rLabel + '</span>' +
+    '</div>' +
+    '</div>' +
+    '<div class="sparkline-legend">' +
+    '<span><span class="sparkline-dot" style="background:#3b82f6;"></span> TPM</span>' +
+    '<span><span class="sparkline-dot" style="background:#10b981;"></span> RPM</span>' +
+    '<span style="margin-left:auto;font-size:7px;color:var(--muted);">' + (times[0]||'') + ' → ' + (times[times.length-1]||'') + '</span>' +
+    '</div>';
+  return html;
+}
+
 function renderKeys(data) {
   lastKeyData = data;
   var summary = data.summary || {};
@@ -1362,6 +1437,9 @@ function renderKeys(data) {
 
         // Cooldown timer
         cooldownHtml +
+
+        // Sparkline chart (TPM/RPM 60s history)
+        renderSparkline(k.history || [], k.tokens_max, k.requests_max) +
 
         '</div>';  // key-card
     }

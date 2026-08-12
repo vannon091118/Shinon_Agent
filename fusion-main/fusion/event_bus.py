@@ -630,14 +630,212 @@ def _save_replay_report(report: ReplayReport) -> None:
             logger.warning("Failed to persist replay report: %s", exc)
 
 
+# ─── EventBus Live Logger ─────────────────────────────────────────────
+
+# All pipeline event types — the live logger subscribes to ALL of them.
+ALL_PIPELINE_EVENTS: Set[str] = {
+    EVENT_RUNTIME_INPUT,
+    EVENT_SHINON_OUTPUT,
+    EVENT_PROMTGUARD_CLAIMS,
+    EVENT_PROMTGUARD_HANDOFF,
+    EVENT_KARMA_FALSIFIED,
+    EVENT_KARMA_EXPERIENCE,
+    EVENT_RUNTIME_ERROR,
+    EVENT_RUNTIME_COMPLETED,
+    EVENT_RUNTIME_HEARTBEAT,
+    EVENT_GOAL_CHAIN_TRIGGERED,
+    EVENT_GOAL_CHAIN_SKILL_CHAIN,
+    EVENT_GOAL_CHAIN_REWORK,
+    EVENT_LIMEN_RATE_LIMITED,
+    EVENT_LIMEN_KEY_COOLDOWN,
+    EVENT_LIMEN_KEY_EXHAUSTED,
+    EVENT_LIMEN_BUDGET_WARNING,
+    EVENT_LIMEN_KEY_RECOVERED,
+    EVENT_LIMEN_API_ERROR,
+}
+
+DEFAULT_LIVE_LOG_PATH = Path("/tmp/eventbus-live-log.jsonl")
+
+
+def _event_payload_snippet(event: Event) -> str:
+    """Create a short, human-readable payload snippet for the live log."""
+    p = event.payload
+    etype = event.event_type
+
+    if etype == EVENT_RUNTIME_INPUT:
+        return (p.get("user_text", "") if isinstance(p, dict) else str(p))[:120]
+    elif etype == EVENT_SHINON_OUTPUT:
+        d = p if isinstance(p, dict) else {}
+        return d.get("reply", d.get("prompt", ""))[:120]
+    elif etype == EVENT_PROMTGUARD_CLAIMS:
+        claims = p.get("claims", []) if isinstance(p, dict) else []
+        count = len(claims)
+        ids = [c.get("id", "?") for c in claims[:3]] if isinstance(claims, list) else []
+        return f"{count} claims: {', '.join(ids)}"
+    elif etype == EVENT_KARMA_FALSIFIED:
+        results = p.get("results", []) if isinstance(p, dict) else []
+        summary = {r.get("claim_id", "?"): r.get("result", "?") for r in results[:5]} if isinstance(results, list) else {}
+        return f"{len(results)} falsified: {summary}"
+    elif etype == EVENT_KARMA_EXPERIENCE:
+        exp = p.get("experience", {}) if isinstance(p, dict) else {}
+        return f"reward={exp.get('reward', '?')} action={exp.get('action', '?')}"
+    elif etype == EVENT_GOAL_CHAIN_TRIGGERED:
+        skills = p.get("skills_triggered", []) if isinstance(p, dict) else []
+        return f"skills={skills[:5]} total={p.get('total_skills', '?')}"
+    elif etype == EVENT_GOAL_CHAIN_REWORK:
+        reworks = p.get("reworks", []) if isinstance(p, dict) else []
+        ids = [r.get("claim_id", "?") for r in reworks[:3]] if isinstance(reworks, list) else []
+        return f"reworks={len(reworks)} claims={ids}"
+    elif etype == EVENT_RUNTIME_COMPLETED:
+        return f"status={p.get('status', '?')} claims={p.get('claim_count', '?')}"
+    elif etype == EVENT_RUNTIME_ERROR:
+        return p.get("error", str(p))[:200]
+    elif etype == EVENT_LIMEN_RATE_LIMITED:
+        return f"type={p.get('limit_type','?')} provider={p.get('provider','?')}"
+    else:
+        return str(p)[:200]
+
+
+# Track which buses have loggers attached (prevents duplicate subscriptions)
+_bus_logger_registry: Dict[int, 'EventBusLiveLogger'] = {}
+
+
+class EventBusLiveLogger:
+    """Auto-attaching live logger for the EventBus.
+
+    Subscribes to ALL pipeline events and writes them in append-only
+    JSONL format to a log file. Designed to be attached once during
+    ControlPlaneRuntime.wire() — no manual startup needed.
+
+    The dashboard's /api/events endpoint reads this file for the
+    live Event Stream view.
+
+    Usage:
+        logger = EventBusLiveLogger()
+        logger.attach(bus)   # or logger.attach(rt.bus)
+        # ... process() calls write events automatically ...
+        await logger.flush()  # optional: force flush
+    """
+
+    def __init__(
+        self,
+        log_path: Optional[Path] = None,
+        max_lines: int = 5000,
+    ):
+        self._log_path = Path(log_path) if log_path else DEFAULT_LIVE_LOG_PATH
+        self._max_lines = max_lines
+        self._attached = False
+        self._write_count = 0
+        self._first_write = True
+
+    @property
+    def log_path(self) -> Path:
+        return self._log_path
+
+    @property
+    def attached(self) -> bool:
+        return self._attached
+
+    @staticmethod
+    def is_bus_attached(bus: AsyncEventBus) -> bool:
+        """Check if ANY live logger is already attached to this bus."""
+        return id(bus) in _bus_logger_registry
+
+    def attach(self, bus: AsyncEventBus) -> None:
+        """Subscribe the live logger to ALL pipeline events on the bus.
+
+        Idempotent per bus instance — calling attach() twice on the same
+        bus will not create duplicate subscriptions. Calling on different
+        buses creates separate loggers.
+        """
+        if self._attached:
+            return
+        if id(bus) in _bus_logger_registry:
+            logger.debug("Bus %s already has a live logger — skipping", id(bus))
+            self._attached = True  # Mark as attached for consistency
+            return
+
+        for etype in sorted(ALL_PIPELINE_EVENTS):
+            bus.subscribe_sync(etype, lambda evt: self._on_event(evt))
+
+        _bus_logger_registry[id(bus)] = self
+        self._attached = True
+        logger.info(
+            "EventBusLiveLogger attached: %d event types → %s (bus=%s)",
+            len(ALL_PIPELINE_EVENTS), self._log_path, id(bus),
+        )
+
+    def _on_event(self, event: Event) -> None:
+        """Handle a single event: write to JSONL log."""
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "type": event.event_type,
+            "source": event.source,
+            "correlation_id": event.correlation_id,
+            "payload_snippet": _event_payload_snippet(event),
+        }
+        try:
+            with open(self._log_path, "a") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            self._write_count += 1
+        except Exception:
+            pass  # Silent — don't break the pipeline
+
+        # Rotate: keep only last max_lines
+        self._rotate_if_needed()
+
+    def _rotate_if_needed(self) -> None:
+        """Keep only the last max_lines in the log.
+
+        Checks on the first write (to handle pre-existing large files)
+        and every 100 writes thereafter.
+        """
+        if not self._log_path.exists():
+            return
+        if not self._first_write and self._write_count % 100 != 0:
+            return
+        self._first_write = False
+        try:
+            lines = self._log_path.read_text().splitlines()
+            if len(lines) > self._max_lines:
+                self._log_path.write_text("\n".join(lines[-self._max_lines:]) + "\n")
+                logger.debug("Live log rotated: %d → %d lines", len(lines), self._max_lines)
+        except Exception:
+            pass
+
+    async def flush(self) -> int:
+        """Return the number of events written so far."""
+        return self._write_count
+
+    def stats(self) -> Dict[str, Any]:
+        return {
+            "attached": self._attached,
+            "log_path": str(self._log_path),
+            "events_written": self._write_count,
+            "subscribed_events": len(ALL_PIPELINE_EVENTS),
+        }
+
+
 # ─── Global singleton (for module-level access) ───────────────────────
 
 _default_bus: Optional[AsyncEventBus] = None
+_default_live_logger: Optional[EventBusLiveLogger] = None
 
 
 def get_event_bus() -> AsyncEventBus:
-    """Get or create the global event bus singleton."""
-    global _default_bus
+    """Get or create the global event bus singleton.
+
+    On first creation, the EventBusLiveLogger is automatically attached.
+    """
+    global _default_bus, _default_live_logger
     if _default_bus is None:
         _default_bus = AsyncEventBus()
+        # Auto-attach live logger on first bus creation
+        _default_live_logger = EventBusLiveLogger()
+        _default_live_logger.attach(_default_bus)
     return _default_bus
+
+
+def get_live_logger() -> Optional[EventBusLiveLogger]:
+    """Return the global EventBusLiveLogger (may be None if bus not created yet)."""
+    return _default_live_logger

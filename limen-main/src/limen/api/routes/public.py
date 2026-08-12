@@ -67,6 +67,129 @@ async def live_visualizer(request: Request) -> StreamingResponse:
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 
+@router.get("/v1/dashboard/keys")
+async def dashboard_keys(request: Request) -> dict[str, object]:
+    """Public endpoint: per-key health data for the Control Plane dashboard.
+
+    Returns status, rate-limit budgets, and health metrics for all
+    providers in the database — no auth required (localhost-only).
+    """
+    import json as _json
+    from datetime import UTC, datetime
+
+    database = request.app.state.database
+    registry = request.app.state.registry
+
+    rows = await asyncio.to_thread(
+        lambda: list(database.connection.execute(
+            "SELECT key_id, provider, deployment, status, cooldown_until,"
+            " observed_itpm, observed_otpm, observed_rpm,"
+            " meta_json, last_used_at, priority"
+            " FROM providers ORDER BY priority ASC, provider ASC"
+        ).fetchall())
+    )
+
+    keys: list[dict[str, object]] = []
+    now = datetime.now(UTC)
+
+    # Build a lookup of registry deployments for capability/rpm info
+    dep_lookup: dict[str, object] = {}
+    for dep in registry.deployments:
+        dep_lookup[dep.deployment] = {
+            "soft_rpm": getattr(dep, "soft_rpm", None),
+            "soft_itpm": getattr(dep, "soft_itpm", None),
+            "soft_otpm": getattr(dep, "soft_otpm", None),
+            "capabilities": list(dep.capabilities) if hasattr(dep, "capabilities") else [],
+            "model": dep.model if hasattr(dep, "model") else "",
+        }
+
+    for row in rows:
+        key_id = str(row["key_id"])
+        provider = str(row["provider"])
+        deployment = str(row["deployment"])
+        status = str(row["status"])
+        cooldown_until = row["cooldown_until"]
+        itpm = int(row["observed_itpm"] or 0)
+        otpm = int(row["observed_otpm"] or 0)
+        rpm = int(row["observed_rpm"] or 0)
+        priority_val = int(row["priority"] or 1)
+
+        # Parse meta_json for budget limits
+        meta: dict[str, object] = {}
+        try:
+            meta_raw = row["meta_json"]
+            if meta_raw:
+                meta = _json.loads(str(meta_raw))
+        except (_json.JSONDecodeError, TypeError):
+            pass
+
+        tokens_max = int(meta.get("tokens_max", 1_000_000))
+        requests_max = int(meta.get("requests_max", 500))
+        model = str(meta.get("model", ""))
+
+        # Merge registry info if available
+        reg_info = dep_lookup.get(deployment, {})
+        soft_rpm = reg_info.get("soft_rpm")
+        soft_itpm = reg_info.get("soft_itpm")
+
+        # Calculate health: if status is cooldown/dead, health is low
+        if status == "active":
+            health_pct = min(100.0, max(10.0, 100.0 - (itpm / max(tokens_max, 1)) * 50.0))
+        elif status == "cooldown":
+            health_pct = 25.0
+        else:
+            health_pct = 0.0
+
+        # Calculate cooldown remaining seconds
+        cooldown_remaining: float | None = None
+        if cooldown_until and status == "cooldown":
+            try:
+                cooldown_dt = datetime.fromisoformat(str(cooldown_until))
+                remaining = (cooldown_dt - now).total_seconds()
+                cooldown_remaining = max(0.0, remaining)
+            except (ValueError, OSError):
+                pass
+
+        keys.append({
+            "key_id": key_id,
+            "provider": provider,
+            "deployment": deployment,
+            "status": status,
+            "cooldown_until": cooldown_until,
+            "cooldown_remaining": cooldown_remaining,
+            "tokens_used": itpm + otpm,
+            "tokens_max": tokens_max,
+            "token_pct": round((itpm + otpm) / max(tokens_max, 1) * 100, 1),
+            "requests_used": rpm,
+            "requests_max": requests_max,
+            "request_pct": round(rpm / max(requests_max, 1) * 100, 1),
+            "health_pct": round(health_pct, 1),
+            "health_color": "#10b981" if health_pct > 70 else "#f59e0b" if health_pct > 30 else "#ef4444",
+            "priority": priority_val,
+            "model": model,
+            "soft_rpm": soft_rpm,
+            "soft_itpm": soft_itpm,
+            "capabilities": reg_info.get("capabilities", []),
+            "last_used_at": str(row["last_used_at"] or ""),
+        })
+
+    # Summary
+    active = sum(1 for k in keys if k["status"] == "active")
+    cooldown = sum(1 for k in keys if k["status"] == "cooldown")
+    dead = sum(1 for k in keys if k["status"] == "dead")
+
+    return {
+        "available": True,
+        "summary": {
+            "total": len(keys),
+            "active": active,
+            "cooldown": cooldown,
+            "dead": dead,
+        },
+        "keys": keys,
+    }
+
+
 @router.get("/health")
 async def health(request: Request) -> dict[str, object]:
     app_state = request.app.state

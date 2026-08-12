@@ -167,12 +167,20 @@ class KARMASubscriber:
         self._claim_evidence_cache: Optional[Dict[str, Any]] = None
         self._claim_evidence_loaded_at: float = 0.0
 
+        # Preprocessor evidence: StructuredInput from LLMPreProcessor
+        # Populated by ControlPlaneRuntime before process() runs
+        self._preprocess_evidence: Optional[Dict[str, Any]] = None
+        self._preprocess_evidence_requirements: List[str] = []
+        self._preprocess_evidence_tests: List[str] = []
+        self._preprocess_evidence_goal: str = ""
+
         # Counters
         self._falsification_count = 0
         self._experience_count = 0
         self._gate_falsifications = 0  # via FalsificationGate
         self._heuristic_falsifications = 0  # via regex fallback
         self._evidence_hits = 0  # claims where evidence was found in claim-log
+        self._cross_reference_hits = 0  # claims matched against preprocessor evidence
 
         # Import DispatchGate lazily to avoid hard dependency
         self._Action = None
@@ -186,6 +194,123 @@ class KARMASubscriber:
             logger.info("KARMA FalsificationGate connected — real probe-based verification")
         else:
             logger.info("KARMA FalsificationGate not provided — heuristic fallback active")
+
+    def set_preprocess_evidence(self, structured_input: Optional[Any]) -> None:
+        """Set LLMPreProcessor output as falsification evidence.
+
+        Called by ControlPlaneRuntime after preprocessing. The structured
+        input's requirements, tests, and goal are used to cross-reference
+        claims during falsification — replacing the empty evidence pool.
+
+        Args:
+            structured_input: StructuredInput from LLMPreProcessor.structure()
+        """
+        if structured_input is None:
+            self._preprocess_evidence = None
+            self._preprocess_evidence_requirements = []
+            self._preprocess_evidence_tests = []
+            self._preprocess_evidence_goal = ""
+            return
+
+        # Extract evidence from StructuredInput
+        reqs = getattr(structured_input, 'requirements', [])
+        tests = getattr(structured_input, 'tests', [])
+        goal = getattr(structured_input, 'goal', '')
+        arch = getattr(structured_input, 'architecture_components', [])
+
+        self._preprocess_evidence = {
+            "requirements": list(reqs),
+            "tests": list(tests),
+            "goal": goal,
+            "architecture": list(arch),
+            "mode": getattr(structured_input, 'mode', 'unknown'),
+        }
+        self._preprocess_evidence_requirements = list(reqs)
+        self._preprocess_evidence_tests = list(tests)
+        self._preprocess_evidence_goal = goal
+
+        logger.info(
+            "KARMA preprocess evidence set: %d requirements, %d tests, goal='%s'",
+            len(reqs), len(tests), goal[:60],
+        )
+
+    def _cross_reference_claim(
+        self, claim_text: str
+    ) -> Dict[str, Any]:
+        """Cross-reference a claim against the LLM's structured requirements and tests.
+
+        Returns a dict with:
+          - matched_requirement: the best-matching requirement text (or None)
+          - matched_test: the best-matching test text (or None)
+          - req_overlap: keyword overlap with requirements (0.0-1.0)
+          - test_overlap: keyword overlap with tests (0.0-1.0)
+          - goal_overlap: keyword overlap with the goal statement (0.0-1.0)
+        """
+        if not self._preprocess_evidence_requirements and not self._preprocess_evidence_tests:
+            return {"matched_requirement": None, "matched_test": None,
+                    "req_overlap": 0.0, "test_overlap": 0.0, "goal_overlap": 0.0}
+
+        # Extract significant words from the claim
+        stopwords = {"this", "that", "with", "from", "have", "been", "were", "they",
+                     "will", "would", "could", "should", "must", "shall", "also", "then",
+                     "the", "and", "for", "are", "has", "had", "not", "its", "all"}
+        claim_words = set(
+            w.lower().rstrip(".,;:!?)\"'")
+            for w in claim_text.split()
+            if len(w) >= 3 and w.lower() not in stopwords
+        )
+
+        if not claim_words:
+            return {"matched_requirement": None, "matched_test": None,
+                    "req_overlap": 0.0, "test_overlap": 0.0, "goal_overlap": 0.0}
+
+        # Best requirement match
+        best_req = None
+        best_req_score = 0.0
+        for req in self._preprocess_evidence_requirements:
+            req_words = set(
+                w.lower().rstrip(".,;:!?)\"'")
+                for w in req.split()
+                if len(w) >= 3 and w.lower() not in stopwords
+            )
+            if not req_words:
+                continue
+            overlap = len(claim_words & req_words) / max(len(req_words), 1)
+            if overlap > best_req_score:
+                best_req_score = overlap
+                best_req = req
+
+        # Best test match
+        best_test = None
+        best_test_score = 0.0
+        for test in self._preprocess_evidence_tests:
+            test_words = set(
+                w.lower().rstrip(".,;:!?)\"'")
+                for w in test.split()
+                if len(w) >= 3 and w.lower() not in stopwords
+            )
+            if not test_words:
+                continue
+            overlap = len(claim_words & test_words) / max(len(test_words), 1)
+            if overlap > best_test_score:
+                best_test_score = overlap
+                best_test = test
+
+        # Goal overlap
+        goal_words = set(
+            w.lower().rstrip(".,;:!?)\"'")
+            for w in self._preprocess_evidence_goal.split()
+            if len(w) >= 3 and w.lower() not in stopwords
+        )
+        goal_overlap = len(claim_words & goal_words) / max(len(goal_words), 1) if goal_words else 0.0
+
+        return {
+            "matched_requirement": best_req,
+            "matched_test": best_test,
+            "req_overlap": round(best_req_score, 2),
+            "test_overlap": round(best_test_score, 2),
+            "goal_overlap": round(goal_overlap, 2),
+        }
 
     def _try_import_dispatch(self) -> None:
         """Try to import KARMA's Action class. Sets _dispatch_available flag."""
@@ -382,6 +507,82 @@ class KARMASubscriber:
                 confidence=0.9,
                 gate_version="heuristic-v1",
             )
+
+        # ── Cross-reference against preprocessor evidence FIRST ──
+        cross_ref = self._cross_reference_claim(claim_text)
+        has_preprocess_evidence = bool(
+            self._preprocess_evidence_requirements or self._preprocess_evidence_tests
+        )
+
+        # If we have preprocessor evidence and a strong match, use it directly
+        if has_preprocess_evidence:
+            req_overlap = cross_ref.get("req_overlap", 0.0)
+            test_overlap = cross_ref.get("test_overlap", 0.0)
+
+            # Strong match: claim aligns with an LLM requirement AND an LLM test
+            if req_overlap >= 0.3 and test_overlap >= 0.2:
+                self._cross_reference_hits += 1
+                evidence_lines = [
+                    f"[preprocess] ✅ Matched requirement: {cross_ref.get('matched_requirement', '?')[:150]}",
+                    f"[preprocess] ✅ Matched test: {cross_ref.get('matched_test', '?')[:150]}",
+                    f"[preprocess] req_overlap={req_overlap} test_overlap={test_overlap} goal_overlap={cross_ref.get('goal_overlap', 0)}",
+                    f"[preprocess] Source: LLMPreProcessor structured output (mode={self._preprocess_evidence.get('mode', '?')})",
+                ]
+                confidence = min(0.95, 0.5 + req_overlap * 0.5 + test_overlap * 0.4)
+                return FalsificationResult(
+                    claim_id=claim_id,
+                    result="supported",
+                    evidence=evidence_lines,
+                    confidence=round(confidence, 2),
+                    gate_version="preprocess-crossref-v1",
+                )
+
+            # Medium match: claim aligns with a requirement only
+            if req_overlap >= 0.2:
+                self._cross_reference_hits += 1
+                evidence_lines = [
+                    f"[preprocess] ✅ Matched requirement: {cross_ref.get('matched_requirement', '?')[:150]}",
+                    f"[preprocess] req_overlap={req_overlap} (test_overlap={test_overlap})",
+                    f"[preprocess] Source: LLMPreProcessor (mode={self._preprocess_evidence.get('mode', '?')})",
+                ]
+                return FalsificationResult(
+                    claim_id=claim_id,
+                    result="supported",
+                    evidence=evidence_lines,
+                    confidence=round(min(0.75, 0.4 + req_overlap * 0.8), 2),
+                    gate_version="preprocess-crossref-v1",
+                )
+
+            # Weak match: claim has some overlap with tests
+            if test_overlap >= 0.15:
+                self._cross_reference_hits += 1
+                evidence_lines = [
+                    f"[preprocess] ⚠️ Partial test match: {cross_ref.get('matched_test', '?')[:150]}",
+                    f"[preprocess] test_overlap={test_overlap} (req_overlap={req_overlap})",
+                ]
+                return FalsificationResult(
+                    claim_id=claim_id,
+                    result="unverified",
+                    evidence=evidence_lines,
+                    confidence=round(0.25 + test_overlap * 0.5, 2),
+                    gate_version="preprocess-crossref-v1",
+                )
+
+            # No match: claim has NO overlap with requirements or tests
+            # This is suspicious — the LLM didn't anticipate this claim
+            if req_overlap < 0.1 and test_overlap < 0.1 and has_preprocess_evidence:
+                evidence_lines = [
+                    f"[preprocess] ⚠️ No match: claim not found in LLM's requirements or tests",
+                    f"[preprocess] req_overlap={req_overlap} test_overlap={test_overlap}",
+                    f"[preprocess] {len(self._preprocess_evidence_requirements)} requirements, {len(self._preprocess_evidence_tests)} tests checked",
+                ]
+                return FalsificationResult(
+                    claim_id=claim_id,
+                    result="unverified",
+                    evidence=evidence_lines,
+                    confidence=0.15,  # Lower than default — no evidence at all
+                    gate_version="preprocess-crossref-v1",
+                )
 
         # ── Path A: Real FalsificationGate ──
         if self._falsification_gate_available and self._falsification_gate:
@@ -698,4 +899,6 @@ class KARMASubscriber:
             "gate_falsifications": self._gate_falsifications,
             "heuristic_falsifications": self._heuristic_falsifications,
             "evidence_hits": self._evidence_hits,
+            "cross_reference_hits": self._cross_reference_hits,
+            "preprocess_evidence_available": 1 if self._preprocess_evidence else 0,
         }

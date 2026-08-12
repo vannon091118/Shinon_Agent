@@ -66,11 +66,13 @@ class RuntimeResult:
 
     correlation_id: str = ""
     input_text: str = ""
+    original_input: str = ""  # Before preprocessing (if any)
     shinon_output: Optional[Any] = None
     claims: List[Any] = field(default_factory=list)
     falsification_results: List[Any] = field(default_factory=list)
     experience_records: List[Any] = field(default_factory=list)
     aggregator_summary: Optional[Dict[str, Any]] = None
+    preprocess_info: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     started_at: str = ""
     completed_at: str = ""
@@ -310,12 +312,17 @@ class ControlPlaneRuntime:
         karma: Optional[Any] = None,
         goal_chain: Optional[Any] = None,
         limen: Optional[Any] = None,
+        # Pre-processor: auto-structure imprecise prompts
+        preprocessor: Optional[Any] = None,
+        preprocess_mode: str = "auto",  # "auto" | "force" | "synthetic" | "off"
     ):
         self.bus = bus or get_event_bus()
         self._state_dir = Path(state_dir) if state_dir else Path(".promtset/state")
         self._state_dir.mkdir(parents=True, exist_ok=True)
         self._timeout = timeout
         self._goal_chain_dispatch_mode = goal_chain_dispatch_mode
+        self._preprocess_mode = preprocess_mode
+        self._preprocessor = preprocessor
 
         # If a registry is provided, use it. Otherwise build a default one.
         if registry is not None:
@@ -477,6 +484,30 @@ class ControlPlaneRuntime:
 
         return registry
 
+    def _attach_live_logger(self) -> None:
+        """Attach EventBusLiveLogger to self.bus if not already attached.
+
+        Ensures EVERY process() call automatically writes events to
+        /tmp/eventbus-live-log.jsonl without manual bridge startup.
+
+        Uses per-bus tracking (EventBusLiveLogger.is_bus_attached()) so
+        custom bus instances also get logging, not just the global singleton.
+        """
+        try:
+            from fusion.event_bus import EventBusLiveLogger
+
+            # Check if THIS specific bus already has a logger (not just the global one)
+            if EventBusLiveLogger.is_bus_attached(self.bus):
+                logger.debug("LiveLogger already attached to bus %s", id(self.bus))
+                return
+
+            # Create and attach to THIS bus
+            live_logger = EventBusLiveLogger()
+            live_logger.attach(self.bus)
+            logger.info("LiveLogger attached to bus %s → %s", id(self.bus), live_logger.log_path)
+        except Exception as exc:
+            logger.warning("Failed to attach LiveLogger: %s", exc)
+
     # ── Wiring ───────────────────────────────────────────────────────
 
     def wire(self) -> None:
@@ -489,9 +520,15 @@ class ControlPlaneRuntime:
 
         Also wires the core pipeline chain:
           runtime.input → shinon → promtguard → karma
+
+        Also attaches the EventBusLiveLogger (if not already attached):
+          ALL events → /tmp/eventbus-live-log.jsonl
         """
         if self._wired:
             return
+
+        # ── Attach live logger (auto, no manual bridge needed) ──
+        self._attach_live_logger()
 
         # Create and wire all registered components
         self.registry.wire_all(self.bus)
@@ -553,6 +590,10 @@ class ControlPlaneRuntime:
           - Each pipeline stage completes independently
           - Aggregator tracks stage completions by correlation_id
           - Returns when all mandatory stages complete (or timeout)
+
+        When preprocessor is configured (preprocess_mode != "off"),
+        imprecise/long-winded prompts are first structured via LLM or
+        synthetic heuristics before entering the pipeline.
         """
         if not self._wired:
             self.wire()
@@ -561,8 +602,49 @@ class ControlPlaneRuntime:
             self._session_counter += 1
             session_id = f"auto-sess-{self._session_counter:04d}"
 
+        # ── Pre-process: structure imprecise/vague prompts ──
+        original_text = user_text
+        preprocess_info: Optional[Dict[str, Any]] = None
+        _structured_input = None  # Keep reference for evidence injection
+
+        if self._preprocess_mode != "off":
+            preprocessor = self._get_or_create_preprocessor()
+            if preprocessor is not None:
+                try:
+                    structured = await preprocessor.structure(user_text)
+                    _structured_input = structured
+                    if structured.preprocessed:
+                        user_text = structured.to_text()
+                        preprocess_info = {
+                            "original": original_text[:200],
+                            "structured": True,
+                            "mode": structured.mode,
+                            "goal": structured.goal,
+                            "requirements_count": len(structured.requirements),
+                            "tests_count": len(structured.tests),
+                        }
+                        logger.info(
+                            "PreProcessor: %s mode → %d requirements, %d tests",
+                            structured.mode,
+                            len(structured.requirements),
+                            len(structured.tests),
+                        )
+                except Exception as exc:
+                    logger.warning("PreProcessor failed — using original input: %s", exc)
+                    user_text = original_text  # Fallback to original
+
+        # ── Inject preprocess evidence into KARMA ──
+        if _structured_input is not None:
+            karma = self.registry.get("karma")
+            if karma is not None and hasattr(karma, 'set_preprocess_evidence'):
+                karma.set_preprocess_evidence(_structured_input)
+
         # Create result + aggregator for this run
-        result = RuntimeResult(input_text=user_text)
+        result = RuntimeResult(
+            input_text=user_text,
+            original_input=original_text,
+            preprocess_info=preprocess_info,
+        )
         stages = default_pipeline_stages()
         self._current_aggregator = ResultAggregator(
             correlation_id=result.correlation_id,
@@ -636,6 +718,40 @@ class ControlPlaneRuntime:
         return result
 
     # ── Convenience ──────────────────────────────────────────────────
+
+    def _get_or_create_preprocessor(self):
+        """Get or lazily create the LLMPreProcessor.
+
+        Creates from LIMEN DB if no preprocessor was explicitly passed.
+        In synthetic mode, creates without KeyPool (keyword-based only).
+        """
+        if self._preprocessor is not None:
+            return self._preprocessor
+
+        if self._preprocess_mode == "synthetic":
+            from fusion.llm_preprocessor import LLMPreProcessor
+            self._preprocessor = LLMPreProcessor(mode="synthetic")
+            return self._preprocessor
+
+        # Try creating from LIMEN DB
+        try:
+            from fusion.llm_preprocessor import create_preprocessor_from_limen
+            self._preprocessor = create_preprocessor_from_limen(
+                mode=self._preprocess_mode
+            )
+        except Exception as exc:
+            logger.warning("Could not create LLMPreProcessor from LIMEN: %s", exc)
+            # Fallback to synthetic
+            from fusion.llm_preprocessor import LLMPreProcessor
+            self._preprocessor = LLMPreProcessor(mode="synthetic")
+
+        return self._preprocessor
+
+    def get_preprocessor_stats(self) -> Optional[Dict[str, Any]]:
+        """Return preprocessor stats if configured."""
+        if self._preprocessor is not None:
+            return self._preprocessor.stats
+        return None
 
     def summary(self) -> str:
         return (

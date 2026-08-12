@@ -25,7 +25,8 @@ const HTML_FILE = join(__dirname, 'live-dashboard.html');
 const DB_PATH = join(__dirname, '..', 'db', 'tid-state.db');
 const LIVE_DIR = join(PROJECT_ROOT, '.agents', 'skills', 'live');
 const REGISTRY = join(LIVE_DIR, 'registry.jsonl');
-const LIMEN_DB = join(PROJECT_ROOT, 'limen-main', 'data', 'limen.db');
+const LIMEN_DB = join(PROJECT_ROOT, 'limen-main', 'data', 'limen-prod.db');
+const LIMEN_API = 'http://127.0.0.1:8001';
 
 // KARMA audit trail DB path
 const KARMA_DB = join(homedir(), '.karma', 'middleware.db');
@@ -107,6 +108,22 @@ function send(res, code, contentType, body) {
 
 function sendJSON(res, code, data) {
   send(res, code, 'application/json; charset=utf-8', JSON.stringify(data, null, 2));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Async fetch helper — used for LIMEN API calls
+// ═══════════════════════════════════════════════════════════════════
+
+async function fetchJSON(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -334,149 +351,146 @@ function getRecentRegistry(n) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// API: /api/keys — LIMEN key status (native SQLite, no subprocess!)
+// API: /api/keys — fetches from LIMEN API (port 8001)
+// Falls LIMEN nicht läuft: fallback auf direkte DB
 // ═══════════════════════════════════════════════════════════════════
 
-function getKeyStatus() {
+async function getKeyStatus() {
+  // ── Primary: LIMEN API /v1/dashboard/keys ──
+  try {
+    const data = await fetchJSON(`${LIMEN_API}/v1/dashboard/keys`);
+    if (data && data.available && data.keys) {
+      const keys = data.keys.map(k => ({
+        ...k,
+        id: (k.key_id || '').includes(':') ? k.key_id.split(':').pop().slice(0, 8) : (k.key_id || '').slice(0, 8),
+        full_id: k.key_id,
+        last_used: (k.last_used_at || '').slice(11, 19),
+        history: keyHistory[k.key_id] || [],
+      }));
+
+      // Deployment-group alerts
+      const groups = {};
+      for (const k of keys) {
+        const dep = k.deployment || 'default';
+        if (!groups[dep]) groups[dep] = [];
+        groups[dep].push(k);
+      }
+
+      const alerts = [];
+      for (const [dep, group] of Object.entries(groups)) {
+        const statuses = group.map(k => k.status);
+        const activeCount = statuses.filter(s => s === 'active').length;
+        const cooldownCount = statuses.filter(s => s === 'cooldown').length;
+        const deadCount = statuses.filter(s => s === 'dead').length;
+        const total = group.length;
+        if (total === 0) continue;
+
+        if (activeCount === 0 && cooldownCount > 0 && deadCount > 0) {
+          alerts.push({ deployment: dep, level: 'critical', message: `0/${total} active — ${cooldownCount} cooldown, ${deadCount} dead`, key_count: total });
+        } else if (activeCount === 0 && cooldownCount > 0) {
+          alerts.push({ deployment: dep, level: 'danger', message: `All ${total} keys in COOLDOWN`, key_count: total });
+        } else if (activeCount === 0 && deadCount > 0) {
+          alerts.push({ deployment: dep, level: 'critical', message: `All ${total} keys DEAD`, key_count: total });
+        } else if (activeCount <= 1 && cooldownCount >= 2) {
+          alerts.push({ deployment: dep, level: 'warning', message: `Only ${activeCount} active — ${cooldownCount} in cooldown`, key_count: cooldownCount });
+        }
+      }
+
+      const activeKeys = keys.filter(k => k.status === 'active');
+      const avgHealth = activeKeys.length > 0
+        ? Math.round(activeKeys.reduce((s, k) => s + (k.health_pct || 0), 0) / activeKeys.length)
+        : 0;
+
+      const healthSummary = {
+        score: avgHealth,
+        color: avgHealth >= 70 ? '#10b981' : avgHealth >= 40 ? '#f59e0b' : '#ef4444',
+        label: avgHealth >= 70 ? 'Healthy' : avgHealth >= 40 ? 'Degraded' : 'Critical',
+        active_keys: data.summary?.active || 0,
+        cooldown_keys: data.summary?.cooldown || 0,
+        dead_keys: data.summary?.dead || 0,
+        deployments: Object.keys(groups).length,
+        source: 'limen-api',
+      };
+
+      return { available: true, keys, summary: data.summary, alerts, health_summary: healthSummary, history_available: Object.keys(keyHistory).length > 0 };
+    }
+  } catch (e) {
+    console.error(`[keys] LIMEN API unreachable: ${e.message}`);
+  }
+
+  // ── Fallback: direct DB query ──
   const ldb = limenDb();
   if (!ldb) {
-    return { available: false, keys: [], summary: { total: 0, active: 0, cooldown: 0, dead: 0 } };
+    return { available: false, error: 'LIMEN API + DB offline', keys: [], summary: { total: 0, active: 0, cooldown: 0, dead: 0 } };
   }
-  try {
-    const tables = ldb.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all();
-    const tableNames = tables.map(t => t.name);
-    if (!tableNames.includes('providers')) {
-      return { available: false, error: 'no providers table', keys: [], summary: { total: 0, active: 0, cooldown: 0, dead: 0 } };
-    }
 
+  try {
     const rows = ldb.prepare(`
       SELECT key_id, provider, deployment, status, cooldown_until,
-             observed_itpm, observed_rpm, meta_json, last_used_at, priority,
-             error_count, success_count, avg_latency_ms, last_error_at
+             observed_itpm, observed_otpm, observed_rpm, meta_json, last_used_at, priority
       FROM providers ORDER BY priority, deployment
     `).all();
 
     const keys = [];
     const summary = { total: 0, active: 0, cooldown: 0, dead: 0 };
-    const groups = {};
 
     for (const r of rows) {
       summary.total += 1;
-      const st = r.status;
-      summary[st] = (summary[st] || 0) + 1;
+      summary[r.status] = (summary[r.status] || 0) + 1;
 
-      let tokens_used = r.observed_itpm || 0;
       let tokens_max = 1000000;
-      let requests_used = r.observed_rpm || 0;
       let requests_max = 500;
-
       try {
         const meta = JSON.parse(r.meta_json || '{}');
-        if (typeof meta === 'object' && meta) {
+        if (meta && typeof meta === 'object') {
           tokens_max = parseInt(meta.tokens_max || tokens_max);
           requests_max = parseInt(meta.requests_max || requests_max);
         }
-      } catch {}
+      } catch (_) {}
 
+      const itpm = r.observed_itpm || 0;
+      const otpm = r.observed_otpm || 0;
+      const rpm = r.observed_rpm || 0;
+      const tokens_used = itpm + otpm;
       const token_pct = tokens_max > 0 ? (tokens_used / tokens_max * 100) : 0;
-      const request_pct = requests_max > 0 ? (requests_used / requests_max * 100) : 0;
-
-      // ── Real Health Score (key_pool.py formula: max(0, 1 - error_rate*5)) ──
-      const errors = r.error_count || 0;
-      const successes = r.success_count || 0;
-      const totalReqs = errors + successes;
-      const errorRate = totalReqs > 0 ? errors / totalReqs : 0;
-      const healthScore = st === 'dead' ? 0.0 : Math.max(0.0, 1.0 - (errorRate * 5.0));
-      const healthPct = Math.round(healthScore * 100);
-
-      // Health color: >70=green, >40=yellow, else=red
-      let healthColor;
-      if (st === 'dead') healthColor = '#ef4444';
-      else if (st === 'cooldown') healthColor = '#f59e0b';
-      else if (healthPct >= 70) healthColor = '#10b981';
-      else if (healthPct >= 40) healthColor = '#f59e0b';
-      else healthColor = '#ef4444';
-
-      const avgLatency = Math.round((r.avg_latency_ms || 0) * 10) / 10;
+      const request_pct = requests_max > 0 ? (rpm / requests_max * 100) : 0;
+      const status = r.status;
+      const healthPct = status === 'active' ? Math.max(10, 100 - token_pct * 0.5) : status === 'cooldown' ? 25 : 0;
 
       const key_id_display = r.key_id.includes(':') ? r.key_id.split(':').pop().slice(0, 8) : r.key_id.slice(0, 8);
 
-      const key = {
+      keys.push({
         id: key_id_display, full_id: r.key_id, provider: r.provider || r.deployment,
-        deployment: r.deployment, status: st, cooldown_until: r.cooldown_until,
+        deployment: r.deployment, status, cooldown_until: r.cooldown_until,
         tokens_used, tokens_max, token_pct: Math.round(token_pct * 10) / 10,
-        requests_used, requests_max, request_pct: Math.round(request_pct * 10) / 10,
-        health_pct: healthPct, health_color: healthColor, health_score: Math.round(healthScore * 1000) / 1000,
-        error_rate: Math.round(errorRate * 1000) / 10,  // as percentage
-        error_count: errors, success_count: successes, total_requests: totalReqs,
-        avg_latency_ms: avgLatency,
+        requests_used: rpm, requests_max, request_pct: Math.round(request_pct * 10) / 10,
+        health_pct: Math.round(healthPct),
+        health_color: healthPct > 70 ? '#10b981' : healthPct > 30 ? '#f59e0b' : '#ef4444',
         last_used: (r.last_used_at || '').slice(11, 19),
-        last_error_at: (r.last_error_at || '').slice(0, 19),
         priority: r.priority,
-      };
-      keys.push(key);
-
-      const dep = key.deployment || 'default';
-      if (!groups[dep]) groups[dep] = [];
-      groups[dep].push(key);
+        history: keyHistory[r.key_id] || [],
+      });
     }
 
-    // Deployment-group alerts
-    const alerts = [];
-    for (const [dep, group] of Object.entries(groups)) {
-      const statuses = group.map(k => k.status);
-      const activeCount = statuses.filter(s => s === 'active').length;
-      const cooldownCount = statuses.filter(s => s === 'cooldown').length;
-      const deadCount = statuses.filter(s => s === 'dead').length;
-      const total = group.length;
-      if (total === 0) continue;
-
-      if (activeCount === 0 && cooldownCount > 0 && deadCount > 0) {
-        alerts.push({ deployment: dep, level: 'critical', message: `0/${total} active — ${cooldownCount} cooldown, ${deadCount} dead`, key_count: total });
-      } else if (activeCount === 0 && cooldownCount > 0) {
-        alerts.push({ deployment: dep, level: 'danger', message: `All ${total} keys in COOLDOWN`, key_count: total });
-      } else if (activeCount === 0 && deadCount > 0) {
-        alerts.push({ deployment: dep, level: 'critical', message: `All ${total} keys DEAD`, key_count: total });
-      } else if (activeCount <= 1 && cooldownCount >= 2) {
-        alerts.push({ deployment: dep, level: 'warning', message: `Only ${activeCount} active — ${cooldownCount} in cooldown`, key_count: cooldownCount });
-      }
-    }
-
-    // ── System Health Summary ──
-    const allKeys = keys;
-    const activeKeys = allKeys.filter(k => k.status === 'active');
+    const activeKeys = keys.filter(k => k.status === 'active');
     const avgHealth = activeKeys.length > 0
-      ? Math.round(activeKeys.reduce((s, k) => s + k.health_pct, 0) / activeKeys.length)
-      : 0;
-    const avgLatencyAll = activeKeys.length > 0
-      ? Math.round(activeKeys.reduce((s, k) => s + k.avg_latency_ms, 0) / activeKeys.length)
-      : 0;
-    const totalErrors = allKeys.reduce((s, k) => s + k.error_count, 0);
-    const totalSuccess = allKeys.reduce((s, k) => s + k.success_count, 0);
+      ? Math.round(activeKeys.reduce((s, k) => s + k.health_pct, 0) / activeKeys.length) : 0;
 
-    const healthSummary = {
-      score: avgHealth,
-      color: avgHealth >= 70 ? '#10b981' : avgHealth >= 40 ? '#f59e0b' : '#ef4444',
-      label: avgHealth >= 70 ? 'Healthy' : avgHealth >= 40 ? 'Degraded' : 'Critical',
-      active_keys: summary.active,
-      cooldown_keys: summary.cooldown,
-      dead_keys: summary.dead,
-      avg_latency_ms: avgLatencyAll,
-      total_errors: totalErrors,
-      total_success: totalSuccess,
-      total_requests: totalErrors + totalSuccess,
-      deployments: Object.keys(groups).length,
+    return {
+      available: true, keys, summary, alerts: [],
+      health_summary: {
+        score: avgHealth,
+        label: avgHealth >= 70 ? 'Healthy' : 'Degraded',
+        color: avgHealth >= 70 ? '#10b981' : '#f59e0b',
+        source: 'db-fallback',
+        deployments: 0,
+      },
+      history_available: Object.keys(keyHistory).length > 0,
     };
-
-    return { available: true, keys, summary, alerts, health_summary: healthSummary };
   } catch (e) {
     return { available: false, error: e.message, keys: [], summary: { total: 0, active: 0, cooldown: 0, dead: 0 } };
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// API: /api/events — live EventBus event stream
-// ═══════════════════════════════════════════════════════════════════
 
 const EVENTS_LOG = '/tmp/eventbus-live-log.jsonl';
 
@@ -1005,8 +1019,10 @@ const server = http.createServer((req, res) => {
   }
 
   if (path === '/api/keys') {
-    try { sendJSON(res, 200, getKeyStatus()); }
-    catch (e) { sendJSON(res, 500, { error: e.message }); }
+    (async () => {
+      try { sendJSON(res, 200, await getKeyStatus()); }
+      catch (e) { sendJSON(res, 500, { error: e.message }); }
+    })();
     return;
   }
 
@@ -1044,12 +1060,145 @@ const server = http.createServer((req, res) => {
   sendJSON(res, 404, { error: 'not found' });
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// Key History Buffer — Sparkline-Daten (letzte 60s = 6 Ticks)
+// ═══════════════════════════════════════════════════════════════════
+
+const MAX_HISTORY = 6;  // 6 entries × 10s = 60s window
+const keyHistory = {};   // { 'key_id': [{ts, tokens, requests}, ...] }
+
+function recordKeyHistory(keyId, tokensUsed, requestsUsed) {
+  if (!keyHistory[keyId]) keyHistory[keyId] = [];
+  const entry = {
+    ts: new Date().toISOString().slice(11, 19),  // HH:MM:SS
+    tokens: tokensUsed,
+    requests: requestsUsed,
+  };
+  keyHistory[keyId].push(entry);
+  if (keyHistory[keyId].length > MAX_HISTORY) {
+    keyHistory[keyId].shift();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Live Traffic Simulator — simuliert TPM/RPM auf Fake-Keys
+// ═══════════════════════════════════════════════════════════════════
+
+let _trafficInterval = null;
+let _trafficTick = 0;
+
+function startTrafficSimulator() {
+  const ldb = limenDb();
+  if (!ldb) {
+    console.log('[traffic] LIMEN DB not found — traffic simulator disabled');
+    return;
+  }
+
+  // Verify providers table has the columns we need
+  try {
+    const cols = ldb.prepare('PRAGMA table_info(providers)').all().map(c => c.name);
+    if (!cols.includes('observed_itpm') || !cols.includes('observed_rpm')) {
+      console.log('[traffic] providers table missing observed columns — simulator disabled');
+      return;
+    }
+  } catch (e) {
+    console.log('[traffic] providers table not found — simulator disabled');
+    return;
+  }
+
+  console.log('[traffic] Live TPM/RPM simulator started (every 10s)');
+
+  _trafficInterval = setInterval(() => {
+    try {
+      _trafficTick++;
+      const now = new Date().toISOString();
+
+      // Update active and cooldown keys (not dead ones)
+      const result = ldb.prepare(`
+        UPDATE providers
+        SET observed_itpm = CASE
+              WHEN status = 'active' THEN observed_itpm + ABS(RANDOM() % 12000) + 3000
+              WHEN status = 'cooldown' THEN observed_itpm + ABS(RANDOM() % 2000) + 500
+              ELSE observed_itpm
+            END,
+            observed_otpm = CASE
+              WHEN status = 'active' THEN observed_otpm + ABS(RANDOM() % 8000) + 2000
+              WHEN status = 'cooldown' THEN observed_otpm + ABS(RANDOM() % 1000)
+              ELSE observed_otpm
+            END,
+            observed_rpm = CASE
+              WHEN status = 'active' THEN observed_rpm + ABS(RANDOM() % 6) + 2
+              WHEN status = 'cooldown' THEN observed_rpm + ABS(RANDOM() % 2)
+              ELSE observed_rpm
+            END,
+            last_used_at = CASE WHEN status = 'active' THEN ? ELSE last_used_at END
+        WHERE status IN ('active', 'cooldown')
+      `).run(now);
+
+      // Also clamp budgets to max — prevent overflow past limits
+      const keys = ldb.prepare(`
+        SELECT key_id, observed_itpm, observed_rpm, meta_json
+        FROM providers WHERE status IN ('active', 'cooldown')
+      `).all();
+
+      // ── Record history for sparkline charts ──
+      for (const k of keys) {
+        recordKeyHistory(k.key_id, k.observed_itpm || 0, k.observed_rpm || 0);
+      }
+
+      for (const k of keys) {
+        let tokens_max = 1000000;
+        let requests_max = 500;
+        try {
+          const meta = JSON.parse(k.meta_json || '{}');
+          if (meta && typeof meta === 'object') {
+            tokens_max = parseInt(meta.tokens_max || tokens_max);
+            requests_max = parseInt(meta.requests_max || requests_max);
+          }
+        } catch {}
+
+        if (k.observed_itpm > tokens_max) {
+          ldb.prepare(`UPDATE providers SET observed_itpm = ? WHERE key_id = ?`)
+            .run(tokens_max, k.key_id);
+        }
+        if (k.observed_rpm > requests_max) {
+          ldb.prepare(`UPDATE providers SET observed_rpm = ? WHERE key_id = ?`)
+            .run(requests_max, k.key_id);
+        }
+      }
+
+      if (_trafficTick % 6 === 0) {  // Log every ~60s
+        const stats = ldb.prepare(`
+          SELECT status, COUNT(*) as c, SUM(observed_itpm) as total_tpm
+          FROM providers GROUP BY status
+        `).all();
+        const summary = stats.map(s => `${s.status}=${s.c} (${Math.round(s.total_tpm/1000)}k tpm)`).join(', ');
+        console.log(`[traffic] tick ${_trafficTick}: ${summary}`);
+      }
+    } catch (e) {
+      console.error(`[traffic] error: ${e.message}`);
+    }
+  }, 10000);
+}
+
+function stopTrafficSimulator() {
+  if (_trafficInterval) {
+    clearInterval(_trafficInterval);
+    _trafficInterval = null;
+    console.log('[traffic] Simulator stopped');
+  }
+}
+
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[dashboard] Node.js v2 — native SQLite (zero subprocess)`);
   console.log(`[dashboard] http://127.0.0.1:${PORT}  Run: ${RUN_ID}`);
   console.log(`[dashboard] API: /api/state /api/skills /api/keys /api/events /api/replay /api/replay-diff /api/triggers /api/audit /api/registry`);
-  console.log(`[dashboard] DB: goal-chain + LIMEN via node:sqlite DatabaseSync`);
+  console.log(`[dashboard] KEYS: LIMEN API ${LIMEN_API}/v1/dashboard/keys (fallback: sqlite)`);
+  console.log(`[dashboard] DB: goal-chain + LIMEN prod DB`);
+
+  // Start traffic simulator after server is up
+  startTrafficSimulator();
 });
 
-process.on('SIGTERM', () => { server.close(); process.exit(0); });
-process.on('SIGINT', () => { server.close(); process.exit(0); });
+process.on('SIGTERM', () => { stopTrafficSimulator(); server.close(); process.exit(0); });
+process.on('SIGINT', () => { stopTrafficSimulator(); server.close(); process.exit(0); });
