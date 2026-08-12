@@ -24,7 +24,15 @@ DAYS=7
 KEEP_GOAL=false
 DRY_RUN=false
 LIVE_DIR=".agents/skills/live"
-DB_PATH=".agents/skills/goal-chain/db/tid-state.db"
+# Zentral-first: $SHINON_HOME/data/goal-chain/tid-state.db, sonst Legacy.
+_SHINON_HOME="${SHINON_HOME:-$HOME/.shinon}"
+if [[ -n "${SHINON_GOALCHAIN_DB:-}" ]]; then
+    DB_PATH="${SHINON_GOALCHAIN_DB}"
+elif [[ -f "${_SHINON_HOME}/data/goal-chain/tid-state.db" ]]; then
+    DB_PATH="${_SHINON_HOME}/data/goal-chain/tid-state.db"
+else
+    DB_PATH="$ROOT/.agents/skills/goal-chain/db/tid-state.db"
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

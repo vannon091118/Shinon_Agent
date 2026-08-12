@@ -1,38 +1,36 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════
 # complete.sh v2 — Multi-Way Pipeline completion
-# After TID writes output → verify-template → user-checkpoint if required
+# After TID writes output → verify-template → FalsificationGate → done
 # ═══════════════════════════════════════════════════════════════════
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/tid-helpers.sh"
+# complete.sh is called from different working directories; resolve the repo
+# root independently so artifact and audit paths are stable.
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 TID="${1:?Usage: bash complete.sh TID [RESULT]}"
 RESULT="${2:-DONE}"
 AUTO_FLAG="${3:-}"
 
 ensure_db
-
-# Get TID details (de-duplicated — was duplicated twice)
 OUTPUT_FILE=$(task_field "$TID" "output_artifact")
 REQUIRES_APPROVAL=$(task_field "$TID" "requires_approval")
 RUN_ID=$(task_field "$TID" "run_id")
-
-# Final progress for dashboard snapshot
 PROGRESS_SNAPSHOT=$(progress_summary "$RUN_ID")
 
-# Refresh HTML snapshot so /preview reflects new state
+# Refresh HTML snapshot so /preview reflects new state.
 SNAPSHOT_GLOB=$(find ".goal/${RUN_ID}"* -name 'snapshot.html' 2>/dev/null | head -1 || true)
 if [[ -n "$SNAPSHOT_GLOB" && -x "$SCRIPT_DIR/update-snapshot.sh" ]]; then
     bash "$SCRIPT_DIR/update-snapshot.sh" "$RUN_ID" "TID_${RESULT} · $(progress_summary "$RUN_ID")" > "$SNAPSHOT_GLOB" 2>/dev/null || true
 fi
 
-# 1. Auto-verification (DRIFT DETECTION) — NUR bei DONE
-#    Bugfix (P0-1): verify-template MUSS VOR tid_done laufen.
-#    Bugfix (P0-4): verify-template NUR bei RESULT=DONE ausfuehren.
-#    Sonst: FAIL auf partial Output → verify schlaegt fehl → exit 1 → tid_fail nie erreicht.
 GATE_RESULT=""
+
+# 1. Drift verification. Missing artifacts are intentionally not skipped: the
+# mandatory FalsificationGate below will record them as a failed probe.
 if [[ "$RESULT" == "DONE" && -n "$OUTPUT_FILE" && "$OUTPUT_FILE" != "None" && -f "$OUTPUT_FILE" ]]; then
     echo ""
     echo "── DRIFT-VERIFICATION ──────────────────────────────────────"
@@ -48,7 +46,6 @@ if [[ "$RESULT" == "DONE" && -n "$OUTPUT_FILE" && "$OUTPUT_FILE" != "None" && -f
             exit 1
         fi
     fi
-    # Extrahiere Gate-Result (PASS/FAIL) fuer Gate-TIDs
     TID_PHASE=$(task_field "$TID" "phase")
     if [[ "$TID_PHASE" == G* ]]; then
         GATE_RESULT=$(head -1 "$OUTPUT_FILE" 2>/dev/null | grep -oE '^(PASS|FAIL)$' || true)
@@ -56,52 +53,165 @@ if [[ "$RESULT" == "DONE" && -n "$OUTPUT_FILE" && "$OUTPUT_FILE" != "None" && -f
     fi
 fi
 
-# 2. Mark current TID as done (NACH erfolgreicher Verifikation)
+# 2. Mandatory KARMA FalsificationGate. This is fail-closed and happens before
+# tid_done. No --force flag bypasses this governance decision.
+FALSIFICATION_LOG=""
+if [[ "$RESULT" == "DONE" ]]; then
+    TID_PHASE="${TID_PHASE:-$(task_field "$TID" "phase")}"
+    TID_SECTION=$(task_field "$TID" "phase_section" 2>/dev/null || true)
+    TID_SKILL=$(task_field "$TID" "skill_name" 2>/dev/null || true)
+    GATE_PROJECT="$(basename "$REPO_ROOT")"
+    GATE_STEP="${TID_SECTION:-${TID_PHASE:-$TID}}"
+    GATE_SKILL="${TID_SKILL:-unknown}"
+    GATE_OUTPUT="$OUTPUT_FILE"
+    if [[ -n "$GATE_OUTPUT" && "$GATE_OUTPUT" != /* ]]; then
+        GATE_OUTPUT="$REPO_ROOT/$GATE_OUTPUT"
+    fi
+
+    GATE_LOG_DIR="${SHINON_GATE_LOG_DIR:-$REPO_ROOT/.goal/$RUN_ID}"
+    mkdir -p "$GATE_LOG_DIR"
+    FALSIFICATION_LOG="$GATE_LOG_DIR/falsification-gate-${TID}.json"
+    GATE_STDOUT=$(mktemp)
+    GATE_STDERR=$(mktemp)
+    GATE_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    KARMA_PY="${SHINON_KARMA_PYTHON:-$REPO_ROOT/.venv/bin/python3}"
+    if [[ ! -x "$KARMA_PY" ]]; then
+        KARMA_PY="$(command -v python3 || true)"
+    fi
+
+    echo ""
+    echo "── KARMA FALSIFICATION-GATE ───────────────────────────────"
+    echo "  Project:  $GATE_PROJECT"
+    echo "  Step:     $GATE_STEP"
+    echo "  Skill:    $GATE_SKILL"
+    echo "  Artifact: ${GATE_OUTPUT:-<missing>}"
+    echo "  Log:      $FALSIFICATION_LOG"
+
+    GATE_RC=127
+    if [[ -n "$KARMA_PY" ]]; then
+        # KARMA's middleware persistence is isolated under the central Shinon
+        # home. An explicit caller override remains authoritative.
+        SHINON_HOME_FOR_KARMA="${SHINON_HOME:-$HOME/.shinon}"
+        export LLM_MIDDLEWARE_ROOT="${LLM_MIDDLEWARE_ROOT:-$SHINON_HOME_FOR_KARMA/data/karma}"
+        set +e
+        PYTHONPATH="$REPO_ROOT/karma-main${PYTHONPATH:+:$PYTHONPATH}" \
+            "$KARMA_PY" -m karma.core.falsification_gate \
+            "$GATE_PROJECT" "$GATE_STEP" "$GATE_SKILL" "$GATE_OUTPUT" --json \
+            >"$GATE_STDOUT" 2>"$GATE_STDERR"
+        GATE_RC=$?
+        set -e
+    else
+        printf '%s\n' "KARMA Python runtime not found" >"$GATE_STDERR"
+    fi
+
+    # Persist complete structured results plus diagnostics. Crashes or invalid
+    # JSON become an explicit gate_runtime failure, never an implicit pass.
+    python3 - "$GATE_STDOUT" "$GATE_STDERR" "$FALSIFICATION_LOG" \
+        "$GATE_RC" "$GATE_PROJECT" "$GATE_STEP" "$GATE_SKILL" "$GATE_OUTPUT" \
+        "$GATE_STARTED_AT" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+stdout_path, stderr_path, log_path, rc, project, step, skill, output, started = sys.argv[1:]
+try:
+    raw = Path(stdout_path).read_text(encoding="utf-8")
+except OSError:
+    raw = ""
+try:
+    stderr = Path(stderr_path).read_text(encoding="utf-8")
+except OSError:
+    stderr = ""
+try:
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError("gate JSON is not an object")
+except Exception as exc:
+    payload = {
+        "gate": "FalsificationGate",
+        "version": "unknown",
+        "passed": False,
+        "critical_failures": ["gate_runtime"],
+        "results": [],
+        "parse_error": str(exc),
+        "raw_stdout": raw,
+    }
+payload.update({
+    "project": payload.get("project", project),
+    "step": payload.get("step", step),
+    "skill": payload.get("skill", skill),
+    "output_file": payload.get("output_file", output),
+    "execution_exit_code": int(rc),
+    "started_at": started,
+    "finished_at": datetime.now(timezone.utc).isoformat(),
+})
+if stderr:
+    payload["stderr"] = stderr
+if int(rc) != 0:
+    payload["passed"] = False
+Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+Path(log_path).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY
+
+    rm -f "$GATE_STDOUT" "$GATE_STDERR"
+    GATE_PASSED=$(python3 - "$FALSIFICATION_LOG" <<'PY'
+import json
+import sys
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        print("true" if json.load(handle).get("passed") is True else "false")
+except Exception:
+    print("false")
+PY
+)
+    if [[ "$GATE_RC" -ne 0 || "$GATE_PASSED" != "true" ]]; then
+        echo "❌ FALSIFICATION-GATE FAILED (exit $GATE_RC, passed=$GATE_PASSED) — TID bleibt offen"
+        echo "   Vollständiger Befund: $FALSIFICATION_LOG"
+        exit 1
+    fi
+    echo "  ✅ Falsification-Gate bestanden"
+fi
+
+# 3. Only now transition to DONE. The following self-improvement hook is
+# explicitly simulation-only; completion.sh never invokes `ml train`.
 if [[ "$RESULT" == "DONE" ]]; then
     tid_done "$TID"
 
-    # ─── POST-TASK AUTO SELF-IMPROVE (1/3-Regel) ──────────────────────
-    # Nach jedem erfolgreich abgeschlossenen TID: karma simuliert EINEN
-    # Cycle (dry-run, kein State-Mutation) und hängt den Snapshot an
-    # .learnings/<proj>-sessions.jsonl an. Das ist die Engine-Seite der
-    # "MUSS NACH JEDEM durchgeführten Task automatisch passieren"-Regel.
-    #
-    # Gating: REAL mutation (`karma ml train`) wird durch das Evil-Twin-
-    # Gate-TID reguliert (G2-TID in der Pipeline). Wir rufen hier nur den
-    # sicheren simulate-Pfad.
-    #
-    # Wenn Karma oder venv fehlen, kein Crash — wir wollen den Goal-Chain-
-    # Ablauf nicht an einem Self-Improve-Aufruf scheitern lassen.
-    if [[ -d ".learnings" ]]; then
-        PROJECT_NAME="$(basename "$(pwd)")"
-        SESSIONS_FILE=".learnings/${PROJECT_NAME}-sessions.jsonl"
-        KARMA_PY=".venv/bin/python3"
+    LEARNINGS_DIR="${SHINON_LEARNINGS_DIR:-$REPO_ROOT/.learnings}"
+    if [[ -d "$LEARNINGS_DIR" ]]; then
+        PROJECT_NAME="$(basename "$REPO_ROOT")"
+        SESSIONS_FILE="$LEARNINGS_DIR/${PROJECT_NAME}-sessions.jsonl"
+        KARMA_PY="${SHINON_KARMA_PYTHON:-$REPO_ROOT/.venv/bin/python3}"
         [ -x "$KARMA_PY" ] || KARMA_PY=""
         if [[ -n "$KARMA_PY" ]]; then
             TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             SKILL_OF_TID=$(task_field "$TID" "skill_name" 2>/dev/null || echo "")
             GOAL_OF_TID=$(task_field "$TID" "goal" 2>/dev/null || echo "")
-            # Aufruf mit --output json; falls karma das Flag nicht kennt,
-            # fällt es zurück auf stdout und wir wrappen es in JSON.
-            RAW=$("$KARMA_PY" -m karma.cli ml train \
+            RAW=$("$KARMA_PY" -m karma.cli ml simulate \
                 --project "$PROJECT_NAME" \
                 --cycles 1 2>&1 || true)
-            # Wenn RAW leer ist (karma noch ohne ml-patterns), notiere "no-op"
             [ -z "$RAW" ] && RAW='{"simulated_actions": []}'
-            # Sanitize: raw in einer einzigen JSON-Zeile, neue Zeilen → \n
-            RAW_ESCAPED=$(printf '%s' "$RAW" | python3 -c \
-                'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null \
-                || printf '"%s"' "$RAW")
-            {
-                printf '{"timestamp":"%s","tid":"%s","run_id":"%s","skill":"%s","goal":"%s","result":"DONE","simulate_output":%s}\n' \
-                    "$TIMESTAMP" "$TID" "$RUN_ID" "$SKILL_OF_TID" "$GOAL_OF_TID" "$RAW_ESCAPED"
-            } >> "$SESSIONS_FILE"
+            RECORD=$(RAW="$RAW" python3 - "$TIMESTAMP" "$TID" "$RUN_ID" "$SKILL_OF_TID" "$GOAL_OF_TID" <<'PY'
+import json
+import os
+import sys
+print(json.dumps({
+    "timestamp": sys.argv[1],
+    "tid": sys.argv[2],
+    "run_id": sys.argv[3],
+    "skill": sys.argv[4],
+    "goal": sys.argv[5],
+    "result": "DONE",
+    "simulate_output": os.environ.get("RAW", ""),
+}, ensure_ascii=False))
+PY
+)
+            printf '%s\n' "$RECORD" >> "$SESSIONS_FILE"
             echo "  ↻ self-improve snapshot → $SESSIONS_FILE ($(wc -l < "$SESSIONS_FILE") Zeilen gesamt)"
         fi
     fi
-
 elif [[ "$RESULT" == "ROOT_CAUSE" ]]; then
-    # Agent hat Root-Cause-Analyse durchgeführt statt blind zu skippen
     rc_reason="${4:-Gate verified: no gap to fill}"
     tid_root_cause_done "$TID" "$rc_reason"
 elif [[ "$RESULT" == "FAIL" ]]; then
@@ -109,17 +219,12 @@ elif [[ "$RESULT" == "FAIL" ]]; then
     tid_fail "$TID" "$FAIL_REASON"
 fi
 
-# Notify live dashboard
 notify_dashboard "TID_${RESULT}" "$TID" "$PROGRESS_SNAPSHOT"
 
-# Record decision — ONLY for actual gate results (PASS/FAIL from gate evaluation).
-# Worker.sh records its own decisions (CHAIN_SCRIPT_FAILED, EMPTY_OUTPUT, PROMPT_CAPTURED)
-# via --auto mode. complete.sh's GATE_RESULT is only meaningful when a gate TID
-# produced a real PASS/FAIL evaluation.
+# Record completion/gate decisions for the audit trail.
 if [[ -n "$GATE_RESULT" ]]; then
     record_decision "$TID" "GATE_RESULT" "$GATE_RESULT" "Gate ${TID_PHASE:-?} evaluated: ${GATE_RESULT}" "" ""
 elif [[ "$AUTO_FLAG" != "--auto" ]]; then
-    # Manual/interactive mode — record the result for audit trail
     if [[ "$RESULT" == "FAIL" ]]; then
         record_decision "$TID" "COMPLETION" "${RESULT}" "FAIL: ${FAIL_REASON:-Agent reported failure}" "" ""
     else
@@ -127,15 +232,13 @@ elif [[ "$AUTO_FLAG" != "--auto" ]]; then
     fi
 fi
 
-# 3. Gate-Phase-Skip (Bugfix P0-2): MUSS VOR user-checkpoint laufen,
-#    da user-checkpoint mit exit 0 beendet und die Gate-Logik sonst nie erreicht wird.
+# Gate routing occurs after completion state is valid and before user checkpoint.
 TID_PHASE=$(task_field "$TID" "phase")
 if [[ "$TID_PHASE" == G* && -n "$GATE_RESULT" ]]; then
     _GATE_NEXT=$(next_pending_tid_after_gate "$RUN_ID" "$TID_PHASE" "$GATE_RESULT" "$OUTPUT_FILE")
     echo "  🔀 Gate-Routing: ${GATE_RESULT} → next=${_GATE_NEXT:-NONE}"
 fi
 
-# 4. User Checkpoint (if this TID requires approval)
 if [[ "$REQUIRES_APPROVAL" == "1" ]]; then
     echo ""
     echo "🛑 USER APPROVAL REQUIRED — rufe user-checkpoint.sh"
@@ -144,9 +247,7 @@ if [[ "$REQUIRES_APPROVAL" == "1" ]]; then
     exit 0
 fi
 
-# 5. Find next TID (default linear — gate-skip already applied above)
 NEXT_TID=$(next_pending_tid "$RUN_ID")
-
 if [[ -z "$NEXT_TID" ]]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════╗"

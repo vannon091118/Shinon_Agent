@@ -23,14 +23,20 @@ import { DatabaseSync } from 'node:sqlite';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..', '..', '..', '..');
 const HTML_FILE = join(__dirname, 'live-dashboard.html');
-const DB_PATH = join(__dirname, '..', 'db', 'tid-state.db');
+// Zentral-first: $SHINON_HOME/data/goal-chain/tid-state.db falls vorhanden,
+// sonst Legacy-Pfad. Ein Ort fuer TID-State, kein Fragmentieren.
+const _SHINON_HOME = process.env.SHINON_HOME || join(homedir(), '.shinon');
+const _CENTRAL_GOAL_DB = join(_SHINON_HOME, 'data', 'goal-chain', 'tid-state.db');
+const DB_PATH = process.env.SHINON_GOALCHAIN_DB
+  || (existsSync(_CENTRAL_GOAL_DB) ? _CENTRAL_GOAL_DB : join(__dirname, '..', 'db', 'tid-state.db'));
 const LIVE_DIR = join(PROJECT_ROOT, '.agents', 'skills', 'live');
 const REGISTRY = join(LIVE_DIR, 'registry.jsonl');
 const LIMEN_DB = join(PROJECT_ROOT, 'limen-main', 'data', 'limen-prod.db');
 const LIMEN_API = 'http://127.0.0.1:8001';
 
 // KARMA audit trail DB path
-const KARMA_DB = join(homedir(), '.karma', 'middleware.db');
+const KARMA_DB = process.env.KARMA_DB
+  || join(process.env.SHINON_HOME || join(homedir(), '.shinon'), 'data', 'karma', 'karma.db');
 const AUDIT_REPORT = join(PROJECT_ROOT, '.freebuff', 'last-audit-report.json');
 
 const PORT = parseInt(process.argv[2]) || 4200;

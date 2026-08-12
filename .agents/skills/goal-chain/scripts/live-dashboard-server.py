@@ -26,7 +26,12 @@ from pathlib import Path
 
 # ─── Config ────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
-DB_PATH = PROJECT_ROOT / ".agents/skills/goal-chain/db/tid-state.db"
+# Zentral-first: $SHINON_HOME/data/goal-chain/tid-state.db falls vorhanden,
+# sonst Legacy-Pfad. Ein Ort fuer TID-State, kein Fragmentieren.
+_shinon_home = os.environ.get("SHINON_HOME") or os.path.expanduser("~/.shinon")
+_central_db = Path(_shinon_home) / "data" / "goal-chain" / "tid-state.db"
+DB_PATH = (Path(os.environ["SHINON_GOALCHAIN_DB"]) if os.environ.get("SHINON_GOALCHAIN_DB")
+           else (_central_db if _central_db.exists() else PROJECT_ROOT / ".agents/skills/goal-chain/db/tid-state.db"))
 LIVE_DIR = PROJECT_ROOT / ".agents/skills/live"
 REGISTRY = LIVE_DIR / "registry.jsonl"
 LIMEN_DB_PATH = PROJECT_ROOT / "limen-main" / "data" / "limen.db"

@@ -7,7 +7,16 @@
 # ─── Global paths ──────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GOAL_CHAIN_DIR="$(dirname "$SCRIPT_DIR")"
-DB_PATH="${GOAL_CHAIN_DIR}/db/tid-state.db"
+# Zentral-first: $SHINON_HOME/data/goal-chain/tid-state.db falls vorhanden,
+# sonst Legacy-Pfad. Ein Ort fuer TID-State — kein Fragmentieren.
+_SHINON_HOME="${SHINON_HOME:-$HOME/.shinon}"
+if [[ -n "${SHINON_GOALCHAIN_DB:-}" ]]; then
+    DB_PATH="${SHINON_GOALCHAIN_DB}"
+elif [[ -f "${_SHINON_HOME}/data/goal-chain/tid-state.db" ]]; then
+    DB_PATH="${_SHINON_HOME}/data/goal-chain/tid-state.db"
+else
+    DB_PATH="${GOAL_CHAIN_DIR}/db/tid-state.db"
+fi
 PROJECT_ROOT="$(cd "$GOAL_CHAIN_DIR/../../.." && pwd)"
 SKILL_BASE=".agents/skills"
 
