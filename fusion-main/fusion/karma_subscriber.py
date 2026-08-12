@@ -55,7 +55,8 @@ class FalsificationResult:
     """Result of a single claim's falsification."""
 
     claim_id: str
-    result: str  # supported | confirmed | refuted | conflicted | unverified
+    claim_text: str = ""
+    result: str = "unverified"  # supported | confirmed | refuted | conflicted | unverified
     evidence: List[str] = field(default_factory=list)
     confidence: float = 0.5
     gate_version: str = "1.0.0"
@@ -68,6 +69,7 @@ class FalsificationResult:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "claim_id": self.claim_id,
+            "claim_text": self.claim_text,
             "result": self.result,
             "evidence": self.evidence,
             "confidence": self.confidence,
@@ -374,6 +376,7 @@ class KARMASubscriber:
                     # Still produce a result for this claim even if dispatch failed
                     result = FalsificationResult(
                         claim_id=claim_id,
+                        claim_text=claim_text,
                         result="unverified",
                         evidence=[f"DispatchGate error: {exc}"],
                         confidence=0.0,
@@ -531,6 +534,7 @@ class KARMASubscriber:
                 confidence = min(0.95, 0.5 + req_overlap * 0.5 + test_overlap * 0.4)
                 return FalsificationResult(
                     claim_id=claim_id,
+                    claim_text=claim_text,
                     result="supported",
                     evidence=evidence_lines,
                     confidence=round(confidence, 2),
@@ -547,6 +551,7 @@ class KARMASubscriber:
                 ]
                 return FalsificationResult(
                     claim_id=claim_id,
+                    claim_text=claim_text,
                     result="supported",
                     evidence=evidence_lines,
                     confidence=round(min(0.75, 0.4 + req_overlap * 0.8), 2),
@@ -562,6 +567,7 @@ class KARMASubscriber:
                 ]
                 return FalsificationResult(
                     claim_id=claim_id,
+                    claim_text=claim_text,
                     result="unverified",
                     evidence=evidence_lines,
                     confidence=round(0.25 + test_overlap * 0.5, 2),
@@ -578,6 +584,7 @@ class KARMASubscriber:
                 ]
                 return FalsificationResult(
                     claim_id=claim_id,
+                    claim_text=claim_text,
                     result="unverified",
                     evidence=evidence_lines,
                     confidence=0.15,  # Lower than default — no evidence at all
@@ -809,6 +816,7 @@ class KARMASubscriber:
                 confidence = 0.7
                 return FalsificationResult(
                     claim_id=claim_id,
+                    claim_text=claim_text,
                     result=verdict,
                     evidence=evidence,
                     confidence=confidence,
@@ -872,6 +880,7 @@ class KARMASubscriber:
 
         return FalsificationResult(
             claim_id=claim_id,
+            claim_text=claim_text,
             result=result,
             evidence=evidence,
             confidence=confidence,

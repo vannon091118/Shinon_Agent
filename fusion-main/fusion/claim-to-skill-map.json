@@ -1,0 +1,62 @@
+{
+  "$schema": "claim-to-skill-map.schema.json",
+  "version": "1.0.0",
+  "description": "Maps claim keywords/patterns to goal-chain skill sections. When KARMA refutes or finds a claim unverified, matching keywords trigger corresponding skill-chain TIDs for gap-filling.",
+  "mappings": {
+    "security": ["security-scan", "validation"],
+    "auth": ["security-scan", "validation"],
+    "jwt": ["security-scan", "validation"],
+    "oauth": ["security-scan", "validation"],
+    "token": ["security-scan", "validation"],
+    "encrypt": ["security-scan"],
+
+    "architecture": ["guide-architekt", "multi-agent-orchestr"],
+    "design pattern": ["guide-architekt"],
+    "pattern": ["guide-architekt"],
+    "scal": ["guide-architekt"],
+    "microservice": ["guide-architekt", "multi-agent-orchestr"],
+
+    "test": ["python-testing-patte", "validation"],
+    "coverage": ["python-testing-patte"],
+    "lint": ["validation"],
+    "type check": ["validation"],
+    "ci/cd": ["autorun", "validation"],
+
+    "data": ["consolidate-memory", "track-findings"],
+    "persistence": ["consolidate-memory", "track-findings"],
+    "database": ["consolidate-memory", "track-findings"],
+    "sqlite": ["consolidate-memory"],
+
+    "ui": ["frontend-design", "web-design-guidelines"],
+    "ux": ["frontend-design", "web-design-guidelines"],
+    "frontend": ["frontend-design"],
+    "css": ["frontend-design", "web-design-guidelines"],
+    "component": ["frontend-design"],
+
+    "documentation": ["document-tools", "pdf"],
+    "docs": ["document-tools"],
+    "readme": ["document-tools"],
+
+    "api": ["clerk-webhooks", "delivery-tracking"],
+    "endpoint": ["clerk-webhooks"],
+    "webhook": ["clerk-webhooks"],
+    "integration": ["clerk-webhooks", "delivery-tracking"],
+
+    "playwright": ["playwright-expert"],
+    "e2e": ["playwright-expert"],
+    "integration test": ["playwright-expert", "python-testing-patte"],
+    "unit test": ["python-testing-patte"],
+
+    "community": ["community-deep-resea"],
+    "research": ["community-deep-resea"],
+    "feedback": ["community-deep-resea"],
+
+    "prompt": ["sub-agent-prompts", "executing-plans"],
+    "agent": ["sub-agent-prompts", "multi-agent-orchestr"],
+    "instruction": ["sub-agent-prompts"],
+
+    "must": ["track-findings"],
+    "shall": ["track-findings"],
+    "should": ["track-findings"]
+  }
+}
