@@ -1,12 +1,9 @@
 @echo off
 REM ════════════════════════════════════════════════════════════════════════
-REM shinon.cmd — Windows CLI-Wrapper (thin shim)
+REM ctl.cmd — Windows Lifecycle-Wrapper (thin shim)
 REM
-REM Leitet ALLES an shinon.py weiter. Die eigentliche Logik lebt in Python.
-REM Forward-kompatibel: jedes neue Subcommand in shinon.py funktioniert
-REM automatisch über diesen Wrapper.
-REM
-REM UTF-8-Codepage wird gesetzt, damit die 🦇 ✅ 🎉 Emojis sauber rendern.
+REM Leitet ALLES an ctl.py weiter (start/stop/status/restart).
+REM UTF-8 für saubere Emoji-Ausgabe.
 REM ════════════════════════════════════════════════════════════════════════
 
 chcp 65001 >nul 2>&1
@@ -19,18 +16,17 @@ cd /d "%~dp0"
 
 where python >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    python "%~dp0shinon.py" %*
+    python "%~dp0ctl.py" %*
     goto :end
 )
 
 where python3 >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    python3 "%~dp0shinon.py" %*
+    python3 "%~dp0ctl.py" %*
     goto :end
 )
 
-echo [FAIL] Python 3.11+ nicht gefunden. Bitte installieren:
-echo        https://www.python.org/downloads/
+echo [FAIL] Python 3.11+ nicht gefunden.
 exit /b 1
 
 :end

@@ -40,15 +40,21 @@ from typing import Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-# ─── Project-Relative Paths (Standalone Mode) ─────────────────────────
-DATA_DIR = PROJECT_ROOT / "data"
-LOGS_DIR = DATA_DIR / "logs"
-PIDS_DIR = DATA_DIR / "pids"
-CONFIG_DIR = PROJECT_ROOT / "config"
-SHINON_DATA = DATA_DIR / "shinon"
-SHINON_CONFIG = CONFIG_DIR / "shinon.toml"
-LIMEN_CONFIG = CONFIG_DIR / "limen.toml"
-LIMEN_DB = DATA_DIR / "limen" / "limen.db"
+# ─── Path Constants (central: $SHINON_HOME, project: source code) ───────
+# IMPORTANT: After install.py with paths.py, all DATA goes through SHINON_HOME
+# (default ~/.shinon on Linux/Mac, %USERPROFILE%\.shinon on Windows). The project
+# only houses SOURCE (shinon-server.mjs, venv, submodules). Ctl.py spawns
+# subprocesses with env vars pointing at SHINON_HOME, NOT project-rel paths.
+import paths as P
+
+DATA_DIR = P.DATA_DIR
+LOGS_DIR = P.LOGS_DIR
+PIDS_DIR = P.PIDS_DIR
+CONFIG_DIR = P.CONFIG_DIR
+SHINON_DATA = P.SHINON_DIR
+SHINON_CONFIG = P.CONFIG_DIR / "shinon.toml"
+LIMEN_CONFIG = P.CONFIG_DIR / "limen.toml"
+LIMEN_DB = P.LIMEN_DB
 SHINON_SERVER_MJS = PROJECT_ROOT / "shinon-server.mjs"
 DASHBOARD_SERVER = PROJECT_ROOT / ".agents" / "skills" / "goal-chain" / "scripts" / "live-dashboard-server.py"
 
@@ -212,16 +218,22 @@ def component_running(component: str) -> bool:
 # ─── Environment for spawned components ───────────────────────────────
 def component_env() -> dict:
     """Standard env all control-plane components receive:
-    - LIMEN_CONFIG points to ./config/limen.toml
-    - SHINON_CONFIG points to ./config/shinon.toml
-    - SHINON_DATA_DIR points to ./data/shinon
-    - LIMEN_DB defaults are honoured by limen-main
+    - SHINON_HOME    points to ~/.shinon (single source of truth for state)
+    - LIMEN_CONFIG   points to $SHINON_HOME/config/limen.toml
+    - SHINON_CONFIG  points to $SHINON_HOME/config/shinon.toml
+    - SHINON_DATA_DIR  alias for $SHINON_HOME/data
+    - SHINON_PROJECT_ROOT points back at the source directory (venv, modules)
+    - LIMEN_KEY_STORE points to $SHINON_HOME/keys.json (LIMEN's key-store)
     """
     env = os.environ.copy()
-    env["SHINON_DATA_DIR"] = str(SHINON_DATA)
+    env["SHINON_HOME"] = str(P.SHINON_HOME)
+    env["SHINON_DATA_DIR"] = str(P.DATA_DIR)
     env["SHINON_CONFIG"] = str(SHINON_CONFIG)
     env["LIMEN_CONFIG"] = str(LIMEN_CONFIG)
     env["SHINON_PROJECT_ROOT"] = str(PROJECT_ROOT)
+    # Set LIMEN_KEY_STORE too (LIMEN picks it up preferentially over
+    # ~/.shinon/key_store resolver) — defense in depth.
+    env["LIMEN_KEY_STORE"] = str(P.KEYS_FILE)
     return env
 
 
@@ -246,6 +258,20 @@ def start_limen() -> bool:
         warn(f"Port {port} belegt \u2013 versuche Cleanup")
         _kill_port(port)
         time.sleep(0.5)
+        # Re-check; if still occupied (Windows system service like IIS or
+        # World Wide Web Publishing is hard-coded to skip-kill), tell the
+        # user how to remap the port.
+        if port_in_use(port) is not None:
+            fail(f"Port {port} immer noch belegt nach Cleanup.")
+            if platform.system() == "Windows":
+                info("  Windows-Tipp: h\u00e4ufig belegt durch IIS oder WWW-Publishing.")
+                info("  Diagnose:  Get-NetTCPConnection -LocalPort 8000 -State Listen")
+                info("  Workaround: in config\\limen.toml den [server]-Port \u00e4ndern")
+                info(f"             (z. B. port = {port + 65}) und neu starten.")
+            else:
+                info(f"  Diagnose:  lsof -i :{port}   oder   sudo fuser {port}/tcp")
+                info(f"  Workaround: in config/limen.toml den [server]-Port \u00e4ndern")
+            return False
 
     py = venv_python()
     if not py.exists():
@@ -261,6 +287,15 @@ def start_limen() -> bool:
 
     info(f"Starte LIMEN auf Port {port} \u2026")
     try:
+        creationflags = 0
+        if platform.system() == "Windows":
+            # CREATE_NO_WINDOW: kein Konsolen-Popup f\u00fcr limen-CLI.
+            # DETACHED_PROCESS: Kindprozess \u00fcberlebt ctl.py-Ausstieg.
+            creationflags = (
+                getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            )
         with open(log_file(component), "ab") as logf:
             proc = subprocess.Popen(
                 [str(py), "-m", "limen.cli", "start", "--config", str(LIMEN_CONFIG)],
@@ -272,6 +307,7 @@ def start_limen() -> bool:
                 # Detach on POSIX so we exit independently. On Windows,
                 # DETACHED_PROCESS / CREATE_NEW_PROCESS_GROUP keep the child alive.
                 close_fds=(platform.system() != "Windows"),
+                creationflags=creationflags,
             )
     except OSError as e:
         fail(f"LIMEN konnte nicht gestartet werden: {e}")
@@ -317,6 +353,13 @@ def start_shinon_ui() -> bool:
 
     info(f"Starte shinon-ui (node) auf Port {port} \u2026")
     try:
+        creationflags = 0
+        if platform.system() == "Windows":
+            creationflags = (
+                getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            )
         with open(log_file(component), "ab") as logf:
             proc = subprocess.Popen(
                 [node, str(SHINON_SERVER_MJS), str(port)],
@@ -326,6 +369,7 @@ def start_shinon_ui() -> bool:
                 stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL,
                 close_fds=(platform.system() != "Windows"),
+                creationflags=creationflags,
             )
     except OSError as e:
         fail(f"shinon-ui konnte nicht gestartet werden: {e}")
@@ -374,6 +418,13 @@ def start_dashboard() -> bool:
 
     info(f"Starte dashboard auf Port {port} \u2026")
     try:
+        creationflags = 0
+        if platform.system() == "Windows":
+            creationflags = (
+                getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            )
         with open(log_file(component), "ab") as logf:
             # live-dashboard-server.py expects port as first positional arg
             proc = subprocess.Popen(
@@ -384,6 +435,7 @@ def start_dashboard() -> bool:
                 stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL,
                 close_fds=(platform.system() != "Windows"),
+                creationflags=creationflags,
             )
     except OSError as e:
         fail(f"dashboard konnte nicht gestartet werden: {e}")

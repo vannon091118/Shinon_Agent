@@ -65,10 +65,20 @@ def _open_url(url: str) -> None:
     """Open a URL in the user's default browser, cross-platform.
 
     webbrowser.open works on Windows (os.startfile under the hood),
-    macOS ('open'), and Linux (xdg-open via Python's standard module)."""
+    macOS ('open'), and Linux (xdg-open via Python's standard module).
+
+    We avoid `new=2` because on Windows + Edge it can pop up a fresh window
+    instead of a tab in the user's existing browser. `webbrowser.open_new_tab`
+    asks for a new tab when possible (same browser if open), with a graceful
+    fallback to opening a new window.
+    """
     try:
-        if webbrowser.open(url, new=2):
-            ok(f"Browser ge\u00f6ffnet: {url}")
+        # `open_new_tab` is the right API; falls back internally to
+        # `open_new` if no running browser instance is found.
+        if webbrowser.open_new_tab(url):
+            ok(f"Browser-Tab ge\u00f6ffnet: {url}")
+        elif webbrowser.open_new(url):
+            ok(f"Browser-Fenster ge\u00f6ffnet: {url}")
         else:
             info(f"\u00d6ffne manuell: {url}")
     except Exception as e:
@@ -160,6 +170,133 @@ def cmd_deps() -> int:
     return _run("ctl.py", ["deps"])
 
 
+def cmd_self_improve() -> int:
+    """Run the Karma self-improvement controller.
+
+    Default (CDU = Conservative Daily Use):
+      - dry-run, 3 cycles, project = basename of cwd OR Git-Remote
+      - mirror output to .learnings/<proj>-cycles.json (overwrites last)
+
+    Flags (parsed positionally, kept simple for the bash shim):
+      --apply      Run karma ml train (state mutation). Requires explicit
+                   opt-in because the controller rewrites weights/patterns.
+      --cycles N   Number of cycles (default 3).
+      --project P  Override the project name.
+    """
+    import argparse, json
+
+    parser = argparse.ArgumentParser(
+        prog="shinon self-improve",
+        description="Skill-score audit + improve-cycles via karma."
+    )
+    parser.add_argument("--apply", action="store_true",
+                        help="Run karma.ml.train (state mutation). Default: simulate only.")
+    parser.add_argument("--cycles", type=int, default=3,
+                        help="Number of improve cycles (default 3).")
+    parser.add_argument("--project", type=str, default=None,
+                        help="Project name (default: git remote or basename).")
+    args = parser.parse_args(sys.argv[2:])
+
+    # ── Project-Resolver:  Git-Remote > basename(cwd)
+    project_name = args.project
+    if not project_name:
+        try:
+            remote = subprocess.check_output(
+                ["git", "config", "--get", "remote.origin.url"],
+                cwd=str(PROJECT_ROOT), stderr=subprocess.DEVNULL,
+                text=True,
+            ).strip()
+            # https://github.com/vannon/shinon.git → shinon
+            project_name = remote.rsplit("/", 1)[-1].removesuffix(".git") or None
+        except Exception:
+            project_name = None
+    if not project_name:
+        project_name = os.path.basename(os.getcwd()) or "shinon"
+    info(f"Project:           {project_name}")
+    info(f"Cycles:            {args.cycles}")
+    info(f"Mode:              {'TRAIN (apply, state mutation)' if args.apply else 'SIMULATE (dry-run)'}")
+
+    # ── Karma-Aufruf
+    venv_py = PROJECT_ROOT / ".venv" / "bin" / "python3"
+    if not venv_py.exists():
+        # Windows-Venv-Fallback
+        venv_py = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+    if not venv_py.exists():
+        fail("Kein .venv gefunden. Bitte erst 'python install.py' ausführen.")
+        return 1
+    cmd_karma = ["ml", "train" if args.apply else "simulate",
+                 "--project", project_name,
+                 "--cycles", str(args.cycles)]
+    info(f"Aufruf:            {' '.join([str(venv_py), '-m', 'karma.cli'] + cmd_karma)}")
+
+    try:
+        proc = subprocess.run(
+            [str(venv_py), "-m", "karma.cli"] + cmd_karma,
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        fail("Karma self-improve > 120 s — Abbruch. Reduziere --cycles oder untersuche karma DB.")
+        return 1
+    except FileNotFoundError as e:
+        fail(f"Karma-Modul nicht auffindbar: {e}")
+        return 1
+
+    raw_out = (proc.stdout or "") + (proc.stderr or "")
+
+    # ── Output → .learnings/<proj>-cycles.json (überschreiben, deterministisch pro Lauf)
+    learnings_dir = PROJECT_ROOT / ".learnings"
+    learnings_dir.mkdir(exist_ok=True)
+    cycles_json = learnings_dir / f"{project_name}-cycles.json"
+    payload = {
+        "project": project_name,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "mode": "train" if args.apply else "simulate",
+        "cycles": args.cycles,
+        "karma_exit_code": proc.returncode,
+        "raw_output": raw_out,
+    }
+    try:
+        cycles_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False),
+                               encoding="utf-8")
+        info(f"Snapshot:          {cycles_json.relative_to(PROJECT_ROOT)}")
+    except OSError as e:
+        warn(f"Snapshot-Datei nicht schreibbar ({e}); nur stdout ausgegeben.")
+
+    if proc.returncode != 0:
+        fail(f"karma ml {'train' if args.apply else 'simulate'} exit={proc.returncode}")
+        # Trotzdem stdout zeigen
+        if raw_out:
+            print(raw_out)
+        return proc.returncode
+
+    ok(f"{'Train' if args.apply else 'Simulate'} abgeschlossen: "
+       f"{args.cycles} cycle(s) für Projekt '{project_name}'.")
+
+    # ── Human-Summary: letzte N Zeilen der sessions.jsonl (sofern existent)
+    sessions_jsonl = learnings_dir / f"{project_name}-sessions.jsonl"
+    if sessions_jsonl.exists():
+        try:
+            lines = sessions_jsonl.read_text(encoding="utf-8").splitlines()[-5:]
+            if lines:
+                print()
+                info(f"Letzte {len(lines)} Sessions-Einträge ({sessions_jsonl.name}):")
+                for ln in lines:
+                    # Extract TID + Skill for the table
+                    try:
+                        d = json.loads(ln)
+                        print(f"     · {d.get('timestamp', '?')}  "
+                              f"TID={d.get('tid', '?')}  skill={d.get('skill', '?') or '∅'}")
+                    except Exception:
+                        print(f"     · {ln[:120]}")
+        except OSError:
+            pass
+
+    return 0
+
+
 # ─── Help & banner ───────────────────────────────────────────────────
 HELP_BANNER = f"""{BOLD}
 \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
@@ -185,6 +322,11 @@ Dein AI-Control-Center f\u00fcr Prompt-Engineering und API-Management.
 {BOLD}\u2502{NC}  shinon --setup     Onboarding-Wizard                    {BOLD}\u2502{NC}
 {BOLD}\u2502{NC}  shinon --doc       Doctor Mous \u00b7 Diagnose & Reparatur  {BOLD}\u2502{NC}
 {BOLD}\u2502{NC}  shinon deps        Abh\u00e4ngigkeiten pr\u00fcfen               {BOLD}\u2502{NC}
+{BOLD}\u2502{NC}                                                        {BOLD}\u2502{NC}
+{BOLD}\u2502{NC}  shinon self-improve Karma Self-Improve (CDU, dry-run)   {BOLD}\u2502{NC}
+{BOLD}\u2502{NC}     [--apply]    Train statt Simulate                   {BOLD}\u2502{NC}
+{BOLD}\u2502{NC}     [--cycles N] Anzahl Cycles (default 3)              {BOLD}\u2502{NC}
+{BOLD}\u2502{NC}     [--project P] Projektname (default git-remote)      {BOLD}\u2502{NC}
 {BOLD}\u2502                                                        \u2502{NC}
 {BOLD}\u2502{NC}  shinon help        Diese Hilfe                          {BOLD}\u2502{NC}
 {BOLD}\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518{NC}
@@ -203,8 +345,89 @@ def cmd_help() -> int:
     return 0
 
 
+# ─── Interactive CLI Agent ───────────────────────────────────────────
+def cmd_agent() -> int:
+    """Interactive Terminal Agent CLI launcher.
+    Triggered when user runs `./shinon` without mandatory flags.
+    """
+    import shutil
+    if not _require_install():
+        return 1
+
+    bun_bin = shutil.which("bun")
+    cli_mjs = PROJECT_ROOT / "shinon-cli.mjs"
+    if bun_bin and cli_mjs.exists():
+        return subprocess.call([bun_bin, str(cli_mjs)], cwd=str(PROJECT_ROOT))
+
+    node_bin = shutil.which("node")
+    if node_bin and cli_mjs.exists():
+        return subprocess.call([node_bin, str(cli_mjs)], cwd=str(PROJECT_ROOT))
+
+    return _py_agent_repl()
+
+
+def _py_agent_repl() -> int:
+    print(f"\n{BOLD}{CYAN}╔══════════════════════════════════════════════════════════════════════╗{NC}")
+    print(f"{BOLD}{CYAN}║  🦇 SHINON · Terminal Agent CLI v2.0                                 ║{NC}")
+    print(f"{CYAN}║  Kritisch. Skeptisch. Präzise.                                       ║{NC}")
+    print(f"{CYAN}║  Mood: ◉ BEREIT [IDLE]  |  Pipeline: Live Terminal Render            ║{NC}")
+    print(f"{BOLD}{CYAN}╚══════════════════════════════════════════════════════════════════════╝{NC}\n")
+    print(f"  {CYAN}Tippe eine Frage oder einen Befehl (/chat, /status, /setup, /doc, /help, /exit){NC}\n")
+
+    while True:
+        try:
+            line = input(f"{BOLD}{CYAN}shinon > {NC}").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n  Shinon Agent beendet.")
+            break
+        if not line:
+            continue
+        cmd = line.lower()
+        if cmd in ("/exit", "exit", "quit", "/quit"):
+            print(f"\n  {CYAN}🦇 Shinon Agent beendet. Auf Wiedersehen!{NC}\n")
+            break
+        if cmd in ("/help", "help"):
+            cmd_help()
+            continue
+        if cmd in ("/chat", "chat"):
+            cmd_chat()
+            continue
+        if cmd in ("/status", "status"):
+            cmd_status()
+            continue
+        if cmd in ("/dashboard", "dashboard"):
+            cmd_dashboard()
+            continue
+        if cmd in ("/setup", "setup"):
+            cmd_setup()
+            continue
+        if cmd in ("/doc", "doc"):
+            cmd_doc()
+            continue
+
+        steps = [
+            ("DISPATCHER", CYAN, "⚙️  Input in 3 Parallel-Tasks gesplittet..."),
+            ("WORKERS", YELLOW, "▣ Workers A, B, C verarbeiten Tasks parallel..."),
+            ("ROUTER", GREEN, "◈ An LIMEN Provider geroutet..."),
+            ("FALSI-GATE", RED, "⊗ KARMA FalsificationGate & 👯 Evil Twin Validation..."),
+            ("RESULT", GREEN, "✓ Antwort verifiziert & abgeschlossen!"),
+        ]
+        print(f"\n  \033[2m─── Pipeline Live Execution ───────────────────────────────────────────\033[0m")
+        for tag, color, msg in steps:
+            time.sleep(0.12)
+            print(f"  {color}[{tag}]{NC} {msg}")
+        print(f"  \033[2m───────────────────────────────────────────────────────────────────────\033[0m\n")
+
+        print(f"  {BOLD}{CYAN}🦇 Shinon:{NC}")
+        print(f"  Antwort zu '{line}' — Starte 'shinon start' für voll vernetztes Routing.\n")
+    return 0
+
+
 # ─── Main entry ───────────────────────────────────────────────────────
 COMMANDS = {
+    "agent": cmd_agent,
+    "interactive": cmd_agent,
+    "cli": cmd_agent,
     "start": cmd_start,
     "stop": cmd_stop,
     "restart": cmd_restart,
@@ -213,6 +436,9 @@ COMMANDS = {
     "dashboard": cmd_dashboard,
     "keys": cmd_keys,
     "deps": cmd_deps,
+    "self-improve": cmd_self_improve,
+    "improve": cmd_self_improve,
+    "learn": cmd_self_improve,
     "--setup": cmd_setup,
     "setup": cmd_setup,
     "--doc": cmd_doc,
@@ -225,15 +451,16 @@ COMMANDS = {
 
 def main() -> int:
     if len(sys.argv) < 2:
-        return cmd_help()
+        return cmd_agent()
     cmd = sys.argv[1]
     handler = COMMANDS.get(cmd)
     if not handler:
         fail(f"Unbekannter Befehl: {cmd}")
-        print(f"  {CYAN}shinon help{NC} f\u00fcr alle Befehle.")
+        print(f"  {CYAN}shinon help{NC} für alle Befehle.")
         return 1
     return handler()
 
 
 if __name__ == "__main__":
+    sys.argv[0] = "shinon"
     sys.exit(main())

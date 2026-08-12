@@ -59,6 +59,47 @@ fi
 # 2. Mark current TID as done (NACH erfolgreicher Verifikation)
 if [[ "$RESULT" == "DONE" ]]; then
     tid_done "$TID"
+
+    # ─── POST-TASK AUTO SELF-IMPROVE (1/3-Regel) ──────────────────────
+    # Nach jedem erfolgreich abgeschlossenen TID: karma simuliert EINEN
+    # Cycle (dry-run, kein State-Mutation) und hängt den Snapshot an
+    # .learnings/<proj>-sessions.jsonl an. Das ist die Engine-Seite der
+    # "MUSS NACH JEDEM durchgeführten Task automatisch passieren"-Regel.
+    #
+    # Gating: REAL mutation (`karma ml train`) wird durch das Evil-Twin-
+    # Gate-TID reguliert (G2-TID in der Pipeline). Wir rufen hier nur den
+    # sicheren simulate-Pfad.
+    #
+    # Wenn Karma oder venv fehlen, kein Crash — wir wollen den Goal-Chain-
+    # Ablauf nicht an einem Self-Improve-Aufruf scheitern lassen.
+    if [[ -d ".learnings" ]]; then
+        PROJECT_NAME="$(basename "$(pwd)")"
+        SESSIONS_FILE=".learnings/${PROJECT_NAME}-sessions.jsonl"
+        KARMA_PY=".venv/bin/python3"
+        [ -x "$KARMA_PY" ] || KARMA_PY=""
+        if [[ -n "$KARMA_PY" ]]; then
+            TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            SKILL_OF_TID=$(task_field "$TID" "skill_name" 2>/dev/null || echo "")
+            GOAL_OF_TID=$(task_field "$TID" "goal" 2>/dev/null || echo "")
+            # Aufruf mit --output json; falls karma das Flag nicht kennt,
+            # fällt es zurück auf stdout und wir wrappen es in JSON.
+            RAW=$("$KARMA_PY" -m karma.cli ml simulate \
+                --project "$PROJECT_NAME" \
+                --cycles 1 2>&1 || true)
+            # Wenn RAW leer ist (karma noch ohne ml-patterns), notiere "no-op"
+            [ -z "$RAW" ] && RAW='{"simulated_actions": []}'
+            # Sanitize: raw in einer einzigen JSON-Zeile, neue Zeilen → \n
+            RAW_ESCAPED=$(printf '%s' "$RAW" | python3 -c \
+                'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null \
+                || printf '"%s"' "$RAW")
+            {
+                printf '{"timestamp":"%s","tid":"%s","run_id":"%s","skill":"%s","goal":"%s","result":"DONE","simulate_output":%s}\n' \
+                    "$TIMESTAMP" "$TID" "$RUN_ID" "$SKILL_OF_TID" "$GOAL_OF_TID" "$RAW_ESCAPED"
+            } >> "$SESSIONS_FILE"
+            echo "  ↻ self-improve snapshot → $SESSIONS_FILE ($(wc -l < "$SESSIONS_FILE") Zeilen gesamt)"
+        fi
+    fi
+
 elif [[ "$RESULT" == "ROOT_CAUSE" ]]; then
     # Agent hat Root-Cause-Analyse durchgeführt statt blind zu skippen
     rc_reason="${4:-Gate verified: no gap to fill}"

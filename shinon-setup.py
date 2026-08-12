@@ -6,15 +6,19 @@
 #   python shinon-setup.py           runs the onboarding wizard
 #   python shinon-setup.py --doc     runs Doctor Mous diagnosis
 #   python shinon-setup.py --step N  jumps directly to step N (1..4)
+#   python shinon-setup.py --from-env  reads ~/.shinon/config/.env directly
 #
-# Project-relative paths only. Reads keys from stdin.
+# Uses central paths through paths.py (resolves ~/.shinon by default).
+# Reads keys from stdin / .env / pasted multi-line KEY=VALUE blocks.
 # ═══════════════════════════════════════════════════════════════════════
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import socket
 import sqlite3
@@ -23,18 +27,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
-# ─── Path constants ───────────────────────────────────────────────────
-PROJECT_ROOT = Path(__file__).resolve().parent
-DATA_DIR = PROJECT_ROOT / "data"
-SHINON_DATA = DATA_DIR / "shinon"
-KARMA_DATA = DATA_DIR / "karma"
-CONFIG_DIR = PROJECT_ROOT / "config"
-SHINON_MEM = SHINON_DATA / "memory.db"
-LIMEN_DB = DATA_DIR / "limen" / "limen.db"
-LIMEN_CONFIG = CONFIG_DIR / "limen.toml"
-SHINON_CONFIG = CONFIG_DIR / "shinon.toml"
-GOALCHAIN_DB = PROJECT_ROOT / ".agents" / "skills" / "goal-chain" / "db" / "tid-state.db"
-KARMA_DB = KARMA_DATA / "karma.db"
+# Single source of truth for every data directory.
+import paths as P
 
 # ─── ANSI helpers ─────────────────────────────────────────────────────
 def _c() -> bool:
@@ -62,6 +56,7 @@ def banner(text: str) -> None:
     print(f"\n{BOLD}{text}{NC}\n")
 
 
+# ─── Prompt helpers ───────────────────────────────────────────────────
 def prompt(label: str, default: str = "") -> str:
     suffix = f" [{default}]" if default else ""
     try:
@@ -71,12 +66,82 @@ def prompt(label: str, default: str = "") -> str:
     return s or default
 
 
-def prompt_password(label: str) -> str:
+def prompt_pasteable_key(label: str) -> str:
+    """API-Key paste-friendly input.
+
+    Why this exists: `getpass.getpass()` hides input on stdin, which made
+    users think their paste didn't register. Plain `input()` echoes, so the
+    user SEES the pasted key go in. API keys are not passphrases — they live
+    in the user's password manager / clipboard anyway, so echoing is fine.
+
+    Supports:
+      • Simple paste (single line, no surrounding whitespace)
+      • Multi-line paste where each line looks like  KEY=value  → first
+        matching occurrence wins.
+      • Quiet mode (just hit Enter) → skip
+    """
     try:
-        import getpass
-        return getpass.getpass(f"  {label}: ")
-    except Exception:
-        return prompt(label)
+        raw = input(f"  {label}: ")
+    except EOFError:
+        return ""
+    raw = raw.strip()
+
+    if not raw:
+        return ""
+
+    # If the user pasted a multi-line KEY=value block (from .env.example),
+    # extract every `*_API_KEY=<value>` line and remember them all so the
+    # caller can store each one.  Single-line pastes are returned as-is.
+    if "\n" in raw and "=" in raw:
+        matches = re.findall(
+            r"^\s*([A-Z][A-Z0-9_]*_API_KEY(?:\s*=\s*(?:\".*?\"|'[^']*'|[^\s#\"']+))?)",
+            raw,
+            re.MULTILINE,
+        )
+        # Also grab raw `KEY=value` pairs (no quotes) for keys without _API_KEY
+        # suffix — useful for OPENAI_API_KEY etc.
+        matches += re.findall(
+            r"^\s*([A-Z][A-Z0-9_]*)\s*=\s*([^\s#\"']+)",
+            raw,
+            re.MULTILINE,
+        )
+        if matches:
+            return raw  # caller parses further
+    return raw
+
+
+def _parse_pasted_env_block(pasted: str) -> dict[str, str]:
+    """Parse a multi-line KEY=value paste into a dict.
+
+    Accepts:
+      • KEY=value
+      • KEY='value with spaces'
+      • KEY="value with spaces"
+      • Lines starting with `#` (comments) ignored
+      • Blank lines ignored
+    """
+    env: dict[str, str] = {}
+    for line in pasted.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = re.match(r"""^([A-Z_][A-Z0-9_]*)\s*=\s*(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|([^\s#]+))""", line)
+        if m:
+            key = m.group(1)
+            val = m.group(2) if m.group(2) is not None else (
+                  m.group(3) if m.group(3) is not None else m.group(4))
+            if val is not None:
+                env[key] = val
+    return env
+
+
+# ─── Provider metadata (subscription URL + free / paid tags) ──────────
+PROVIDER_INFO = {
+    "groq":       {"url": "https://console.groq.com/keys",       "tier": "gratis", "env": "GROQ_API_KEY"},
+    "openrouter": {"url": "https://openrouter.ai/keys",          "tier": "pay",    "env": "OPENROUTER_API_KEY"},
+    "nvidia":     {"url": "https://build.nvidia.com",            "tier": "gratis", "env": "NVIDIA_NIM_API_KEY"},
+    "mistral":    {"url": "https://console.mistral.ai/api-keys", "tier": "gratis", "env": "MISTRAL_API_KEY", "note": "32K context, Tool-Calls nur bei large"},
+}
 
 
 def press_enter() -> None:
@@ -95,6 +160,98 @@ def port_in_use(port: int) -> bool:
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# LIMEN providers table — SCHEMA-AWARE OPERATIONS
+# ═══════════════════════════════════════════════════════════════════════
+# Correct schema (limen-main/src/limen/persistence/database.py:21):
+#
+#   key_id TEXT PRIMARY KEY,
+#   provider TEXT NOT NULL,
+#   deployment TEXT NOT NULL,
+#   api_key_fingerprint TEXT NOT NULL,   <-- sha256(value)[:16], NOT the key itself
+#   account_id TEXT,
+#   limit_scope TEXT NOT NULL CHECK (limit_scope IN ('key','account','provider','model','unknown')),
+#   status TEXT NOT NULL CHECK (status IN ('active','cooldown','dead')),
+#   cooldown_until TEXT,
+#   last_used_at TEXT,
+#   priority INTEGER NOT NULL,
+#   observed_rpm INTEGER, observed_itpm INTEGER, observed_otpm INTEGER,
+#   error_count INTEGER NOT NULL DEFAULT 0, success_count INTEGER NOT NULL DEFAULT 0,
+#   meta_json TEXT NOT NULL DEFAULT '{}'
+#
+# RAW KEY is stored in `meta_json` as `{"api_key": "...", "source": "wizard"}`.
+# There is NO `value` column. There is NO `health_score` column (that's a
+# runtime property of the KeyPool, not a SQL column). There is NO
+# `model_registry` table (model→provider mapping lives in config/limen.toml).
+# ═══════════════════════════════════════════════════════════════════════
+
+def _key_id_for(provider: str, fingerprint: str) -> str:
+    return f"{provider}:{fingerprint}"
+
+
+def _fingerprint_of(key_value: str) -> str:
+    return hashlib.sha256(key_value.encode("utf-8")).hexdigest()[:16]
+
+
+def providers_has_keys(conn: sqlite3.Connection) -> list[dict[str, object]]:
+    """Return rows whose `meta_json` carries a non-empty api_key.
+    Sets row_factory=sqlite3.Row briefly so we can build dicts, then
+    restores whatever the caller had set.
+    """
+    prev_factory = conn.row_factory
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT provider, status, key_id, meta_json, error_count, success_count "
+            "FROM providers "
+            "WHERE json_extract(meta_json, '$.api_key') IS NOT NULL "
+            "  AND json_extract(meta_json, '$.api_key') != ''"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.row_factory = prev_factory
+
+
+def upsert_provider_key(conn: sqlite3.Connection, provider: str,
+                        key_value: str, *, source: str = "wizard") -> str:
+    """Store a key for `provider`. Returns the key_id."""
+    fingerprint = _fingerprint_of(key_value)
+    key_id = _key_id_for(provider, fingerprint)
+    meta = json.dumps({"api_key": key_value, "source": source})
+    conn.execute(
+        "INSERT INTO providers"
+        " (key_id, provider, deployment, api_key_fingerprint,"
+        "  account_id, limit_scope, status, priority, meta_json)"
+        " VALUES (?, ?, 'default', ?, '', 'key', 'active', 1, ?)"
+        " ON CONFLICT(key_id) DO UPDATE SET"
+        "  meta_json = excluded.meta_json,"
+        "  status = 'active',"
+        "  cooldown_until = NULL",
+        (key_id, provider, fingerprint, meta),
+    )
+    return key_id
+
+
+def _write_keys_json(keys: dict[str, str]) -> None:
+    """Mirror the LIMEN `_KEY_STORE` (~/.shinon/keys.json) — same JSON shape
+    that LIMEN's internal.py expects."""
+    P.ensure_layout()
+    # Atomic write: tmp + rename
+    fd, tmp = tempfile.mkstemp(dir=str(P.SHINON_HOME), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(keys, f)
+        Path(tmp).chmod(0o600)
+        Path(tmp).rename(P.KEYS_FILE)
+    except Exception:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
+# Import tempfile here so the rest of the module doesn't need to.
+import tempfile  # noqa: E402
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # Doctor Mous — Diagnose & Repair
 # ═══════════════════════════════════════════════════════════════════════
 def doctor_mous() -> int:
@@ -104,37 +261,38 @@ def doctor_mous() -> int:
     issues = 0
     fixes = 0
 
-    # 1. Install-Marker
-    print(f"{BOLD}1. Installation{NC}")
-    marker = CONFIG_DIR / ".install-done"
-    if marker.exists():
-        ok("Installation abgeschlossen (Marker vorhanden)")
-    else:
-        fail("Installation nicht gefunden -> bitte 'python install.py' ausfuehren")
+    # 0. SHINON_HOME
+    print(f"{BOLD}0. Zentrale Datenverzeichnisse{NC}")
+    print(P.explain())
+    if not P.SHINON_HOME.exists():
+        fail(f"{P.SHINON_HOME} existiert nicht — bitte 'python install.py' "
+             f"ausfuehren (legt es automatisch an).")
         issues += 1
+    else:
+        ok(f"{P.SHINON_HOME} vorhanden")
 
-    # 2. venv
-    print(f"\n{BOLD}2. Python-Umgebung{NC}")
+    # 1. venv
+    print(f"\n{BOLD}1. Python-Umgebung{NC}")
     if platform.system() == "Windows":
-        venv_py = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+        venv_py = P.PROJECT_VENV / "Scripts" / "python.exe"
     else:
-        venv_py = PROJECT_ROOT / ".venv" / "bin" / "python3"
+        venv_py = P.PROJECT_VENV / "bin" / "python3"
     if venv_py.exists():
-        ok(f"venv: {venv_py.relative_to(PROJECT_ROOT)}")
+        ok(f"venv: {venv_py.relative_to(P.PROJECT_ROOT)}")
     else:
-        fail("venv fehlt")
+        fail("venv fehlt — bitte 'python install.py' ausfuehren")
         issues += 1
 
-    # 3. Datenbanken
-    print(f"\n{BOLD}3. Datenbanken{NC}")
+    # 2. Datenbanken
+    print(f"\n{BOLD}2. Datenbanken{NC}")
     for db_path, label in [
-        (LIMEN_DB, "LIMEN"),
-        (GOALCHAIN_DB, "goal-chain"),
-        (KARMA_DB, "KARMA"),
-        (SHINON_MEM, "Shinon-Memory"),
+        (P.LIMEN_DB, "LIMEN"),
+        (P.GOALCHAIN_DB, "goal-chain"),
+        (P.KARMA_DB, "KARMA"),
+        (P.SHINON_MEM, "Shinon-Memory"),
     ]:
         if not db_path.exists():
-            warn(f"{label}: fehlt ({db_path.relative_to(PROJECT_ROOT)})")
+            warn(f"{label}: fehlt ({db_path.relative_to(P.SHINON_HOME)})")
             issues += 1
             continue
         try:
@@ -148,38 +306,44 @@ def doctor_mous() -> int:
             warn(f"  -> Backup nach .bak, neu initialisiert beim naechsten Install")
             fixes += 1
 
-    # 4. Configs
-    print(f"\n{BOLD}4. Konfiguration{NC}")
-    if SHINON_CONFIG.exists():
-        ok(f"Shinon-Config: {SHINON_CONFIG.relative_to(PROJECT_ROOT)}")
+    # 3. Configs
+    print(f"\n{BOLD}3. Konfiguration{NC}")
+    shinon_cfg = P.CONFIG_DIR / "shinon.toml"
+    limen_cfg  = P.CONFIG_DIR / "limen.toml"
+    if shinon_cfg.exists():
+        ok(f"Shinon-Config: {shinon_cfg.relative_to(P.SHINON_HOME)}")
     else:
         fail("Shinon-Config fehlt")
         issues += 1
-    if LIMEN_CONFIG.exists():
-        ok(f"LIMEN-Config:  {LIMEN_CONFIG.relative_to(PROJECT_ROOT)}")
+    if limen_cfg.exists():
+        ok(f"LIMEN-Config:  {limen_cfg.relative_to(P.SHINON_HOME)}")
     else:
         fail("LIMEN-Config fehlt")
         issues += 1
 
-    # 5. API-Keys
-    print(f"\n{BOLD}5. API-Keys (LIMEN-DB){NC}")
-    if LIMEN_DB.exists():
+    # 4. API-Keys (LIMEN-DB — schema-aware query)
+    print(f"\n{BOLD}4. API-Keys (LIMEN-DB){NC}")
+    if P.LIMEN_DB.exists():
         try:
-            with sqlite3.connect(str(LIMEN_DB)) as conn:
+            with sqlite3.connect(str(P.LIMEN_DB)) as conn:
                 conn.row_factory = sqlite3.Row
-                rows = conn.execute(
-                    "SELECT provider, status, health_score "
-                    "FROM providers WHERE value != '' AND value IS NOT NULL"
-                ).fetchall()
+                rows = providers_has_keys(conn)
             if rows:
                 ok(f"{len(rows)} API-Key(s) gefunden")
                 for r in rows:
-                    icon = "[active] " if r["status"] == "active" else "[cooldown]"
-                    health = f"{r['health_score']:.0f}%" if r['health_score'] else "n/a"
-                    info(f"  {icon}  {r['provider']:<15s}  health={health}")
+                    icon = "[active]" if r["status"] == "active" else "[cooldown]"
+                    total = (r["error_count"] or 0) + (r["success_count"] or 0)
+                    if total > 0:
+                        health_pct = round((r["success_count"] or 0) / total * 100, 1)
+                        health = f"{health_pct:.1f}%"
+                    else:
+                        health = "n/a"
+                    info(f"  {icon:<10} {r['provider']:<14s} health={health}")
             else:
                 warn("Keine API-Keys konfiguriert")
-                tip("Mit 'python shinon-setup.py --step 2' einen Key anlegen")
+                tip("Mit 'python shinon-setup.py --step 2' einen Key anlegen "
+                    "oder mit 'cp .env.example /home/<user>/.shinon/config/.env' "
+                    "alle Keys auf einmal eintragen.")
                 issues += 1
         except sqlite3.DatabaseError as e:
             fail(f"Konnte LIMEN-DB nicht lesen: {e}")
@@ -187,6 +351,19 @@ def doctor_mous() -> int:
     else:
         warn("LIMEN-DB fehlt -> Keys koennen nicht geprueft werden")
         issues += 1
+
+    # 5. Keys-Mirror
+    print(f"\n{BOLD}5. Key-Mirror (LIMEN-internal){NC}")
+    if P.KEYS_FILE.exists():
+        try:
+            mirror = json.loads(P.KEYS_FILE.read_text())
+            ok(f"{len(mirror)} Eintrag/Eintraege in keys.json")
+        except (json.JSONDecodeError, OSError) as e:
+            fail(f"keys.json korrupt: {e}")
+            issues += 1
+    else:
+        info("keys.json noch nicht angelegt — wird beim ersten "
+             "'shinon-setup --step 2' erstellt.")
 
     # 6. Ports
     print(f"\n{BOLD}6. Ports{NC}")
@@ -196,7 +373,7 @@ def doctor_mous() -> int:
         else:
             info(f"Port {port} ({label}) -- frei")
 
-    # 7. Rust (manchmal noetig fuer pip-Wheels)
+    # 7. Rust
     print(f"\n{BOLD}7. Rust-Toolchain (fuer pip-Wheels wie tiktoken){NC}")
     cargo = shutil.which("cargo")
     rustc = shutil.which("rustc")
@@ -205,11 +382,25 @@ def doctor_mous() -> int:
     else:
         user_cargo = Path.home() / ".cargo" / "bin" / "cargo"
         if user_cargo.exists():
-            info(f"cargo vorhanden (user-local in {Path.home() / '.cargo' / 'bin'}), "
-                 f"aber nicht im PATH dieser Shell")
-            info("  Workaround: PATH=$HOME/.cargo/bin:$PATH vor dem Install setzen")
+            info(f"cargo lokal in {Path.home() / '.cargo'} — nicht im PATH. "
+                 f"Workaround: PATH=$HOME/.cargo/bin:$PATH vor 'install.py' setzen")
         else:
             warn("Rust nicht installiert (kein Issue, solange alle pip-Wheels passen)")
+
+    # 8. LIMP-Healthcheck (Schema-upgrade test)
+    print(f"\n{BOLD}8. LIMEN-DB Schema{NC}")
+    if P.LIMEN_DB.exists():
+        with sqlite3.connect(str(P.LIMEN_DB)) as conn:
+            schema_v = conn.execute("PRAGMA user_version").fetchone()[0]
+            cols = [r[1] for r in conn.execute(
+                "PRAGMA table_info(providers)").fetchall()]
+        ok(f"Schema-Version: {schema_v}")
+        if "meta_json" in cols and "api_key_fingerprint" in cols:
+            ok("providers-Spalten passen zum erwarteten Schema")
+        else:
+            warn(f"providers-Spalten passen NICHT (meta_json/api_key_fingerprint fehlt). "
+                 f"Bitte 'python install.py --repair'.")
+            issues += 1
 
     # Zusammenfassung
     print()
@@ -222,18 +413,53 @@ def doctor_mous() -> int:
         ok(f"{fixes} Problem(e) automatisch repariert")
     if issues > 0:
         tip("Bei offenen Problemen: 'python install.py --repair' "
-            "oder schau in data/logs/")
+            "oder schau in logs/")
     return 0
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# Onboarding-Wizard (4 Schritte — lean)
+# KEY-AUFNAHME: aus .env, einzeln, oder gepastet
+# ═══════════════════════════════════════════════════════════════════════
+
+def read_env_file(env_path: Path) -> dict[str, str]:
+    """Read a .env-style file. Returns {KEY: value}."""
+    if not env_path.exists():
+        return {}
+    env: dict[str, str] = {}
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = re.match(
+            r"""^([A-Z_][A-Z0-9_]*)\s*=\s*(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|([^\s#]+))""",
+            line)
+        if m:
+            key = m.group(1)
+            val = (m.group(2) if m.group(2) is not None else
+                   m.group(3) if m.group(3) is not None else
+                   m.group(4))
+            if val is not None:
+                env[key] = val
+    return env
+
+
+def _provider_from_env_key(env_key: str) -> Optional[str]:
+    """Map GROQ_API_KEY → 'groq', NVIDIA_NIM_API_KEY → 'nvidia', MISTRAL_API_KEY → 'mistral', etc."""
+    base = env_key.upper().replace("_API_KEY", "").replace("_NIM", "")
+    base = base.lower()
+    if base in ("groq", "openrouter", "nvidia", "mistral"):
+        return base
+    return None
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Onboarding — Schritte
 # ═══════════════════════════════════════════════════════════════════════
 def step_1_welcome() -> None:
     banner("Schritt 1/4  —  Was ist Shinon?")
     print("""
   Shinon ist ein AI-Control-Center. Anders als freundliche Chat-Wrapper ist
-  Shinon KRITISCH, SKEPTISCH und PRÄZISE.
+  Shinon KRITISCH, SKEPTISCH und PRAEZISE.
 
   5 Komponenten unter einem Dach:
     - Shinon Persoenlichkeit (Pattern Engine, Memory, Attitude)
@@ -249,75 +475,161 @@ def step_1_welcome() -> None:
     press_enter()
 
 
-def step_2_keys() -> None:
-    banner("Schritt 2/4  —  API-Keys einrichten")
-    if not LIMEN_DB.exists():
+def step_2_keys(direct_env: Optional[Path] = None) -> None:
+    banner("Schritt 2/4  -  API-Keys einrichten")
+    P.ensure_layout()
+
+    if not P.LIMEN_DB.exists():
         warn("LIMEN-DB fehlt -> 'python install.py' zuerst ausfuehren")
         press_enter()
         return
 
-    provider_urls = {
-        "groq":       "https://console.groq.com",
-        "openrouter": "https://openrouter.ai",
-        "nvidia":     "https://build.nvidia.com",
-    }
-    provider_models = {
-        "groq":       ["llama-3.3-70b-versatile"],
-        "openrouter": ["deepseek/deepseek-chat", "openai/gpt-4o-mini"],
-        "nvidia":     ["nvidia/llama-3.1-nemotron-70b-instruct"],
-    }
+    # Use the given env-file if any (e.g. --from-env flag), else default path.
+    env_path = direct_env or (P.CONFIG_DIR / ".env")
+
+    # ── Mode 1: read from .env file directly (no interactive prompts) ──
+    if direct_env is not None or (env_path.exists() and not sys.stdin.isatty()):
+        env_keys = read_env_file(env_path)
+        if env_keys:
+            return _save_keys_from_env(env_keys, source=str(env_path))
+
+    # ── Mode 2: interactive wizard ────────────────────────────────────
+    print(f"  Du kannst entweder (1) pro Anbieter einen Key einzeln einfuegen")
+    print(f"  oder (2) deine ganze .env-Datei hier hineinpasten.")
+    print()
+    print(f"  Tipp:    {P.CONFIG_DIR / '.env'} existiert bereits? Dann wird")
+    print(f"           'python shinon-setup.py --from-env' bevorzugt.")
+    print()
 
     saved = 0
+    keys_mirror: dict[str, str] = {}
     while True:
-        print(f"\n  Anbieter: 1=groq, 2=openrouter, 3=nvidia, 4=Fertig")
+        print(f"\n  Anbieter: 1=groq, 2=openrouter, 3=nvidia, 4=mistral, 5=Fertig, 6=.env-pasten")
         choice = prompt("Wahl", "1")
         try:
             n = int(choice)
         except ValueError:
-            print("  Bitte 1-4")
+            print("  Bitte 1-6")
             continue
-        if n == 4:
+        if n == 5:
             break
-        if n not in (1, 2, 3):
+        if n == 6:
+            # Bulk paste mode — read all multi-line input until terminator
+            print()
+            print("  Pasten einer beliebigen Anzahl KEY=value Zeilen.")
+            print("  Leerzeile allein beendet die Eingabe.")
+            print()
+            print(f"  Beispiel:")
+            print(f"    GROQ_API_KEY=gsk_xxx")
+            print(f"    OPENROUTER_API_KEY=sk-or-...")
+            print(f"    NVIDIA_NIM_API_KEY=nvapi-...")
+            print(f"    MISTRAL_API_KEY=...")
+            print()
+            pasted = _read_multiline()
+            env_map = _parse_pasted_env_block(pasted)
+            if not env_map:
+                warn("Nichts geparst — kein KEY=value erkannt.")
+                continue
+            saved += _save_keys_from_env(env_map, source="pasted")
             continue
-        provider = ["groq", "openrouter", "nvidia"][n - 1]
-        key = prompt_password(f"{provider}-API-Key (leer = ueberspringen)")
-        if not key:
+        if n not in (1, 2, 3, 4):
+            continue
+        provider = ["groq", "openrouter", "nvidia", "mistral"][n - 1]
+        meta = PROVIDER_INFO[provider]
+        print()
+        print(f"  Hole einen Key von:  {meta['url']}")
+        print(f"  Bezahlung:           {meta['tier']}")
+        print()
+        print(f"  Einfuegen sichtbar (kein getpass-Verbergen). "
+              f"Leer = ueberspringen.")
+        pasted = prompt_pasteable_key(f"{provider}-API-Key")
+        if not pasted:
             warn("Leerer Key, uebersprungen.")
             continue
-        try:
-            with sqlite3.connect(str(LIMEN_DB)) as conn:
-                key_id = f"{provider}-onboarding-{saved}"
-                meta = json.dumps({"api_key": key, "source": "wizard"})
-                conn.execute(
-                    "INSERT OR REPLACE INTO providers "
-                    "(key_id, provider, deployment, value, status, priority, meta_json) "
-                    "VALUES (?, ?, 'default', ?, 'active', 1, ?)",
-                    (key_id, provider, key, meta),
-                )
-                for m in provider_models.get(provider, []):
-                    conn.execute(
-                        "INSERT OR IGNORE INTO model_registry "
-                        "(model_id, provider, deployment, capabilities, cost_tier) "
-                        "VALUES (?, ?, 'default', '{}', 'standard')",
-                        (m, provider),
-                    )
-                conn.commit()
-            ok(f"{provider}-Key gespeichert ({provider_urls[provider]})")
-            saved += 1
-        except sqlite3.DatabaseError as e:
-            fail(f"Speichern fehlgeschlagen: {e}")
+
+        # If user pasted a multi-line block, parse it and store each provider.
+        if "\n" in pasted and "=" in pasted:
+            env_map = _parse_pasted_env_block(pasted)
+            saved += _save_keys_from_env(env_map, source="pasted")
+            continue
+
+        # Single-line — store as this provider
+        saved += _store_single_key(provider, pasted, "wizard", keys_mirror)
 
     if saved == 0:
-        warn("Keine Keys eingerichtet. Spater mit 'python shinon-setup.py --step 2' nachholen.")
+        warn("Keine Keys eingerichtet. Spater mit 'python shinon-setup.py --step 2' "
+             f"nachholen (oder in {P.CONFIG_DIR / '.env'} eintragen).")
     else:
-        ok(f"{saved} API-Key(s) gespeichert. LIMEN rotiert automatisch bei 429.")
+        ok(f"{saved} API-Key(s) gespeichert. "
+           f"LIMEN rotiert automatisch bei 429.")
+        if keys_mirror:
+            _write_keys_json(keys_mirror)
+            ok(f"Key-Mirror in {P.KEYS_FILE.relative_to(P.SHINON_HOME)} "
+               f"geschrieben (mode 0600).")
     press_enter()
 
 
+def _read_multiline() -> str:
+    """Read multi-line input from stdin until a single blank line or EOF."""
+    lines: list[str] = []
+    try:
+        while True:
+            line = input()
+            if line.strip() == "" and lines:
+                break
+            lines.append(line)
+    except EOFError:
+        pass
+    return "\n".join(lines)
+
+
+def _store_single_key(provider: str, key_value: str,
+                       source: str, mirror: dict[str, str]) -> int:
+    if not P.LIMEN_DB.exists():
+        warn("LIMEN-DB fehlt — kann nicht speichern.")
+        return 0
+    fingerprint = _fingerprint_of(key_value)
+    with sqlite3.connect(str(P.LIMEN_DB)) as conn:
+        key_id = upsert_provider_key(conn, provider, key_value, source=source)
+        conn.commit()
+    mirror[provider] = key_value
+    ok(f"{PROVIDER_INFO[provider]['tier']:>7s}  {provider}-Key gespeichert "
+       f"(fingerprint={fingerprint})")
+    return 1
+
+
+def _save_keys_from_env(env: dict[str, str], *, source: str) -> int:
+    """Parse a .env-style mapping {KEY: value}, store each provider's key."""
+    if not P.LIMEN_DB.exists():
+        warn("LIMEN-DB fehlt — kann nicht speichern. "
+             "Bitte zuerst 'python install.py' ausfuehren.")
+        return 0
+    saved = 0
+    mirror: dict[str, str] = {}
+    with sqlite3.connect(str(P.LIMEN_DB)) as conn:
+        for env_key, val in env.items():
+            prov = _provider_from_env_key(env_key)
+            if prov is None or not val:
+                continue
+            try:
+                upsert_provider_key(conn, prov, val, source=source)
+                mirror[prov] = val
+                saved += 1
+                ok(f"{PROVIDER_INFO[prov]['tier']:>7s}  {prov}-Key importiert "
+                   f"(aus {env_key}, fingerprint={_fingerprint_of(val)})")
+            except sqlite3.DatabaseError as e:
+                fail(f"{prov}-Key nicht gespeichert: {e}")
+        conn.commit()
+    if saved > 0 and mirror:
+        _write_keys_json(mirror)
+        ok(f"Key-Mirror in {P.KEYS_FILE.relative_to(P.SHINON_HOME)} "
+           f"geschrieben (mode 0600).")
+    return saved
+
+
 def step_3_personality() -> None:
-    banner("Schritt 3/4  —  Persoenlichkeit")
-    if not SHINON_MEM.exists():
+    banner("Schritt 3/4  -  Persoenlichkeit")
+    if not P.SHINON_MEM.exists():
         warn("Shinon-Memory-DB fehlt")
         press_enter()
         return
@@ -332,7 +644,7 @@ def step_3_personality() -> None:
     print("  Standard ist kritisch/skeptisch. Diese Werte justieren die Intensitaet.")
     print("  Empfehlung: alle Defaults einfach mit Enter uebernehmen.\n")
     try:
-        with sqlite3.connect(str(SHINON_MEM)) as conn:
+        with sqlite3.connect(str(P.SHINON_MEM)) as conn:
             for label, col, default in dims:
                 val = prompt(label, str(default))
                 try:
@@ -346,16 +658,16 @@ def step_3_personality() -> None:
                     pass
             conn.commit()
         ok("Persoenlichkeit gespeichert")
-        tip("Anpassbar jederzeit via 'python shinon-setup.py --step 3' "
-            f"oder direkt in {SHINON_CONFIG.relative_to(PROJECT_ROOT)}")
+        tip(f"Anpassbar jederzeit via 'python shinon-setup.py --step 3' "
+            f"oder direkt in {P.CONFIG_DIR / 'shinon.toml'}")
     except sqlite3.DatabaseError as e:
         fail(f"Speichern fehlgeschlagen: {e}")
     press_enter()
 
 
 def step_4_done() -> None:
-    banner("Schritt 4/4  —  Fertig!")
-    print("""
+    banner("Schritt 4/4  -  Fertig!")
+    print(f"""
   Naechste Schritte:
 
     ./shinon start        # alle Komponenten starten
@@ -366,11 +678,18 @@ def step_4_done() -> None:
   Auf Windows ersetze './shinon' mit 'shinon.cmd'.
 
   Bei Problemen: 'python install.py --repair' repariert Configs + DBs.
+
+  Zentrale Daten liegen jetzt in:
+    {P.SHINON_HOME}
+
+  Keys editieren:
+    {P.CONFIG_DIR / '.env'}   <- eine Datei, alle Anbieter
 """)
-    marker = CONFIG_DIR / ".onboarding-done"
+    marker = P.CONFIG_DIR / ".onboarding-done"
     marker.write_text(json.dumps({
         "version": "1.0.0",
         "completed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "shinon_home": str(P.SHINON_HOME),
     }, indent=2), encoding="utf-8")
     ok("Onboarding abgeschlossen. Viel Erfolg mit Shinon!")
 
@@ -381,6 +700,7 @@ def onboarding(start_step: int = 1) -> int:
         lambda: (step_4_done(), None)[1],
     ]
     banner("Shinon  ·  Onboarding (4 Schritte)")
+    print(f"  Zentrale Daten:   {P.SHINON_HOME}")
     print("  Strg+C jederzeit zum Abbrechen. Das Onboarding kann jederzeit")
     print("  mit 'python shinon-setup.py --step N' fortgesetzt werden.\n")
     for i, fn in enumerate(steps, 1):
@@ -397,11 +717,24 @@ def onboarding(start_step: int = 1) -> int:
 # Main
 # ═══════════════════════════════════════════════════════════════════════
 def main() -> int:
-    if len(sys.argv) >= 2 and sys.argv[1] in ("--doc", "doc"):
+    args = sys.argv[1:]
+    if args and args[0] in ("--doc", "doc"):
         return doctor_mous()
-    if len(sys.argv) >= 3 and sys.argv[1] == "--step":
+    if args and args[0] == "--from-env":
+        env_path = Path(args[1]).expanduser() if len(args) >= 2 else (P.CONFIG_DIR / ".env")
+        if not env_path.exists():
+            fail(f"{env_path} nicht gefunden. Kopiere .env.example dorthin "
+                 f"oder erstelle sie manuell.")
+            return 1
+        env_map = read_env_file(env_path)
+        if not env_map:
+            warn(f"{env_path} ist leer.")
+            return 0
+        saved = _save_keys_from_env(env_map, source=str(env_path))
+        return 0 if saved else 1
+    if args and args[0] == "--step":
         try:
-            step = int(sys.argv[2])
+            step = int(args[1])
             if 1 <= step <= 4:
                 return onboarding(step)
             fail("--step erwartet 1-4")
