@@ -1,0 +1,28 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: BONE resource — Undead drop, crafting material.
+# ENGINE_DEFAULTS: supply category, tradeable, crafting material.
+# LAST_ENTRY: Entry 1
+# FILE_CONTEXT: V71/data/init/resource/supply/BONE.txt
+# VERSION: 0.1.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+RESOURCE: BONE,
+MORALE_ADD: 0.0,
+HEALTH_EFFECT: 0.0,
+CONSUMPTION_PER_USER_DAY: 0.0,
+CONSUMPTION_PER_ITEM_DAY: 0.0,
+AMOUNT_PER_PERSON: 1,
+RACES: [UNDEAD],
+ICON: 32->UNDEAD->BONE,
+VALUE: 5,
+WEIGHT: 2.0,
+SPRITE: BONE,
+STACK_SIZE: 100,
+CATEGORY_DEFAULT: 1,
+EDIBLE: false,
+PROPERTIES: {
+    TRADEABLE: true,
+    CRAFTING_MATERIAL: true,
+},

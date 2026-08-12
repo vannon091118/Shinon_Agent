@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SyxCraft Custom Event",
+  "type": "object",
+  "required": ["_ignoreVanilla", "ICON", "DURATION", "OCCURRENCE", "CHOICES"],
+  "properties": {
+    "_ignoreVanilla": { "type": "boolean", "const": true },
+    "ICON": { "type": "string", "pattern": "^[0-9]+->[A-Z_]+->[A-Z_0-9]+$" },
+    "DURATION": { "type": "object", "required": ["DAYS"], "properties": { "DAYS": { "type": "number", "minimum": 0.1 } } },
+    "OCCURRENCE": {
+      "type": "object",
+      "properties": {
+        "CLIMATE": { "type": "object", "additionalProperties": { "type": "number" } },
+        "TERRAIN": { "type": "object", "additionalProperties": { "type": "number" } },
+        "RACE": { "type": "object", "additionalProperties": { "type": "number" } },
+        "REQUIRES": {
+          "type": "object",
+          "properties": {
+            "GREATER": { "type": "object", "additionalProperties": { "type": "number" } },
+            "LESS": { "type": "object", "additionalProperties": { "type": "number" } },
+            "EQUAL": { "type": "object", "additionalProperties": { "type": "number" } }
+          }
+        },
+        "MAX_SPAWNS": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "TAGS": {
+      "type": "object",
+      "properties": {
+        "ALLOW_NOT": { "type": "array", "items": { "type": "string" } },
+        "REQUIRE": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "SELECTION": {
+      "type": "object",
+      "properties": {
+        "SUBJECTS": {
+          "type": "object",
+          "properties": {
+            "USE_AS_ICON": { "type": "boolean" },
+            "MAX_AMOUNT": { "type": "object", "properties": { "RELATIVE": { "type": "number" }, "AMOUNT": { "type": "integer" } } },
+            "FILTERS": { "type": "array", "items": { "type": "object" } }
+          }
+        },
+        "REGIONS": {
+          "type": "object",
+          "properties": {
+            "MAX_AMOUNT": { "type": "object", "properties": { "AMOUNT": { "type": "integer" } } },
+            "MIN_AMOUNT": { "type": "object", "properties": { "AMOUNT": { "type": "integer" } } },
+            "FILTERS": { "type": "array", "items": { "type": "object" } }
+          }
+        }
+      }
+    },
+    "CHOICES": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["ACTIONS"],
+        "properties": {
+          "ACTIONS": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["TYPE"],
+              "properties": {
+                "TYPE": { "type": "string" },
+                "EVENT": { "type": "string" },
+                "AMOUNT": { "type": "object", "properties": { "RELATIVE": { "type": "number" }, "AMOUNT": { "type": "integer" } } },
+                "RESOURCE": { "type": "string" },
+                "RACE": { "type": "string" },
+                "CLASS_CITIZEN": { "type": "integer" },
+                "CLASS_SLAVE": { "type": "integer" },
+                "AMOUNT": { "type": "object", "properties": { "RELATIVE": { "type": "number" }, "AMOUNT": { "type": "integer" } } },
+                "FACTION": { "type": "string" },
+                "VALUE": { "type": "number" },
+                "TARGET": { "type": "string" },
+                "DAMAGE": { "type": "number" },
+                "BUILDING": { "type": "string" },
+                "TEXT": { "type": "string" },
+                "BOOST_PERM": { "type": "object" },
+                "BOOST": { "type": "object" },
+                "POPULATION_CLASS_CHANGE": { "type": "object" },
+                "POPULATION_CLASS_ADD": { "type": "object" },
+                "POPULATION_CLASS_TRANSFER": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

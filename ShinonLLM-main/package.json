@@ -1,0 +1,26 @@
+{
+  "name": "llmrab-runtime",
+  "private": true,
+  "version": "0.2.3a",
+  "type": "module",
+  "scripts": {
+    "start-local": "powershell -ExecutionPolicy Bypass -File ./start-local.ps1",
+    "stop-local": "powershell -ExecutionPolicy Bypass -File ./stop-local.ps1",
+    "verify-full": "powershell -ExecutionPolicy Bypass -File ./verify-full.ps1",
+    "verify:full:node": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts && node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/unit/session-persistence.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts && node --import tsx ./tests/e2e/chat-ui.spec.ts && node ./frontend/node_modules/next/dist/bin/next build ./frontend",
+    "test:baseline-integrity": "node --import tsx ./tests/gates/baseline-integrity.spec.ts",
+    "test:determinism": "node --import tsx ./tests/gates/replay-gate.spec.ts",
+    "test:e2e": "node --import tsx ./tests/e2e/chat-ui.spec.ts",
+    "test:gates": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts",
+    "test:backend": "node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/unit/session-persistence.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts",
+    "verify:backend": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts && node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/unit/session-persistence.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.8.0"
+  }
+}

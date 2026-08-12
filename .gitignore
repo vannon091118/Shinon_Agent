@@ -12,6 +12,12 @@ venv/
 node_modules/
 npm-debug.log*
 .next/
+.next-*/
+frontend/.next-*/
+ShinonLLM-main/frontend/.next-*/
+ShinonLLM-main/.runtime/
+ShinonLLM-main/frontend/.next-dev/
+ShinonLLM-main/frontend/.next-build/
 
 # ─── Environment & Secrets ─────────────────────────────────────
 .env
@@ -41,8 +47,20 @@ Thumbs.db
 *.log
 !phase3_finish.log
 !.goal/**/*.log
+*.replay
 
 # ─── Freebuff / Workspace ──────────────────────────────────────
+.freebuff/
+.goal/
+.promtset/state/
+!promtset-state.example/
+# Generated Promtguard reports are reproducible locally, not release source.
+pipeline-state.db
+.agents/skills/goal-chain/db/*.db
+.agents/skills/goal-chain/db/*.db.bak
+.agents/skills/live/registry.jsonl
+limen-main/data/
+ShinonLLM-main/.git/
 .freebuff/preview-*.log
 .freebuff/desktop-v2.db
 .freebuff/run.md
@@ -54,6 +72,8 @@ Thumbs.db
 !assets/*.zip
 
 # ─── Data directories (keep schema, ignore runtime data) ──────
+Promtguard-main/.promtset/out/
+Promtguard-main/.promtset/state/
 karma-main/state/
 karma-main/data/
 fusion-main/data/

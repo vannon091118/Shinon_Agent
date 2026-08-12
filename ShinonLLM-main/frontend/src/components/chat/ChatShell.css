@@ -1,0 +1,192 @@
+/* ChatShell Component Styles */
+
+.chat-shell {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.chat-shell__header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.chat-shell__header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.chat-shell__header p {
+  margin: 0.5rem 0 0;
+  color: #666;
+}
+
+.chat-shell__error {
+  background: #fee;
+  color: #c00;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.chat-shell__messages {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.chat-shell__message {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.chat-shell__message--user {
+  background: #e3f2fd;
+  margin-left: 20%;
+}
+
+.chat-shell__message--assistant {
+  background: #f5f5f5;
+  margin-right: 20%;
+}
+
+.chat-shell__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.chat-shell__model {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-shell__model select {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.chat-shell__composer textarea {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.chat-shell__composer button {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  background: #1976d2;
+  color: white;
+  cursor: pointer;
+}
+
+.chat-shell__composer button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* DEV Model Selector Styles */
+.dev-model-selector {
+  margin: 1rem 0;
+}
+
+.dev-model-selector__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.dev-model-selector__label {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.dev-model-selector__hide-btn {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  background: #333;
+  color: #888;
+  border: none;
+  cursor: pointer;
+}
+
+.dev-model-selector__active {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #5f5;
+}
+
+/* DEV Debug Toggle */
+.dev-debug-toggle {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #333;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+/* DEV Debug Grid */
+.dev-debug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.dev-debug-panel {
+  background: #1a1a1a;
+  color: #0f0;
+  padding: 1rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+  max-height: 200px;
+  overflow: auto;
+  border-radius: 4px;
+}
+
+.dev-debug-panel--storage {
+  color: #fa0;
+}
+
+.dev-debug-panel__title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.dev-debug-panel__muted {
+  color: #888;
+  word-break: break-all;
+}
+
+.dev-debug-panel__log--error {
+  color: #f55;
+}
+
+.dev-debug-panel__log--success {
+  color: #5f5;
+}
+
+.dev-debug-panel__log--request {
+  color: #ff5;
+}
+
+.dev-debug-panel__row {
+  margin-top: 0.5rem;
+}
+
+.dev-debug-panel__row + .dev-debug-panel__row {
+  margin-top: 0.25rem;
+}

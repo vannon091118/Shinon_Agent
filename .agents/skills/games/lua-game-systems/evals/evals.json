@@ -1,0 +1,45 @@
+{
+  "skill_name": "lua-game-systems",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "i'm making a Project Zomboid mod that adds custom weapons and a crafting system. right now all my code is in one big file in media/lua/server/MyMod.lua and it's getting impossible to manage. also im worried about multiplayer cuz i heard items can get duplicated. can u restructure this into proper files and make sure crafting is MP safe? i want weapons to have durability and different damage values that i can balance later without touching code. also my OnPlayerUpdate handler is causing lag spikes on my test server. heres my current mess: [paste of 200-line monolith with mixed UI, spawning, and event logic]",
+      "expected_output": "Restructured mod with proper shared/client/server separation, module pattern with require(), data-driven weapon config, MP-safe crafting via sendClientCommand/server-authoritative pattern, performance-optimized OnPlayerUpdate with guard clause and throttling",
+      "files": [],
+      "expectations": [
+        "Code is split into shared/, client/, server/ directories with proper loading order",
+        "Weapon stats are in a data table separate from logic",
+        "Crafting uses sendClientCommand / OnClientCommand pattern for MP safety",
+        "OnPlayerUpdate includes a guard clause and throttling mechanism",
+        "Module pattern with require() and local scope is used (no global pollution)",
+        "Durability system uses a composable component pattern, not copy-paste"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "ok so my PZ server mod has a loot distribution system for military bases but the containers are getting bloated with like 50 items each and players are complaining. also i feel like my loot balance is biased toward guns because i play a gun build myself lol. i want to design a fair loot table with diminishing returns so no single container is OP. also need sandbox options so server owners can tune the spawn rates. right now i just table.insert everything into the vanilla ProceduralDistributions. how should i redesign this?",
+      "expected_output": "Data-driven loot table with rolls/weight system, OnFillContainer or ProceduralDistributions pattern that avoids bloat, sandbox-options with configurable multipliers, anti-bias balancing principles applied, diminishing returns explanation",
+      "files": [],
+      "expectations": [
+        "Loot tables use roll+weight pattern instead of flat table.insert",
+        "Sandbox options are defined and cached (not read in hot loops)",
+        "Anti-bias principles are applied (opportunity cost, diminishing returns)",
+        "Container bloat prevention strategy is explained",
+        "Server owners can configure spawn rates without touching code"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "i wanna add a vehicle handling overhaul to PZ that reduces drift and makes cars feel more realistic. also need to know how to make it work in multiplayer without desync. my current approach just modifies vehicle values directly in OnTick and it's super laggy plus other players see the car teleporting around. what's the right way to do vehicle physics mods? also how does the anti-cheat interact with modified vehicle speeds?",
+      "expected_output": "Vehicle physics tuning via .txt scripts (not runtime modification), server-authoritative vehicle state, performance pattern for vehicle updates, anti-cheat type 2/3 compatibility guidance, centerOfMassOffset/rollInfluence/wheelFriction tuning advice",
+      "files": [],
+      "expectations": [
+        "Vehicle physics changes are primarily in .txt scripts, not OnTick",
+        "Server-authoritative approach for MP vehicle sync is explained",
+        "Anti-cheat type 2 (speed) considerations are addressed",
+        "Performance pattern avoids per-tick heavy computation",
+        "Specific vehicle parameters (mass, wheelFriction, centerOfMassOffset) are referenced"
+      ]
+    }
+  ]
+}

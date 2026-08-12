@@ -1,0 +1,117 @@
+[project]
+name = "limen"
+version = "0.0.20"
+description = "Local API backend with multi-provider pool, audit observability, and transparent routing for CLI-AI tools."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "vannon" }
+]
+keywords = [
+    "llm",
+    "router",
+    "free-tier",
+    "openai-compatible",
+    "claude-code",
+    "groq",
+    "nvidia-nim",
+    "github-models",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    # HTTP server
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # Async HTTP client für Provider-Calls
+    "httpx>=0.28.0",
+    # Validation + TOML-Config
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "tomli-w>=1.0.0",
+    # Terminal-UI
+    "textual>=0.86.0",
+    "rich>=13.9.0",
+    # Token-Schätzung für TPM-Bucket
+    "tiktoken>=0.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+]
+voice = [
+    # OpenAI-Whisper lokal (für später)
+    "openai-whisper>=20240930",
+]
+
+[project.scripts]
+limen = "limen.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/vannon/limen"
+Issues = "https://github.com/vannon/limen/issues"
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/limen"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/limen",
+    "README.md",
+    "ARCHITECTURE.md",
+    "CHANGELOG.md",
+    "LICENSE",
+]
+
+# ─── dev tooling ──────────────────────────────────────────────────────────
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "ASYNC", "S", "TCH"]
+ignore = ["S101"]  # asserts in tests are fine
+
+[tool.ruff.lint.per-file-ignores]
+"src/limen/adapters/*" = ["E501"]  # Provider-spezifische Parser dürfen lang sein
+"tests/integration/test_phase2_routing_contract.py" = ["E501"]  # Test-Config-Literale
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+disallow_untyped_decorators = false
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+no_implicit_optional = false
+warn_unused_ignores = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.pytest-asyncio]
+mode = "auto"

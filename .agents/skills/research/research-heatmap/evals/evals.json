@@ -1,0 +1,39 @@
+{
+  "skill_name": "research-heatmap",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Take community-evidence.json from my forum research and make a forum-by-theme heatmap. Show raw mentions, confidence-weighted intensity, distinct threads, and source links, then export standalone HTML, CSV, and JSON.",
+      "expected_output": "An accessible standalone heatmap plus data exports and notes that disclose axes, formulas, scope, and limitations.",
+      "files": [],
+      "expectations": [
+        "Uses forum × theme as the default axes or clearly states any confirmed alternative",
+        "Shows raw counts and weighted scores separately",
+        "Includes accessible labels, text alternatives, tooltips or detail table, and source links",
+        "Exports HTML, CSV, normalized JSON, and interpretation notes"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build a heatmap from evidence where one forum has many duplicate cross-posts, some dates are missing, and stance is mixed. Do not let duplicates or missing values create false hotspots.",
+      "expected_output": "A deduplicated or explicitly cross-post-aware heatmap with unknown-date and mixed/unclear categories retained and explained.",
+      "files": [],
+      "expectations": [
+        "Documents the duplicate handling rule",
+        "Does not convert missing dates or mixed stance into zero or a forced polarity",
+        "Flags low-diversity cells and keeps provenance links"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The input is an empty or malformed evidence file. Validate it and tell me what fields are required instead of inventing a visualization.",
+      "expected_output": "A concise validation response naming the missing/invalid fields and avoiding fabricated cells or claims.",
+      "files": [],
+      "expectations": [
+        "Rejects or clearly reports malformed input",
+        "Names required provenance and dimension fields",
+        "Does not fabricate evidence or a misleading heatmap"
+      ]
+    }
+  ]
+}

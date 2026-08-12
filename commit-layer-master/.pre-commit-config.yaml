@@ -1,0 +1,56 @@
+repos:
+  - repo: local
+    hooks:
+      - id: validate-json-schemas
+        name: Validate JSON Schemas
+        entry: python3 -m json.tool
+        language: system
+        types: [json]
+        files: ^SyxCraft-Undead-Research/phase-2/F8-validator-schemas/
+        exclude: ^.*\.schema\.json$
+        verbose: true
+
+      - id: validate-schema-files
+        name: Validate Schema Files Themselves
+        entry: python3 -c "import json, sys; [json.load(open(f)) for f in sys.argv[1:]]; print('All schema files valid')"
+        language: system
+        types: [json]
+        files: ^SyxCraft-Undead-Research/phase-2/F8-validator-schemas/.*\.schema\.json$
+        verbose: true
+
+      - id: validate-data-files
+        name: Validate Data .txt Files (SyxCraft format)
+        entry: python3 scripts/pre-commit/validate_data_files.py
+        language: system
+        types: [text]
+        files: ^SyxCraft/mods/SyxCraft-Undead/V71/data/init/.*\.txt$
+        verbose: true
+
+      - id: validate-java-syntax
+        name: Validate Java Syntax (basic)
+        entry: python3 scripts/pre-commit/validate_java.py
+        language: system
+        types: [java]
+        files: ^SyxCraft/mods/SyxCraft-Undead/src/main/java/
+        verbose: true
+
+      - id: check-markdown-content
+        name: Check Markdown Files Have Content
+        entry: python3 scripts/pre-commit/check_markdown.py
+        language: system
+        types: [markdown]
+        verbose: true
+
+      - id: no-trailing-whitespace
+        name: No Trailing Whitespace
+        entry: sed -i 's/[[:space:]]*$//'
+        language: system
+        types: [text, markdown, java, yaml, json]
+        verbose: true
+
+      - id: verify-commit-message
+        name: Verify Commit Message Format
+        entry: python3 verify_commit_msg.py
+        language: system
+        stages: [commit-msg]
+        verbose: true

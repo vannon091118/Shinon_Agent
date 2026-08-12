@@ -1,0 +1,3725 @@
+[
+  {
+    "p_id": "p294",
+    "id": "plot-2026-07-06T04:31:21",
+    "timestamp": "2026-07-06 04:31:21",
+    "summary": "Provider Uplink Dashboard + Scoring-System Overhaul",
+    "narrator": "Buffy",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c289j99n1a1p17",
+    "ref_to": "plot-2026-07-06T04:29:08",
+    "prev_narrator": "Null",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 12,
+        "deletions": 0
+      },
+      {
+        "file": "core/DB/db.js",
+        "insertions": 3,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 4,
+        "deletions": 5
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 2,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 2,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/public/modules/state.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/public/modules/ui-core.js",
+        "insertions": 134,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/public/modules/ui-data.js",
+        "insertions": 2,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/public/modules/ui-settings.js",
+        "insertions": 3,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/styles.css",
+        "insertions": 22,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 71,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/server-routes.js",
+        "insertions": 1,
+        "deletions": 0
+      },
+      {
+        "file": "core/Translation/providers/client-factory.js",
+        "insertions": 11,
+        "deletions": 6
+      },
+      {
+        "file": "core/Translation/providers/provider-registry.js",
+        "insertions": 107,
+        "deletions": 2
+      },
+      {
+        "file": "core/Translation/translation-db.js",
+        "insertions": 14,
+        "deletions": 6
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 10,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+        "insertions": 66,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 18,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 377,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "858cb62",
+        "subject": "Chronologischer Batch 4 von…",
+        "date": "2026-07-06 05:23:44 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text_batch4.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/log.txt",
+          "logs/server_log.txt"
+        ]
+      },
+      {
+        "hash": "7ecc548",
+        "subject": "[Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…",
+        "date": "2026-07-06 05:18:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/smoke_final.out",
+          "logs/smoke_raw_dump.txt"
+        ]
+      },
+      {
+        "hash": "d0e3987",
+        "subject": "[Buffy] Chronologischer Batch 3 von 4: plotchain-delta…",
+        "date": "2026-07-06 05:16:04 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/_gen_plotchain_delta.mjs",
+          "logs/_gen_plotchain_delta_arcs.mjs",
+          "logs/_gen_progress_a5.mjs",
+          "logs/extract_log_themes.mjs",
+          "logs/extract_themes.mjs",
+          "logs/freebuff-today-2026-07-05.md",
+          "logs/grab_firstprompts.mjs",
+          "logs/plotchain-delta-2026-07-05.md",
+          "logs/plotchain-delta-arcs-2026-07-05.md",
+          "logs/plotchain-delta-full-2026-07-05.md"
+        ]
+      },
+      {
+        "hash": "1d8add4",
+        "subject": "Basher (6 files): Chronologischer Batch 1 von 4: tests/INDEX.md…",
+        "date": "2026-07-06 05:15:49 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "tests/INDEX.md"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+      "858cb62: Chronologischer Batch 4 von…",
+      "7ecc548: [Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…",
+      "d0e3987: [Buffy] Chronologischer Batch 3 von 4: plotchain-delta…",
+      "1d8add4: Basher (6 files): Chronologischer Batch 1 von 4: tests/INDEX.md…"
+    ]
+  },
+  {
+    "p_id": "p295",
+    "id": "plot-2026-07-06T04:41:36",
+    "timestamp": "2026-07-06 04:41:36",
+    "summary": "Auto-Update via GitHub Releases mit Changelog-Popup",
+    "narrator": "Buffy",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c290j27n1a1p4",
+    "ref_to": "plot-2026-07-06T04:31:21",
+    "prev_narrator": "Null",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 5,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/public/app.js",
+        "insertions": 2,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 7,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 7,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/ui-core.js",
+        "insertions": 114,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 56,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/server-routes.js",
+        "insertions": 1,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      },
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "858cb62",
+        "subject": "Chronologischer Batch 4 von…",
+        "date": "2026-07-06 05:23:44 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text_batch4.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/log.txt",
+          "logs/server_log.txt"
+        ]
+      },
+      {
+        "hash": "7ecc548",
+        "subject": "[Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…",
+        "date": "2026-07-06 05:18:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/smoke_final.out",
+          "logs/smoke_raw_dump.txt"
+        ]
+      },
+      {
+        "hash": "d0e3987",
+        "subject": "[Buffy] Chronologischer Batch 3 von 4: plotchain-delta…",
+        "date": "2026-07-06 05:16:04 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/_gen_plotchain_delta.mjs",
+          "logs/_gen_plotchain_delta_arcs.mjs",
+          "logs/_gen_progress_a5.mjs",
+          "logs/extract_log_themes.mjs",
+          "logs/extract_themes.mjs",
+          "logs/freebuff-today-2026-07-05.md",
+          "logs/grab_firstprompts.mjs",
+          "logs/plotchain-delta-2026-07-05.md",
+          "logs/plotchain-delta-arcs-2026-07-05.md",
+          "logs/plotchain-delta-full-2026-07-05.md"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+      "858cb62: Chronologischer Batch 4 von…",
+      "7ecc548: [Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…",
+      "d0e3987: [Buffy] Chronologischer Batch 3 von 4: plotchain-delta…"
+    ]
+  },
+  {
+    "p_id": "p296",
+    "id": "plot-2026-07-06T04:57:20",
+    "timestamp": "2026-07-06 04:57:20",
+    "summary": "SOLL/IST Indikator im Dashboard",
+    "narrator": "Squizzle",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c291j5n5a3p20",
+    "ref_to": "plot-2026-07-06T04:41:36",
+    "prev_narrator": "Buffy",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 9,
+        "deletions": 3
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 11,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 18,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 18,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/ui-core.js",
+        "insertions": 137,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+        "insertions": 66,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      },
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "858cb62",
+        "subject": "Chronologischer Batch 4 von…",
+        "date": "2026-07-06 05:23:44 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text_batch4.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/log.txt",
+          "logs/server_log.txt"
+        ]
+      },
+      {
+        "hash": "7ecc548",
+        "subject": "[Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…",
+        "date": "2026-07-06 05:18:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/smoke_final.out",
+          "logs/smoke_raw_dump.txt"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+      "858cb62: Chronologischer Batch 4 von…",
+      "7ecc548: [Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…"
+    ]
+  },
+  {
+    "p_id": "p297",
+    "id": "plot-2026-07-06T04:59:06",
+    "timestamp": "2026-07-06 04:59:06",
+    "summary": "SOLL/IST Indikator im Dashboard",
+    "narrator": "Ghost",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c292j76n8a3p9",
+    "ref_to": "plot-2026-07-06T04:57:20",
+    "prev_narrator": "Squizzle",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 8,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 9,
+        "deletions": 3
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 11,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 18,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 18,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/ui-core.js",
+        "insertions": 137,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 5,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+        "insertions": 66,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 9,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 142,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      },
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "858cb62",
+        "subject": "Chronologischer Batch 4 von…",
+        "date": "2026-07-06 05:23:44 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text_batch4.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/log.txt",
+          "logs/server_log.txt"
+        ]
+      },
+      {
+        "hash": "7ecc548",
+        "subject": "[Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…",
+        "date": "2026-07-06 05:18:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/smoke_final.out",
+          "logs/smoke_raw_dump.txt"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+      "858cb62: Chronologischer Batch 4 von…",
+      "7ecc548: [Buffy] Chronologischer Batch 1 von 4: tests/INDEX.md…"
+    ]
+  },
+  {
+    "p_id": "p298",
+    "id": "plot-2026-07-06T05:19:12",
+    "timestamp": "2026-07-06 05:19:12",
+    "summary": "Highscores + Logs Export als ZIP + mailto",
+    "narrator": "Glitch",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c293j63n10a2p14",
+    "ref_to": "plot-2026-07-06T04:59:06",
+    "prev_narrator": "Ghost",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 4,
+        "deletions": 10
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 10,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/leaderboard.js",
+        "insertions": 39,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 85,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/server-routes.js",
+        "insertions": 1,
+        "deletions": 0
+      },
+      {
+        "file": "core/package-lock.json",
+        "insertions": 93,
+        "deletions": 5
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 1,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      },
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "858cb62",
+        "subject": "Chronologischer Batch 4 von…",
+        "date": "2026-07-06 05:23:44 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text_batch4.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/log.txt",
+          "logs/server_log.txt"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+      "858cb62: Chronologischer Batch 4 von…"
+    ]
+  },
+  {
+    "p_id": "p299",
+    "id": "plot-2026-07-06T05:20:30",
+    "timestamp": "2026-07-06 05:20:30",
+    "summary": "Highscores + Logs Export als ZIP + mailto",
+    "narrator": "Ghost",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c294j64n8a4p21",
+    "ref_to": "plot-2026-07-06T05:19:12",
+    "prev_narrator": "Glitch",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 8,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 4,
+        "deletions": 10
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 10,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/public/modules/leaderboard.js",
+        "insertions": 39,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 85,
+        "deletions": 0
+      },
+      {
+        "file": "core/GUI/server-routes.js",
+        "insertions": 1,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 5,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 9,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 161,
+        "deletions": 0
+      },
+      {
+        "file": "core/package-lock.json",
+        "insertions": 93,
+        "deletions": 5
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 1,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      },
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "858cb62",
+        "subject": "Chronologischer Batch 4 von…",
+        "date": "2026-07-06 05:23:44 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text_batch4.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "logs/log.txt",
+          "logs/server_log.txt"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+      "858cb62: Chronologischer Batch 4 von…"
+    ]
+  },
+  {
+    "p_id": "p300",
+    "id": "plot-2026-07-06T05:52:18",
+    "timestamp": "2026-07-06 05:52:18",
+    "summary": "Bugfix: Mod Load Order + Provider User-Priority erzwungen",
+    "narrator": "Sage",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c295j72n14a5p7",
+    "ref_to": "plot-2026-07-06T05:20:30",
+    "prev_narrator": "Ghost",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/public/modules/ui-pages.js",
+        "insertions": 15,
+        "deletions": 3
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 3,
+        "deletions": 2
+      },
+      {
+        "file": "core/Translation/router.js",
+        "insertions": 23,
+        "deletions": 9
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      },
+      {
+        "hash": "8abb4e6",
+        "subject": "[Buffy] RULES.md REGEL 15 hinzugefuegt:…",
+        "date": "2026-07-06 05:28:50 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "RULES.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+      "8abb4e6: [Buffy] RULES.md REGEL 15 hinzugefuegt:…"
+    ]
+  },
+  {
+    "p_id": "p301",
+    "id": "plot-2026-07-06T06:17:49",
+    "timestamp": "2026-07-06 06:17:49",
+    "summary": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx)",
+    "narrator": "Devin",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c296j37n6a2p13",
+    "ref_to": "plot-2026-07-06T05:52:18",
+    "prev_narrator": "Sage",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 13,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/GAME/minigame.js",
+        "insertions": 5,
+        "deletions": 3
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul"
+    ]
+  },
+  {
+    "p_id": "p302",
+    "id": "plot-2026-07-06T06:19:10",
+    "timestamp": "2026-07-06 06:19:10",
+    "summary": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx)",
+    "narrator": "Thinker",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c297j89n3a5p9",
+    "ref_to": "plot-2026-07-06T06:17:49",
+    "prev_narrator": "Devin",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 8,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 13,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/GAME/minigame.js",
+        "insertions": 5,
+        "deletions": 3
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 5,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 9,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 134,
+        "deletions": 805
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "29cfd5f",
+        "subject": "[Buffy] Provider Uplink Dashboard + Scoring-System Overhaul",
+        "date": "2026-07-06 06:31:23 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/DB/db.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/state.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/public/modules/ui-data.js",
+          "core/GUI/public/modules/ui-settings.js",
+          "core/GUI/public/styles.css",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/Translation/providers/client-factory.js",
+          "core/Translation/providers/provider-registry.js",
+          "core/Translation/translation-db.js"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+      "29cfd5f: [Buffy] Provider Uplink Dashboard + Scoring-System Overhaul"
+    ]
+  },
+  {
+    "p_id": "p303",
+    "id": "plot-2026-07-06T07:02:15",
+    "timestamp": "2026-07-06 07:02:15",
+    "summary": "Kilo Bugfix-Review: server-handlers.js Indentation Fix + CHANGELOG/INDEX/PLAN Updates",
+    "narrator": "Devin",
+    "model_id": "mimo-v2.5",
+    "composite": "c298j95n6a6p2",
+    "ref_to": "plot-2026-07-06T06:19:10",
+    "prev_narrator": "Thinker",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 17,
+        "deletions": 0
+      },
+      {
+        "file": "INDEX.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "PLAN.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 2,
+        "deletions": 13
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 2,
+        "deletions": 1
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+        "insertions": 22,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup"
+    ]
+  },
+  {
+    "p_id": "p304",
+    "id": "plot-2026-07-06T07:03:44",
+    "timestamp": "2026-07-06 07:03:44",
+    "summary": "Kilo Bugfix-Review: server-handlers.js Indentation Fix + CHANGELOG/INDEX/PLAN Updates",
+    "narrator": "Echo",
+    "model_id": "mimo-v2.5",
+    "composite": "c299j57n12a2p5",
+    "ref_to": "plot-2026-07-06T07:02:15",
+    "prev_narrator": "Devin",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 21,
+        "deletions": 0
+      },
+      {
+        "file": "INDEX.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "PLAN.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 3,
+        "deletions": 12
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 2,
+        "deletions": 1
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 7,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+        "insertions": 22,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 9,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 140,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "1761c50",
+        "subject": "[Buffy] Auto-Update via GitHub Releases mit Changelog-Popup",
+        "date": "2026-07-06 06:41:38 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+      "1761c50: [Buffy] Auto-Update via GitHub Releases mit Changelog-Popup"
+    ]
+  },
+  {
+    "p_id": "p305",
+    "id": "plot-2026-07-06T07:17:16",
+    "timestamp": "2026-07-06 07:17:16",
+    "summary": "v0.26 Release: Alle Scripts+Tests getrackt, Root-Package fuer npm test, ESLint-Fixes",
+    "narrator": "Glitch",
+    "model_id": "mimo-v2.5",
+    "composite": "c300j55n10a4p15",
+    "ref_to": "plot-2026-07-06T07:03:44",
+    "prev_narrator": "Echo",
+    "data_changes": [
+      {
+        "file": ".gitignore",
+        "insertions": 2,
+        "deletions": 17
+      },
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 2,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 2,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 2,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/public/modules/ui-core.js",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/Translation/plugins/RimWorldPlugin.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/scripts/INDEX.md",
+        "insertions": 166,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/build-review-base.js",
+        "insertions": 311,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/check_consistency.js",
+        "insertions": 396,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/check_plan_baseline.js",
+        "insertions": 229,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/check_vendor_drift.js",
+        "insertions": 245,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/check_verify_agents_drift.js",
+        "insertions": 250,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/diagnose_db_mods.js",
+        "insertions": 423,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/fix_i18n_duplicates.js",
+        "insertions": 371,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/fresh-readme.js",
+        "insertions": 190,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/gen-index.js",
+        "insertions": 166,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/log_sorter.js",
+        "insertions": 278,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/package.js",
+        "insertions": 81,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/quality_benchmark.js",
+        "insertions": 618,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/release.js",
+        "insertions": 106,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/sync-version.js",
+        "insertions": 136,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/update-badges.js",
+        "insertions": 204,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/vendor-sync.js",
+        "insertions": 430,
+        "deletions": 0
+      },
+      {
+        "file": "core/scripts/vendor-utils.js",
+        "insertions": 280,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/INDEX.md",
+        "insertions": 90,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/check-backup-config.js",
+        "insertions": 56,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/check_plan_baseline_smoke.js",
+        "insertions": 169,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/cleanup-bak.js",
+        "insertions": 115,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/context-packets.test.js",
+        "insertions": 132,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/core_engine_hotswap.test.js",
+        "insertions": 273,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/e2e_bug1_native_mode.js",
+        "insertions": 412,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/e2e_multi_language.js",
+        "insertions": 581,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/e2e_p3_risk_scoring.js",
+        "insertions": 73,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/e2e_p5_sprachauswahl.js",
+        "insertions": 278,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/env-protection-smoke.js",
+        "insertions": 106,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/freeze_plotchain.test.js",
+        "insertions": 202,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/fulltest_run.js",
+        "insertions": 447,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/gate-counter-smoke.js",
+        "insertions": 109,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/hooks_pre_commit_body.test.js",
+        "insertions": 186,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/i18n-unified-smoke.js",
+        "insertions": 721,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/inventory-audio.js",
+        "insertions": 233,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/item0a_auto_freeze_test.js",
+        "insertions": 236,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/ollama_cloud_e2e.js",
+        "insertions": 195,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/parser.test.js",
+        "insertions": 263,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/parser_smoke.js",
+        "insertions": 67,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/plugin-boundary-contract.js",
+        "insertions": 350,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/plugin-boundary-smoke.js",
+        "insertions": 320,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/scanner_protection.test.js",
+        "insertions": 226,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/setup-cleanup-task.bat",
+        "insertions": 10,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/setup-cleanup-task.ps1",
+        "insertions": 122,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/sos_info_parsing.test.js",
+        "insertions": 141,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/translation-runtime-smoke.js",
+        "insertions": 530,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/translation-runtime.test.js",
+        "insertions": 278,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/v21_p0_live_verify.js",
+        "insertions": 178,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/validator-smoke.js",
+        "insertions": 292,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/validator.test.js",
+        "insertions": 269,
+        "deletions": 0
+      },
+      {
+        "file": "core/tests/writing_rules.test.js",
+        "insertions": 113,
+        "deletions": 0
+      },
+      {
+        "file": "package.json",
+        "insertions": 27,
+        "deletions": 0
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f35656d",
+        "subject": "Ghost verzeichnet: SOLL/IST Indikator im Dashboard",
+        "date": "2026-07-06 06:59:08 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+      "f35656d: Ghost verzeichnet: SOLL/IST Indikator im Dashboard"
+    ]
+  },
+  {
+    "p_id": "p306",
+    "id": "plot-2026-07-06T07:19:56",
+    "timestamp": "2026-07-06 07:19:56",
+    "summary": "Post-Release-Fixes: prepare-Script und smoke-test Pfad korrigiert",
+    "narrator": "Devin",
+    "model_id": "mimo-v2.5",
+    "composite": "c301j35n6a2p14",
+    "ref_to": "plot-2026-07-06T07:17:16",
+    "prev_narrator": "Glitch",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "package.json",
+        "insertions": 1,
+        "deletions": 1
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      },
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto"
+    ]
+  },
+  {
+    "p_id": "p307",
+    "id": "plot-2026-07-06T07:21:13",
+    "timestamp": "2026-07-06 07:21:13",
+    "summary": "Post-Release-Fixes: prepare-Script und smoke-test Pfad korrigiert",
+    "narrator": "Sage",
+    "model_id": "mimo-v2.5",
+    "composite": "c302j64n14a5p10",
+    "ref_to": "plot-2026-07-06T07:19:56",
+    "prev_narrator": "Devin",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 8,
+        "deletions": 0
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 7,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 9,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 133,
+        "deletions": 0
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "package.json",
+        "insertions": 1,
+        "deletions": 1
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      },
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "12614e7",
+        "subject": "Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto",
+        "date": "2026-07-06 07:20:32 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/leaderboard.js",
+          "core/GUI/server-handlers.js",
+          "core/GUI/server-routes.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package-lock.json",
+          "core/package.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+      "12614e7: Ghost verzeichnet: Highscores + Logs Export als ZIP + mailto"
+    ]
+  },
+  {
+    "p_id": "p308",
+    "id": "plot-2026-07-06T07:43:26",
+    "timestamp": "2026-07-06 07:43:26",
+    "summary": "v0.26 UI Version-Bump + Audit-Bugfixes (parseMetadata, broadcast-guard, test-cleanups)",
+    "narrator": "Sage",
+    "model_id": "mimo-v2.5",
+    "composite": "c303j50n14a1p15",
+    "ref_to": "plot-2026-07-06T07:21:13",
+    "prev_narrator": "Devin",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "README.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 16,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/app.js",
+        "insertions": 3,
+        "deletions": 3
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/es.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/fr.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/it.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/ja.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/ko.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/nl.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/pl.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/pt.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/ru.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/sv.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/tr.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/uk.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/zh.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/leaderboard.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/server-broadcasts.js",
+        "insertions": 3,
+        "deletions": 0
+      },
+      {
+        "file": "core/Translation/plugins/SongsOfSyxPlugin.js",
+        "insertions": 4,
+        "deletions": 2
+      },
+      {
+        "file": "core/commit-layer/author_system.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/scripts/check_syntax.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/tests/sos_info_parsing.test.js",
+        "insertions": 1,
+        "deletions": 2
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "f839170",
+        "subject": "Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+        "date": "2026-07-06 09:21:15 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json",
+          "package.json"
+        ]
+      },
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      },
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "f839170: Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…"
+    ]
+  },
+  {
+    "p_id": "p309",
+    "id": "plot-2026-07-06T07:50:27",
+    "timestamp": "2026-07-06 07:50:27",
+    "summary": "v0.26 UI Version-Bump + Version-Modal + Audit-Bugfixes",
+    "narrator": "Flux",
+    "model_id": "mimo-v2.5",
+    "composite": "c304j15n13a5p13",
+    "ref_to": "plot-2026-07-06T07:43:26",
+    "prev_narrator": "Sage",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 8,
+        "deletions": 0
+      },
+      {
+        "file": "README.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 8,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/app.js",
+        "insertions": 3,
+        "deletions": 3
+      },
+      {
+        "file": "core/GUI/public/index.html",
+        "insertions": 17,
+        "deletions": 5
+      },
+      {
+        "file": "core/GUI/public/modules/lang/de.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/en.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/es.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/fr.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/it.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/ja.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/ko.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/nl.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/pl.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/pt.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/ru.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/sv.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/tr.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/uk.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/lang/zh.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/public/modules/leaderboard.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/server-broadcasts.js",
+        "insertions": 3,
+        "deletions": 0
+      },
+      {
+        "file": "core/Translation/plugins/SongsOfSyxPlugin.js",
+        "insertions": 4,
+        "deletions": 2
+      },
+      {
+        "file": "core/commit-layer/PLOT_LORE.md",
+        "insertions": 21,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/author_system.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a6/frozen_plotchain.json",
+        "insertions": 112,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/composite_chain.json",
+        "insertions": 9,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/commit_lore/plotchain.json",
+        "insertions": 242,
+        "deletions": 0
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/scripts/check_syntax.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/tests/sos_info_parsing.test.js",
+        "insertions": 1,
+        "deletions": 2
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "f839170",
+        "subject": "Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+        "date": "2026-07-06 09:21:15 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json",
+          "package.json"
+        ]
+      },
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      },
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "886741c",
+        "subject": "Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…",
+        "date": "2026-07-06 07:52:20 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/ui-pages.js",
+          "core/GUI/server-handlers.js",
+          "core/Translation/router.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "f839170: Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+      "886741c: Sage lehrt: Bugfix: Mod Load Order + Provider User-Priority…"
+    ]
+  },
+  {
+    "p_id": "p310",
+    "id": "plot-2026-07-06T07:52:34",
+    "timestamp": "2026-07-06 07:52:34",
+    "summary": "README Badge-Fix 364 Tests + dupliziertes consistency Script entfernt",
+    "narrator": "Basher",
+    "model_id": "mimo-v2.5",
+    "composite": "c305j79n2a4p11",
+    "ref_to": "plot-2026-07-06T07:50:27",
+    "prev_narrator": "Flux",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "README.md",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/package.json",
+        "insertions": 0,
+        "deletions": 1
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "f524de2",
+        "subject": "Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+        "date": "2026-07-06 09:50:29 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/lang/es.js",
+          "core/GUI/public/modules/lang/fr.js",
+          "core/GUI/public/modules/lang/it.js",
+          "core/GUI/public/modules/lang/ja.js",
+          "core/GUI/public/modules/lang/ko.js",
+          "core/GUI/public/modules/lang/nl.js",
+          "core/GUI/public/modules/lang/pl.js",
+          "core/GUI/public/modules/lang/pt.js"
+        ]
+      },
+      {
+        "hash": "f839170",
+        "subject": "Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+        "date": "2026-07-06 09:21:15 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json",
+          "package.json"
+        ]
+      },
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      },
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "a38e85f",
+        "subject": "Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]",
+        "date": "2026-07-06 08:19:13 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/GAME/minigame.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "f524de2: Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+      "f839170: Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+      "a38e85f: Multi-Game UI Kalibrierung (RimWorld + Songs of Syx) [Analyse: Thinker]"
+    ]
+  },
+  {
+    "p_id": "p311",
+    "id": "plot-2026-07-14T20:18:22",
+    "timestamp": "2026-07-14 20:18:22",
+    "summary": "Doku-Rekonstruktion: alle INDEX-Dateien aktualisiert, irreführende Claims entfernt, 5 Session-Artefakte gelöscht, 3 neue Domain-INDEXe erstellt (GUI, config, utils)",
+    "narrator": "Basher",
+    "model_id": "mimo-v2",
+    "composite": "c306j57n2a4p23",
+    "ref_to": "plot-2026-07-06T07:52:34",
+    "prev_narrator": "Flux",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "INDEX.md",
+        "insertions": 15,
+        "deletions": 14
+      },
+      {
+        "file": "PLAN.md",
+        "insertions": 8,
+        "deletions": 6
+      },
+      {
+        "file": "README.md",
+        "insertions": 6,
+        "deletions": 6
+      },
+      {
+        "file": "_Info.txt",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 23,
+        "deletions": 5
+      },
+      {
+        "file": "core/DB/INDEX.md",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/GUI/INDEX.md",
+        "insertions": 124,
+        "deletions": 308
+      },
+      {
+        "file": "core/Translation/INDEX.md",
+        "insertions": 24,
+        "deletions": 13
+      },
+      {
+        "file": "core/Translation/config/INDEX.md",
+        "insertions": 84,
+        "deletions": 0
+      },
+      {
+        "file": "core/data/INDEX.md",
+        "insertions": 3,
+        "deletions": 3
+      },
+      {
+        "file": "core/scripts/INDEX.md",
+        "insertions": 17,
+        "deletions": 13
+      },
+      {
+        "file": "core/tests/INDEX.md",
+        "insertions": 28,
+        "deletions": 4
+      },
+      {
+        "file": "core/utils/INDEX.md",
+        "insertions": 50,
+        "deletions": 0
+      },
+      {
+        "file": "logs/freebuff-today-2026-07-05.md",
+        "insertions": 0,
+        "deletions": 154
+      },
+      {
+        "file": "logs/plotchain-delta-2026-07-05.md",
+        "insertions": 0,
+        "deletions": 83
+      },
+      {
+        "file": "logs/plotchain-delta-arcs-2026-07-05.md",
+        "insertions": 0,
+        "deletions": 345
+      },
+      {
+        "file": "logs/plotchain-delta-full-2026-07-05.md",
+        "insertions": 0,
+        "deletions": 152
+      },
+      {
+        "file": "tests/INDEX.md",
+        "insertions": 0,
+        "deletions": 65
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "da909ce",
+        "subject": "Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+        "date": "2026-07-06 09:52:37 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f524de2",
+        "subject": "Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+        "date": "2026-07-06 09:50:29 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/lang/es.js",
+          "core/GUI/public/modules/lang/fr.js",
+          "core/GUI/public/modules/lang/it.js",
+          "core/GUI/public/modules/lang/ja.js",
+          "core/GUI/public/modules/lang/ko.js",
+          "core/GUI/public/modules/lang/nl.js",
+          "core/GUI/public/modules/lang/pl.js",
+          "core/GUI/public/modules/lang/pt.js"
+        ]
+      },
+      {
+        "hash": "f839170",
+        "subject": "Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+        "date": "2026-07-06 09:21:15 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json",
+          "package.json"
+        ]
+      },
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      },
+      {
+        "hash": "8161485",
+        "subject": "Echo erinnert: Kilo Bugfix-Review: server-handlers.js…",
+        "date": "2026-07-06 09:03:46 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/GUI/server-handlers.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/arcs/a5/frozen_plotchain.json",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "da909ce: Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+      "f524de2: Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+      "f839170: Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+      "8161485: Echo erinnert: Kilo Bugfix-Review: server-handlers.js…"
+    ]
+  },
+  {
+    "p_id": "p312",
+    "id": "plot-2026-07-14T20:25:26",
+    "timestamp": "2026-07-14 20:25:26",
+    "summary": "Commit-History-Abgleich: 3 Drifts behoben (Translation 57->56, Data-Phantom-Dateien als Runtime markiert, Root-Footer auf 181 JS/31 MD aktualisiert). Verifiziert gegen 273 Commits.",
+    "narrator": "Echo",
+    "model_id": "mimo-v2",
+    "composite": "c307j58n12a3p14",
+    "ref_to": "plot-2026-07-14T20:18:22",
+    "prev_narrator": "Basher",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "INDEX.md",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 23,
+        "deletions": 23
+      },
+      {
+        "file": "core/Translation/INDEX.md",
+        "insertions": 5,
+        "deletions": 5
+      },
+      {
+        "file": "core/data/INDEX.md",
+        "insertions": 17,
+        "deletions": 7
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "aaa37d6",
+        "subject": "Basher (18 files): Doku-Rekonstruktion: alle INDEX-Dateien…",
+        "date": "2026-07-14 22:18:22 +0200",
+        "author": "Vannon",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "README.md",
+          "_Info.txt",
+          "core/.body_text.txt",
+          "core/DB/INDEX.md",
+          "core/GUI/INDEX.md",
+          "core/Translation/INDEX.md",
+          "core/Translation/config/INDEX.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/data/INDEX.md",
+          "core/scripts/INDEX.md"
+        ]
+      },
+      {
+        "hash": "da909ce",
+        "subject": "Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+        "date": "2026-07-06 09:52:37 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f524de2",
+        "subject": "Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+        "date": "2026-07-06 09:50:29 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/lang/es.js",
+          "core/GUI/public/modules/lang/fr.js",
+          "core/GUI/public/modules/lang/it.js",
+          "core/GUI/public/modules/lang/ja.js",
+          "core/GUI/public/modules/lang/ko.js",
+          "core/GUI/public/modules/lang/nl.js",
+          "core/GUI/public/modules/lang/pl.js",
+          "core/GUI/public/modules/lang/pt.js"
+        ]
+      },
+      {
+        "hash": "f839170",
+        "subject": "Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+        "date": "2026-07-06 09:21:15 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json",
+          "package.json"
+        ]
+      },
+      {
+        "hash": "820067d",
+        "subject": "Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…",
+        "date": "2026-07-06 09:17:17 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          ".gitignore",
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/ui-core.js",
+          "core/Translation/plugins/RimWorldPlugin.js",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/scripts/INDEX.md",
+          "core/scripts/build-review-base.js",
+          "core/scripts/check_consistency.js",
+          "core/scripts/check_plan_baseline.js",
+          "core/scripts/check_vendor_drift.js"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "aaa37d6: Basher (18 files): Doku-Rekonstruktion: alle INDEX-Dateien…",
+      "da909ce: Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+      "f524de2: Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+      "f839170: Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+      "820067d: Glitch ermittelt: v0.26 Release: Alle Scripts+Tests getrackt,…"
+    ]
+  },
+  {
+    "p_id": "p313",
+    "id": "plot-2026-07-14T20:28:35",
+    "timestamp": "2026-07-14 20:28:35",
+    "summary": "SSOT-Check: 5-Dokument-Cross-Reference (INDEX, README, _Info, CHANGELOG, PLAN). PLAN.md Verifikation aktualisiert: Syntax 127->128, Jest 216->360 Tests / 6->17 Suites. Kein Versions-Drift, alle 5 Dokumente konsistent auf v0.26.0.",
+    "narrator": "Ghost",
+    "model_id": "mimo-v2",
+    "composite": "c308j28n8a6p25",
+    "ref_to": "plot-2026-07-14T20:25:26",
+    "prev_narrator": "Echo",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "PLAN.md",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 20,
+        "deletions": 20
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "9582745",
+        "subject": "Echo erinnert: Commit-History-Abgleich: 3 Drifts behoben…",
+        "date": "2026-07-14 22:25:26 +0200",
+        "author": "Vannon",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "core/.body_text.txt",
+          "core/Translation/INDEX.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/data/INDEX.md"
+        ]
+      },
+      {
+        "hash": "aaa37d6",
+        "subject": "Basher (18 files): Doku-Rekonstruktion: alle INDEX-Dateien…",
+        "date": "2026-07-14 22:18:22 +0200",
+        "author": "Vannon",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "README.md",
+          "_Info.txt",
+          "core/.body_text.txt",
+          "core/DB/INDEX.md",
+          "core/GUI/INDEX.md",
+          "core/Translation/INDEX.md",
+          "core/Translation/config/INDEX.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/data/INDEX.md",
+          "core/scripts/INDEX.md"
+        ]
+      },
+      {
+        "hash": "da909ce",
+        "subject": "Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+        "date": "2026-07-06 09:52:37 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f524de2",
+        "subject": "Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+        "date": "2026-07-06 09:50:29 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/lang/es.js",
+          "core/GUI/public/modules/lang/fr.js",
+          "core/GUI/public/modules/lang/it.js",
+          "core/GUI/public/modules/lang/ja.js",
+          "core/GUI/public/modules/lang/ko.js",
+          "core/GUI/public/modules/lang/nl.js",
+          "core/GUI/public/modules/lang/pl.js",
+          "core/GUI/public/modules/lang/pt.js"
+        ]
+      },
+      {
+        "hash": "f839170",
+        "subject": "Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…",
+        "date": "2026-07-06 09:21:15 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json",
+          "package.json"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "9582745: Echo erinnert: Commit-History-Abgleich: 3 Drifts behoben…",
+      "aaa37d6: Basher (18 files): Doku-Rekonstruktion: alle INDEX-Dateien…",
+      "da909ce: Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+      "f524de2: Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+      "f839170: Sage lehrt: Post-Release-Fixes: prepare-Script und smoke-test…"
+    ]
+  },
+  {
+    "p_id": "p314",
+    "id": "plot-2026-07-14T20:39:06",
+    "timestamp": "2026-07-14 20:39:06",
+    "summary": "ESLint 0/0: 59 Warnings bereinigt (47 auto-fix, 12 no-unused-vars manuell). 16 Dateien. README-Badge 59->0. Syntax 128/128, Tests 360/4 unverändert.",
+    "narrator": "Basher",
+    "model_id": "mimo-v2",
+    "composite": "c309j3n2a3p15",
+    "ref_to": "plot-2026-07-14T20:28:35",
+    "prev_narrator": "Ghost",
+    "data_changes": [
+      {
+        "file": "CHANGELOG.md",
+        "insertions": 4,
+        "deletions": 0
+      },
+      {
+        "file": "PLAN.md",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "README.md",
+        "insertions": 3,
+        "deletions": 3
+      },
+      {
+        "file": "core/.body_text.txt",
+        "insertions": 33,
+        "deletions": 21
+      },
+      {
+        "file": "core/DB/admin-db.js",
+        "insertions": 6,
+        "deletions": 6
+      },
+      {
+        "file": "core/GUI/GAME/minigame.js",
+        "insertions": 3,
+        "deletions": 3
+      },
+      {
+        "file": "core/GUI/public/modules/leaderboard.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/GUI/server-handlers.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/GUI/server-routes.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/Translation/providers/client-factory.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/Translation/providers/provider-registry.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/Translation/scanner.js",
+        "insertions": 6,
+        "deletions": 6
+      },
+      {
+        "file": "core/Translation/translation-db.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/commit-layer/commit_lore/arcs/a6/frozen_plotchain.json",
+        "insertions": 66,
+        "deletions": 0
+      },
+      {
+        "file": "core/commit-layer/verify_commit_msg.js",
+        "insertions": 14,
+        "deletions": 13
+      },
+      {
+        "file": "core/scripts/check_plan_baseline.js",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/scripts/check_ssot_consistency.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/tests/core_engine_hotswap.test.js",
+        "insertions": 2,
+        "deletions": 2
+      },
+      {
+        "file": "core/tests/domain_isolation.test.js",
+        "insertions": 9,
+        "deletions": 9
+      },
+      {
+        "file": "core/tests/parser-xml.test.js",
+        "insertions": 4,
+        "deletions": 4
+      },
+      {
+        "file": "core/tests/sos_info_parsing.test.js",
+        "insertions": 1,
+        "deletions": 1
+      },
+      {
+        "file": "core/tests/string_utils_ssot.test.js",
+        "insertions": 1,
+        "deletions": 1
+      }
+    ],
+    "recent_commits": [
+      {
+        "hash": "c7a137f",
+        "subject": "Ghost verzeichnet: SSOT-Check: 5-Dokument-Cross-Reference (INDEX,…",
+        "date": "2026-07-14 22:28:35 +0200",
+        "author": "Vannon",
+        "files_touched": [
+          "CHANGELOG.md",
+          "PLAN.md",
+          "core/.body_text.txt",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json"
+        ]
+      },
+      {
+        "hash": "9582745",
+        "subject": "Echo erinnert: Commit-History-Abgleich: 3 Drifts behoben…",
+        "date": "2026-07-14 22:25:26 +0200",
+        "author": "Vannon",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "core/.body_text.txt",
+          "core/Translation/INDEX.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/data/INDEX.md"
+        ]
+      },
+      {
+        "hash": "aaa37d6",
+        "subject": "Basher (18 files): Doku-Rekonstruktion: alle INDEX-Dateien…",
+        "date": "2026-07-14 22:18:22 +0200",
+        "author": "Vannon",
+        "files_touched": [
+          "CHANGELOG.md",
+          "INDEX.md",
+          "PLAN.md",
+          "README.md",
+          "_Info.txt",
+          "core/.body_text.txt",
+          "core/DB/INDEX.md",
+          "core/GUI/INDEX.md",
+          "core/Translation/INDEX.md",
+          "core/Translation/config/INDEX.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/data/INDEX.md",
+          "core/scripts/INDEX.md"
+        ]
+      },
+      {
+        "hash": "da909ce",
+        "subject": "Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+        "date": "2026-07-06 09:52:37 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/commit-layer/PLOT_LORE.md",
+          "core/commit-layer/commit_lore/composite_chain.json",
+          "core/commit-layer/commit_lore/plotchain.json",
+          "core/package.json"
+        ]
+      },
+      {
+        "hash": "f524de2",
+        "subject": "Flux — also — v0.26 UI Version-Bump + Version-Modal…",
+        "date": "2026-07-06 09:50:29 +0200",
+        "author": "Felix Schneider",
+        "files_touched": [
+          "CHANGELOG.md",
+          "README.md",
+          "core/.body_text.txt",
+          "core/GUI/public/app.js",
+          "core/GUI/public/index.html",
+          "core/GUI/public/modules/lang/de.js",
+          "core/GUI/public/modules/lang/en.js",
+          "core/GUI/public/modules/lang/es.js",
+          "core/GUI/public/modules/lang/fr.js",
+          "core/GUI/public/modules/lang/it.js",
+          "core/GUI/public/modules/lang/ja.js",
+          "core/GUI/public/modules/lang/ko.js",
+          "core/GUI/public/modules/lang/nl.js",
+          "core/GUI/public/modules/lang/pl.js",
+          "core/GUI/public/modules/lang/pt.js"
+        ]
+      }
+    ],
+    "causal_chain_summary": [
+      "c7a137f: Ghost verzeichnet: SSOT-Check: 5-Dokument-Cross-Reference (INDEX,…",
+      "9582745: Echo erinnert: Commit-History-Abgleich: 3 Drifts behoben…",
+      "aaa37d6: Basher (18 files): Doku-Rekonstruktion: alle INDEX-Dateien…",
+      "da909ce: Basher (2 files): README Badge-Fix 364 Tests + dupliziertes…",
+      "f524de2: Flux — also — v0.26 UI Version-Bump + Version-Modal…"
+    ]
+  }
+]

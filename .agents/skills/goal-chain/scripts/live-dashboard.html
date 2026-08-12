@@ -264,6 +264,27 @@
     .rc-detail .rc-type { font-weight: 700; font-size: 9px; color: var(--accent); }
     .rc-chevron { display: inline-block; font-size: 8px; margin-left: 3px; transition: transform .2s ease; }
     .rc-chevron.open { transform: rotate(90deg); }
+
+    /* Cooldown Countdown */
+    .cooldown-timer {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-variant-numeric: tabular-nums; font-family: "SF Mono", Menlo, monospace;
+    }
+    .cooldown-count {
+      font-size: 18px; font-weight: 700; color: #f59e0b;
+      animation: countPulse 1s step-end infinite;
+    }
+    .cooldown-count.soon { color: #ef4444; }
+    .cooldown-bar-wrap {
+      width: 80px; height: 6px; background: var(--bg-card-light);
+      border-radius: 3px; overflow: hidden; flex-shrink: 0;
+    }
+    .cooldown-bar {
+      height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b);
+      border-radius: 3px; transition: width 1s linear;
+    }
+    .cooldown-label { font-size: 9px; color: #f59e0b; text-transform: uppercase; font-weight: 600; }
+    @keyframes countPulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
 </style>
 </head>
 <body>
@@ -725,7 +746,11 @@ function fetchKeyStatus() {
     });
 }
 
+// Store last key data for cooldown counting
+var lastKeyData = null;
+
 function renderKeys(data) {
+  lastKeyData = data; // Save for cooldown timer
   var summary = data.summary || {};
   var keys = data.keys || [];
 
@@ -753,7 +778,7 @@ function renderKeys(data) {
 
   var listHtml = '<div style="margin-top:8px;">';
   listHtml += '<div class="key-row" style="color:var(--fg-dim);font-size:9px;border-bottom:2px solid var(--border);">' +
-    '<span>PROVIDER</span><span>STATUS</span><span>HEALTH</span><span>TOKENS / REQUESTS</span><span>LAST USED</span></div>';
+    '<span>PROVIDER</span><span>STATUS</span><span>HEALTH</span><span>TOKENS / REQUESTS</span><span>COOLDOWN</span></div>';
 
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
@@ -772,14 +797,19 @@ function renderKeys(data) {
     var rp = k.request_pct || 0;
     var rcolor = rp > 90 ? '#ef4444' : rp > 70 ? '#f59e0b' : '#10b981';
 
-    var cooldownInfo = '';
+    // Cooldown column: live countdown if in cooldown
+    var cooldownHtml = '<span style="color:var(--muted);">—</span>';
     if (k.status === 'cooldown' && k.cooldown_until) {
-      cooldownInfo = ' until ' + (k.cooldown_until || '').substring(11, 19);
+      cooldownHtml =
+        '<div class="cooldown-timer" data-key-id="' + (k.id||i) + '" data-cooldown-until="' + (k.cooldown_until||'') + '">' +
+        '<span class="cooldown-count" id="cd-count-' + i + '">--</span>' +
+        '<div class="cooldown-bar-wrap"><div class="cooldown-bar" id="cd-bar-' + i + '" style="width:100%;"></div></div>' +
+        '</div>';
     }
 
     listHtml += '<div class="key-row">' +
       '<div><span style="font-weight:700;">' + (k.provider||'?') + '</span><br><span class="key-id">' + (k.id||'?') + '</span></div>' +
-      '<div class="key-status" style="color:' + sc + ';">' + k.status + cooldownInfo + '</div>' +
+      '<div class="key-status" style="color:' + sc + ';">' + k.status.toUpperCase() + '</div>' +
       '<div><div class="key-health-bar"><div class="key-health-fill" style="width:' + hp + '%;background:' + hc + ';"></div></div><span style="font-size:8px;color:var(--fg-dim);">' + hp + '%</span></div>' +
       '<div>' +
         '<div class="key-gauge-label">Tokens: ' + (k.tokens_used||0).toLocaleString() + ' / ' + (k.tokens_max||0).toLocaleString() + ' (' + tp + '%)</div>' +
@@ -787,12 +817,72 @@ function renderKeys(data) {
         '<div class="key-gauge-label" style="margin-top:4px;">Requests: ' + (k.requests_used||0) + ' / ' + (k.requests_max||0) + ' (' + rp + '%)</div>' +
         '<div class="key-gauge"><div class="key-gauge-fill" style="width:' + rp + '%;background:' + rcolor + ';"></div></div>' +
       '</div>' +
-      '<span style="color:var(--fg-dim);font-size:9px;">' + (k.last_used || '—') + '</span>' +
+      '<div>' + cooldownHtml + '</div>' +
       '</div>';
   }
   listHtml += '</div>';
   document.getElementById('keys-list').innerHTML = listHtml;
 }
+
+// ─── Live Cooldown Countdown (updates every second) ──────────
+function tickCooldowns() {
+  if (!lastKeyData || !lastKeyData.keys) return;
+  var now = Date.now();
+  var keys = lastKeyData.keys;
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (k.status !== 'cooldown' || !k.cooldown_until) continue;
+    var until = new Date(k.cooldown_until).getTime();
+    var remaining = Math.max(0, Math.floor((until - now) / 1000));
+    var totalCooldown = k._total_cooldown || remaining || 60;
+
+    // Update count text
+    var countEl = document.getElementById('cd-count-' + i);
+    if (countEl) {
+      if (remaining <= 0) {
+        countEl.textContent = '0s';
+        countEl.className = 'cooldown-count soon';
+      } else if (remaining < 10) {
+        countEl.textContent = remaining + 's';
+        countEl.className = 'cooldown-count soon';
+      } else if (remaining < 60) {
+        countEl.textContent = remaining + 's';
+        countEl.className = 'cooldown-count';
+      } else {
+        var m = Math.floor(remaining / 60);
+        var s = remaining % 60;
+        countEl.textContent = m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+        countEl.className = 'cooldown-count';
+      }
+    }
+
+    // Update bar width
+    var barEl = document.getElementById('cd-bar-' + i);
+    if (barEl && k._total_cooldown) {
+      var pct = Math.max(0, Math.min(100, (remaining / k._total_cooldown) * 100));
+      barEl.style.width = pct + '%';
+    }
+  }
+}
+
+// Set initial total_cooldown from first render
+function captureCooldownTotals() {
+  if (!lastKeyData || !lastKeyData.keys) return;
+  for (var i = 0; i < lastKeyData.keys.length; i++) {
+    var k = lastKeyData.keys[i];
+    if (k.status === 'cooldown' && k.cooldown_until && !k._total_cooldown) {
+      var until = new Date(k.cooldown_until).getTime();
+      var remaining = Math.max(0, Math.floor((until - Date.now()) / 1000));
+      k._total_cooldown = remaining > 0 ? remaining : 60;
+    }
+  }
+}
+
+// Start cooldown ticker (every second)
+setInterval(function() {
+  captureCooldownTotals();
+  tickCooldowns();
+}, 1000);
 
 // Poll key status every 2 seconds
 setInterval(fetchKeyStatus, 2000);

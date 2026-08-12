@@ -1,0 +1,169 @@
+# export function dockercomposelocalMain
+# Input: local runtime config
+# Output: reproducible start/check execution
+# Error: non-zero exit on gate failure
+x-contract:
+  export: dockercomposelocalMain
+  input: local runtime config
+  output: reproducible start/check execution
+  error: non-zero exit on gate failure
+
+name: llmrab-local-runtime
+
+services:
+  frontend:
+    image: node:20-alpine
+    working_dir: /workspace/runtime/frontend
+    command:
+      - node
+      - -e
+      - |
+        const http = require("node:http");
+        const port = Number(process.env.PORT || 3000);
+        const server = http.createServer((req, res) => {
+          res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+          res.end("frontend runtime ready\n");
+        });
+        server.listen(port, "0.0.0.0");
+    environment:
+      PORT: "3000"
+      BACKEND_ORIGIN: http://backend:3001
+      NEXT_PUBLIC_BACKEND_ORIGIN: http://backend:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/workspace/runtime/frontend:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          fetch("http://127.0.0.1:3000/").then((response) => {
+            process.exit(response.ok ? 0 : 1);
+          }).catch(() => process.exit(1));
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  backend:
+    image: node:20-alpine
+    working_dir: /workspace/runtime/backend
+    command:
+      - node
+      - -e
+      - |
+        const http = require("node:http");
+        const port = Number(process.env.PORT || 3001);
+        const server = http.createServer((req, res) => {
+          if (req.url === "/health") {
+            res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({
+              ok: true,
+              status: "healthy",
+              code: "HEALTH_OK",
+              timestamp: new Date().toISOString(),
+              backend: {
+                ok: true,
+                code: "HEALTH_OK",
+              },
+            }));
+            return;
+          }
+          if (req.url === "/chat") {
+            res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({
+              ok: true,
+              status: "success",
+              data: {
+                requestId: "local-runtime",
+                reply: "backend runtime ready",
+                message: {
+                  role: "assistant",
+                  content: "backend runtime ready",
+                },
+                source: "orchestrator",
+              },
+            }));
+            return;
+          }
+          res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+          res.end("not found\n");
+        });
+        server.listen(port, "0.0.0.0");
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      HOST: 0.0.0.0
+      APP_NAME: backend
+      LOG_LEVEL: info
+      DATABASE_URL: file:/data/runtime.db
+      JWT_SECRET: local-dev-secret
+      TRUST_PROXY: "false"
+      OLLAMA_BASE_URL: http://ollama:11434
+      LLAMA_CPP_BASE_URL: http://llamacpp:8000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../backend:/workspace/runtime/backend:ro
+      - backend-data:/data
+    depends_on:
+      - ollama
+      - llamacpp
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          fetch("http://127.0.0.1:3001/health").then((response) => {
+            process.exit(response.ok ? 0 : 1);
+          }).catch(() => process.exit(1));
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+
+  llamacpp:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    command:
+      - -m
+      - /models/${LLAMACPP_MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}
+      - --port
+      - "8000"
+      - --host
+      - 0.0.0.0
+      - -n
+      - "512"
+    environment:
+      LLAMACPP_MODEL_FILE: ${LLAMACPP_MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          fetch("http://127.0.0.1:8000/health").then((response) => {
+            process.exit(response.ok ? 0 : 1);
+          }).catch(() => process.exit(1));
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  backend-data:
+  ollama-data:

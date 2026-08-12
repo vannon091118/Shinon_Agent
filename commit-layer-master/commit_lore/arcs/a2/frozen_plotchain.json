@@ -1,0 +1,13 @@
+[
+  {
+    "p_id": "p154",
+    "id": "plot-2026-07-02T16:07:22",
+    "timestamp": "2026-07-02 16:07:22",
+    "summary": "Fixed Windows terminal popup from Python scripts: argos-client.js warm-worker spawn + check_argos.js spawnSync calls now set creationFlags 0x08000000 (CREATE_NO_WINDOW) on win32; removed temp check_ids.py; extended check_syntax.js with GUI UX contract (animation matrix wiring, persist pattern, localStorage keys, terminal override) so all falsification runs in Node with zero Python popups.",
+    "narrator": "Glitch",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c149j98n10a1p144",
+    "ref_to": "plot-2026-07-02T15:29:57",
+    "prev_narrator": "Thinker"
+  }
+]

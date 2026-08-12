@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "command-result-v1",
+  "title": "Command Result v1",
+  "description": "Output-Contract für Agenten, die CLI-Commands ausführen und Ergebnisse als JSON liefern.",
+  "type": "object",
+  "required": ["schema", "command", "exit_code", "findings"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "enum": ["command-result/v1"],
+      "description": "Muss exakt 'command-result/v1' sein"
+    },
+    "command": {
+      "type": "string",
+      "description": "Der ausgeführte CLI-Befehl"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit-Code des Befehls (0 = Erfolg)"
+    },
+    "stdout": {
+      "type": "string",
+      "description": "Vollständige stdout-Ausgabe"
+    },
+    "stderr": {
+      "type": "string",
+      "description": "Vollständige stderr-Ausgabe (optional)"
+    },
+    "findings": {
+      "type": "array",
+      "description": "Gefundene Code-Stellen",
+      "items": {
+        "type": "object",
+        "required": ["file", "line", "content"],
+        "properties": {
+          "file": { "type": "string", "description": "Dateipfad relativ zum Projektroot" },
+          "line": { "type": "integer", "description": "Zeilennummer" },
+          "method": { "type": "string", "description": "Methodenname oder null" },
+          "content": { "type": "string", "description": "Der relevante Code-Ausschnitt" },
+          "context": { "type": "string", "description": "WARUM diese Zeile relevant ist" }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Kurzzusammenfassung (1-2 Sätze)"
+    }
+  }
+}

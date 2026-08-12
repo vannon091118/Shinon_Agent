@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "live-test-findings-v1",
+  "title": "Live Test Findings v1",
+  "description": "Output-Contract für Context-Researcher: Live-Test-Ergebnisse in Coder-Tasks umwandeln.",
+  "type": "object",
+  "required": [
+    "schema",
+    "agent",
+    "findings",
+    "derived_tasks",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "enum": ["live-test-findings/v1"],
+      "description": "Muss exakt 'live-test-findings/v1' sein"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Name des Context-Researcher-Agenten"
+    },
+    "test_environment": {
+      "type": "object",
+      "description": "Beschreibung der Test-Umgebung",
+      "properties": {
+        "command": { "type": "string", "description": "Der ausgeführte Befehl" },
+        "exit_code": { "type": "integer", "description": "Exit-Code" },
+        "duration_ms": { "type": "integer", "description": "Laufzeit in ms" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Gefundene Probleme/Erkenntnisse aus dem Live-Test",
+      "items": {
+        "type": "object",
+        "required": ["type", "description", "severity"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["compiler_error", "test_failure", "runtime_error", "logic_bug", "performance", "missing_feature", "refactoring", "other"],
+            "description": "Art des Fundes"
+          },
+          "description": { "type": "string", "description": "Detaillierte Beschreibung" },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"]
+          },
+          "evidence": { "type": "string", "description": "Fundstelle im Format file:line:content" },
+          "code_ref": {
+            "type": "object",
+            "properties": {
+              "file": { "type": "string" },
+              "line": { "type": "integer" },
+              "method": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "derived_tasks": {
+      "type": "array",
+      "description": "Abgeleitete Coder-Tasks aus den Findings",
+      "items": {
+        "type": "object",
+        "required": ["task_description", "scope_in", "scope_out", "priority"],
+        "properties": {
+          "task_description": { "type": "string", "description": "Exakt eine Aufgabe (R03)" },
+          "scope_in": { "type": "string", "description": "Was ist im Scope?" },
+          "scope_out": { "type": "array", "items": { "type": "string" }, "description": "Was ist NICHT im Scope?" },
+          "priority": {
+            "type": "string",
+            "enum": ["P0", "P1", "P2", "P3"],
+            "description": "P0=sofort, P1=bald, P2=später, P3=wünschenswert"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Task-IDs von denen dieser Task abhängt"
+          },
+          "estimated_effort": {
+            "type": "string",
+            "enum": ["minutes", "hours", "days"],
+            "description": "Geschätzter Aufwand"
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Entscheidungen während der Analyse",
+      "items": {
+        "type": "object",
+        "required": ["what", "why"],
+        "properties": {
+          "what": { "type": "string" },
+          "why": { "type": "string" },
+          "alternatives_rejected": { "type": "array", "items": { "type": "string" } },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Kurzzusammenfassung (1-3 Sätze)"
+    }
+  }
+}

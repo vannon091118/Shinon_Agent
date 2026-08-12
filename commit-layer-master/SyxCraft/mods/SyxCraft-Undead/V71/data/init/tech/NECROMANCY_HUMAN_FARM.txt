@@ -1,0 +1,79 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: Necromancy Human Farm Tech — Early-Mid game tech unlocking Human Farm mechanics.
+# ENGINE_DEFAULTS: Cost 200 Civic Knowledge, Requires BASIC_MINING Level 1.
+# LAST_ENTRY: Entry 1
+# FILE_CONTEXT: V71/data/init/tech/NECROMANCY_HUMAN_FARM.txt
+# VERSION: 0.1.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+TECHS: {
+    NECROMANCY_HUMAN_FARM: {
+        COSTS: { CIVIC_KNOWLEDGE: 200 },
+        REQUIRES_TECH_LEVEL: { BASIC_MINING: 1 },
+        UNLOCKS_FACTION: [
+            ROOM_HUMAN_PENS,
+            ROOM_NECROPOLIS,
+        ],
+        UNLOCKS_WORLD_BUILDING: [ WORLD_HUMAN_FARM ],
+        UNLOCKS_EVENT: [ FOUND_HUMAN_FARM, UNDEAD_CONVERSION ],
+        UNLOCKS_LAW: [ UNDEAD_CONVERSION, HUMAN_FARM_MANAGEMENT ],
+        BOOST: { UNDEAD_CAPTIVE_HUMAN_EFFICIENCY>ADD: 0.1 },
+        DESCRIPTION: "Ermöglicht die Errichtung von Menschenfarmen auf der Weltkarte und den Bau von Menschenställen & Nekropolen in der Hauptstadt. Erfordert Basismining-Stufe 1.",
+    },
+},
+
+UNDEAD_NECROPOLIS_MASTERY: {
+    COSTS: { CIVIC_KNOWLEDGE: 500, SCIENTIFIC_KNOWLEDGE: 300 },
+    REQUIRES_TECH_LEVEL: { NECROMANCY_HUMAN_FARM: 1 },
+    UNLOCKS_FACTION: [
+        ROOM_NECROPOLIS_UPGRADE_1,
+        ROOM_NECROPOLIS_UPGRADE_2,
+    ],
+    BOOST: { 
+        CONVERSION_EFFICIENCY>ADD: 0.25,
+        CAPTIVE_HUMAN_CAPACITY>MUL: 2.0,
+    },
+    DESCRIPTION: "Verbessert Nekropolen: Schnellere Konvertierung, mehr Kapazität. Erfordert Necromancy Human Farm Tech.",
+},
+
+DARK_RITUALS: {
+    COSTS: { RELIGIOUS_KNOWLEDGE: 200 },
+    REQUIRES_TECH_LEVEL: { NECROMANCY_HUMAN_FARM: 1 },
+    UNLOCKS_EVENT: [ MASS_CONVERSION, ESSENCE_HARVEST ],
+    BOOST: { 
+        ESSENCE_PRODUCTION>MUL: 1.5,
+        RITUAL_SPEED>ADD: 0.3,
+    },
+    DESCRIPTION: "Dunkle Rituale: Massenkonvertierung, Essenz-Ernte. Erfordert Necromancy Human Farm Tech.",
+},
+
+ORC_SLAVERY: {
+    COSTS: { MILITARY_KNOWLEDGE: 150 },
+    REQUIRES_TECH_LEVEL: { BASIC_MINING: 1 },
+    UNLOCKS_FACTION: [ ROOM_SLAVE_PEN ],
+    UNLOCKS_EVENT: [ ORC_SLAVE_RAID, ORC_SLAVE_TRADE_OFFER ],
+    BOOST: { ORC_SLAVE_RAID_EFFICIENCY>ADD: 0.2 },
+    DESCRIPTION: "Ermöglicht Versklavung von Menschen bei Raids und Handel mit Untoten. Erfordert Basismining-Stufe 1.",
+},
+
+MASS_CONVERSION: {
+    COSTS: { CIVIC_KNOWLEDGE: 1000, RELIGIOUS_KNOWLEDGE: 500 },
+    REQUIRES_TECH_LEVEL: { DARK_RITUALS: 1 },
+    UNLOCKS_EVENT: [ MASS_CONVERSION_EVENT ],
+    BOOST: { MASS_CONVERSION_EFFICIENCY>ADD: 0.5 },
+    DESCRIPTION: "Massenkonvertierung: Konvertiert große Mengen an Gefangenen auf einmal. Erfordert Dark Rituals.",
+},
+
+LICH_TRANSFORMATION: {
+    COSTS: { CIVIC_KNOWLEDGE: 2000, SCIENTIFIC_KNOWLEDGE: 1000, RELIGIOUS_KNOWLEDGE: 1000 },
+    REQUIRES_TECH_LEVEL: { UNDEAD_NECROPOLIS_MASTERY: 2, DARK_RITUALS: 1 },
+    UNLOCKS_RACE: [ LICH ],
+    UNLOCKS_FACTION: [ ROOM_PHYLACTERY_CHAMBER ],
+    BOOST: { 
+        UNDEAD_LEADER_IMMORTALITY>SET: 1,
+        ESSENCE_PRODUCTION>MUL: 3.0,
+    },
+    DESCRIPTION: "Lich-Transformation: Unsterblicher Anführer, Phylakterium-Kammer. Endgame Tech.",
+},

@@ -1,0 +1,29 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: CAPTIVE_HUMAN resource — living resource for Undead conversion and Human Farm production.
+# ENGINE_DEFAULTS: supply category, morale penalty, Undead only.
+# LAST_ENTRY: Entry 1
+# FILE_CONTEXT: V71/data/init/resource/supply/CAPTIVE_HUMAN.txt
+# VERSION: 0.1.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+RESOURCE: CAPTIVE_HUMAN,
+MORALE_ADD: -0.5,
+HEALTH_EFFECT: 0.1,
+CONSUMPTION_PER_USER_DAY: 0.0,
+CONSUMPTION_PER_ITEM_DAY: 0.0,
+AMOUNT_PER_PERSON: 1,
+RACES: [UNDEAD],
+ICON: 32->UNDEAD->CAPTIVE,
+VALUE: 100,
+WEIGHT: 80.0,
+SPRITE: CAPTIVE_HUMAN,
+STACK_SIZE: 10,
+CATEGORY_DEFAULT: 1,
+EDIBLE: false,
+PROPERTIES: {
+    TRADEABLE: true,
+    PERISHABLE: false,
+    CONVERTIBLE: true,
+},

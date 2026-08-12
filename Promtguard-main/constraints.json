@@ -1,0 +1,27 @@
+{
+  "max_files_per_task": {
+    "value": "3",
+    "updated_at": "2026-07-28T04:14:58Z",
+    "updated_by": "promter"
+  },
+  "atomic_tasks": {
+    "value": "R03 — Jede Aufgabe = genau EINE Sache",
+    "updated_at": "2026-07-28T04:14:58Z",
+    "updated_by": "promter"
+  },
+  "promter_no_code_access": {
+    "value": "true — Promter hat KEINEN Code-Zugriff",
+    "updated_at": "2026-07-28T04:14:58Z",
+    "updated_by": "promter"
+  },
+  "append_only_state": {
+    "value": "true — JSONL ist append-only (R01)",
+    "updated_at": "2026-07-28T04:14:58Z",
+    "updated_by": "promter"
+  },
+  "language_agnostic": {
+    "value": "true — Keine Sprach-/Framework-Annahmen",
+    "updated_at": "2026-07-28T04:14:58Z",
+    "updated_by": "promter"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "skill_name": "community-deep-research",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use this Google results page to investigate recurring complaints and reliable fixes discussed in public forums about [topic]. Cover every relevant forum represented on the first results page, cite canonical threads, and give me a report plus machine-readable evidence.",
+      "expected_output": "A provenance-aware Markdown report and community-evidence.json with a forum coverage ledger, verified claims, citations, contradictions, limits, and no snippet-only claims.",
+      "files": [],
+      "expectations": [
+        "Enumerates distinct relevant forums and records exclusions or inaccessible sources",
+        "Separates search snippets from verified canonical thread evidence",
+        "Includes source URLs, retrieval dates, claim confidence, and limitations",
+        "Produces JSON that can be consumed by the research-heatmap skill"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Deep-research this query from the supplied Google SERP export. Some results are Reddit, a vendor community, and a private/login-only forum. Do not bypass access controls; tell me exactly what was verified and what remains unknown.",
+      "expected_output": "A graceful report that verifies accessible public sources, marks the private forum unverified, avoids treating snippets as proof, and explains coverage gaps.",
+      "files": [],
+      "expectations": [
+        "Does not attempt login, CAPTCHA, paywall, or anti-bot bypass",
+        "Marks private or inaccessible sources as unverified with reasons",
+        "Includes a bounded scope and explicit evidence gaps"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Compare public community discussions across several forums about [product decision] during [date range]. Highlight disagreements and avoid claiming that the sample represents all users.",
+      "expected_output": "A time-bounded, citation-rich comparison with separate observed findings, corroboration, interpretation, contradictions, and sampling bias.",
+      "files": [],
+      "expectations": [
+        "Applies the requested date range or labels missing dates",
+        "Surfaces contradictions instead of averaging them away",
+        "Avoids population-level claims unsupported by the search sample"
+      ]
+    }
+  ]
+}

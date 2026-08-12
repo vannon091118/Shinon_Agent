@@ -1,0 +1,52 @@
+name: Feature request
+description: Propose a feature or improvement for ShinonLLM
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user problem are you trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What do you want to add or change?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Runtime (orchestrator/inference/memory)
+        - API / Backend
+        - Frontend
+        - Telemetry / Replay
+        - Docs / Process
+        - Operations
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: runtime_principles
+    attributes:
+      label: Runtime-first principles
+      description: ShinonLLM enforces "the runtime thinks, the LLM formulates text."
+      options:
+        - label: This proposal keeps decision-making and state writes runtime-owned (fail-closed).
+          required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+

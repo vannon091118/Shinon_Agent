@@ -1,0 +1,57 @@
+[
+  {
+    "p_id": "p155",
+    "id": "plot-2026-07-02T18:37:20",
+    "timestamp": "2026-07-02 18:37:20",
+    "summary": "AGENTS Modularisierung + CHANGELOG Freeze + Domain-INDEX: Monolith in 6 Dateien zerlegt (RULES/WORKFLOWS/ARCHITECTURE/ROUTING/INDEX/Pointer), Changelog von 1980 auf 47 Zeilen gekürzt, 3 Domain-INDEX erstellt (DB/Commit-Layer/Data), Archive Freeze AGENTS",
+    "narrator": "Null",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c150j37n11a1p152",
+    "ref_to": "plot-2026-07-02T16:07:22",
+    "prev_narrator": "Glitch"
+  },
+  {
+    "p_id": "p156",
+    "id": "plot-2026-07-02T18:39:02",
+    "timestamp": "2026-07-02 18:39:02",
+    "summary": "AGENTS Modularisierung + CHANGELOG Freeze + Domain-INDEX: Monolith in 6 Dateien zerlegt (RULES/WORKFLOWS/ARCHITECTURE/ROUTING/INDEX/Pointer), Changelog von 1980 auf 47 Zeilen gekürzt, 3 Domain-INDEX erstellt (DB/Commit-Layer/Data), Archive Freeze AGENTS",
+    "narrator": "Spark",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c151j3n9a4p148",
+    "ref_to": "plot-2026-07-02T18:37:20",
+    "prev_narrator": "Null"
+  },
+  {
+    "p_id": "p157",
+    "id": "plot-2026-07-02T18:51:07",
+    "timestamp": "2026-07-02 18:51:07",
+    "summary": "Doku-Widersprüche behoben: AGENTS.md Lesereihenfolge vs RULES.md Regel 4, INDEX.md Dateizählung (83→101), RULES.md U-1 Doku-Commit-Verbot entschärft",
+    "narrator": "Ghost",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c152j83n8a1p127",
+    "ref_to": "plot-2026-07-02T18:39:02",
+    "prev_narrator": "Spark"
+  },
+  {
+    "p_id": "p158",
+    "id": "plot-2026-07-02T19:01:40",
+    "timestamp": "2026-07-02 19:01:40",
+    "summary": "Archive-Cleanup: PLOT_LORE nach commit-layer verschoben, AGENTS+TREE+CHANGELOG auf Redirect-Stubs reduziert, KNOWN_BUGS auf 2 aktive Bugs entrümpelt, LIVE_INDEX+MASTER_DOC aktualisiert",
+    "narrator": "Spark",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c153j41n9a1p105",
+    "ref_to": "plot-2026-07-02T18:51:07",
+    "prev_narrator": "Ghost"
+  },
+  {
+    "p_id": "p159",
+    "id": "plot-2026-07-02T19:02:50",
+    "timestamp": "2026-07-02 19:02:50",
+    "summary": "Archive-Cleanup: PLOT_LORE nach commit-layer verschoben, AGENTS+TREE+CHANGELOG auf Redirect-Stubs reduziert, KNOWN_BUGS auf 2 aktive Bugs entrümpelt, LIVE_INDEX+MASTER_DOC aktualisiert",
+    "narrator": "Vannon",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c154j30n4a5p77",
+    "ref_to": "plot-2026-07-02T19:01:40",
+    "prev_narrator": "Spark"
+  }
+]

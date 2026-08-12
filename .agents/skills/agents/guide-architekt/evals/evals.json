@@ -1,0 +1,23 @@
+{
+  "skill_name": "guide-architekt",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Neues Projekt: eine kleine Konsolen-App für To-do-Listen. Führ mich von der Basis bis zum Release.",
+      "expected_output": "Geht die Phasen der Reihe nach durch (Basis → … → Release), stellt am Anfang Fragen statt Annahmen zu treffen, erklärt was/warum/wie in einfachen Worten auf Deutsch, legt DECISIONS.md an und dokumentiert Entscheidungen.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Erklär mir kurz, was eine Variable in Java ist. Ich bin kompletter Anfänger.",
+      "expected_output": "Kurze Erklärung auf Deutsch mit Alltags-Vergleich, einfache Worte, kein Fachjargon, kein langer Text.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Lass das Konzept weg, ich will sofort Code sehen.",
+      "expected_output": "Weist freundlich auf die übersprungene Phase hin (passiv-aggressiv-konstruktiv, mit Vorschlag), trifft keine stille Annahme, fragt nach und respektiert am Ende die Entscheidung des Architekten.",
+      "files": []
+    }
+  ]
+}

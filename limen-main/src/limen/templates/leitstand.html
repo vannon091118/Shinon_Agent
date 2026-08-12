@@ -1,0 +1,1067 @@
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#0b1118">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LIMEN Leitstand</title>
+<meta name="description" content="Der deutschsprachige Live-Leitstand für LIMEN.">
+<style>
+html { color-scheme: dark; }
+:root {
+  --nacht: #0b1118;
+  --glas: rgba(21, 34, 45, .82);
+  --linie: rgba(188, 211, 222, .15);
+  --schrift: #edf3f3;
+  --leise: #8ba0a7;
+  --tinte: #b7f0df;
+  --gold: #f2bd70;
+  --gruen: #71e0ad;
+  --rot: #f07c77;
+  --schatten: 0 24px 80px rgba(0, 0, 0, .3);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background: var(--nacht);
+  color: var(--schrift);
+}
+* { box-sizing: border-box; }
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(77, 157, 155, .16), transparent 34rem),
+    radial-gradient(circle at 90% 18%, rgba(242, 189, 112, .10), transparent 30rem),
+    var(--nacht);
+  line-height: 1.45;
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  content: "";
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+.shell { max-width: 1120px; margin: 0 auto; padding: 30px 24px 56px; }
+.skip-link { position: absolute; top: 0; left: 16px; padding: 8px 12px; border-radius: 8px; background: var(--gold); color: var(--nacht); transform: translateY(-120%); z-index: 10; }
+.skip-link:focus-visible { transform: translateY(0); }
+.masthead { margin-bottom: 24px; }
+.mark { color: var(--gold); font: 700 .72rem/1.2 monospace; letter-spacing: .2em; text-transform: uppercase; }
+h1, h2, p { margin: 0; }
+h1 { max-width: 720px; margin-top: 12px; font: 700 clamp(2.4rem, 6vw, 5.8rem)/.94 Georgia, serif; letter-spacing: -.065em; }
+.lead { max-width: 480px; margin-top: 16px; color: var(--leise); font-size: 1rem; }
+.hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr);
+  min-height: 270px;
+  overflow: hidden;
+  border: 1px solid var(--linie);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(26, 50, 58, .95), rgba(16, 26, 36, .94));
+  box-shadow: var(--schatten);
+}
+.hero-copy { position: relative; z-index: 1; padding: 34px; align-self: end; }
+.hero-kicker { color: var(--tinte); font: .72rem monospace; letter-spacing: .16em; text-transform: uppercase; }
+.hero h2 { max-width: 570px; margin-top: 12px; font: 700 clamp(1.8rem, 4vw, 3.7rem)/1 Georgia, serif; letter-spacing: -.04em; }
+.hero-note { margin-top: 14px; color: var(--leise); }
+.signal {
+  position: relative;
+  min-height: 270px;
+  overflow: hidden;
+  border-left: 1px solid var(--linie);
+  background: linear-gradient(90deg, rgba(11,17,24,.18), rgba(11,17,24,.85));
+}
+.signal::before, .signal::after { position: absolute; content: ""; }
+.signal::before {
+  top: 50%; left: -10%; width: 120%; height: 1px;
+  background: rgba(183,240,223,.2);
+  box-shadow: 0 -56px 0 rgba(183,240,223,.07), 0 56px 0 rgba(183,240,223,.07);
+}
+.signal::after {
+  top: 50%; left: 10%; width: 120px; height: 120px;
+  border: 1px solid rgba(113,224,173,.7); border-radius: 50%;
+  transform: translateY(-50%) scale(.45); opacity: 0;
+}
+.signal.is-moving::after { animation: ring 1.6s ease-out; }
+.wave {
+  position: absolute; top: 50%; left: 8%; width: 84%; height: 80px;
+  transform: translateY(-50%);
+}
+.wave span { position: absolute; bottom: 50%; width: 3px; border-radius: 4px; background: var(--tinte); opacity: .35; transform-origin: bottom; }
+.wave span:nth-child(1){left:0;height:18px}.wave span:nth-child(2){left:8%;height:32px}.wave span:nth-child(3){left:16%;height:12px}.wave span:nth-child(4){left:24%;height:52px}.wave span:nth-child(5){left:32%;height:25px}.wave span:nth-child(6){left:40%;height:68px}.wave span:nth-child(7){left:48%;height:20px}.wave span:nth-child(8){left:56%;height:42px}.wave span:nth-child(9){left:64%;height:14px}.wave span:nth-child(10){left:72%;height:58px}.wave span:nth-child(11){left:80%;height:25px}.wave span:nth-child(12){left:88%;height:48px}.wave span:nth-child(13){left:96%;height:16px}
+.signal.is-moving .wave span { animation: flicker .75s ease-in-out; }
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+.card { min-height: 140px; padding: 20px; border: 1px solid var(--linie); border-radius: 16px; background: var(--glas); box-shadow: 0 12px 36px rgba(0,0,0,.12); }
+.label { color: var(--leise); font: .68rem monospace; letter-spacing: .14em; text-transform: uppercase; }
+.value { margin-top: 18px; font: 700 clamp(1.35rem, 2.5vw, 2rem)/1 Georgia, serif; font-variant-numeric: tabular-nums; }
+.last-request { display: inline-flex; align-items: center; gap: 9px; color: var(--gruen); }
+.last-request-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gruen); box-shadow: 0 0 0 5px rgba(113,224,173,.1); }
+.subvalue { margin-top: 7px; color: var(--leise); font-size: .82rem; }
+.state { display: inline-flex; align-items: center; gap: 9px; }
+.state-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gruen); box-shadow: 0 0 0 5px rgba(113,224,173,.1); }
+[data-zustand="degraded"] .state-dot { background: var(--gold); box-shadow: 0 0 0 5px rgba(242,189,112,.1); }
+[data-zustand="down"] .state-dot { background: var(--rot); box-shadow: 0 0 0 5px rgba(240,124,119,.1); }
+.activity-flash { display: inline-block; width: 9px; height: 9px; margin-left: 7px; border-radius: 50%; background: var(--tinte); opacity: 0; vertical-align: middle; }
+.activity-flash.is-moving { animation: flash .9s ease-out; }
+.queue-panel { margin-top: 12px; padding: 22px; border: 1px solid var(--linie); border-radius: 16px; background: rgba(17,28,38,.72); }
+.queue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.queue-head h2 { font: 700 1.35rem Georgia, serif; }
+.queue-count { color: var(--tinte); font: 700 1.1rem monospace; }
+.queue-lane { display: flex; align-items: center; gap: 7px; min-height: 42px; margin-top: 16px; padding: 9px 12px; overflow: hidden; border: 1px dashed rgba(183,240,223,.24); border-radius: 10px; background: rgba(0,0,0,.16); }
+.queue-lane.is-moving { animation: lane .7s ease-out; }
+.queue-token { flex: 0 0 11px; height: 22px; border-radius: 3px 8px 8px 3px; background: var(--gold); box-shadow: 0 0 14px rgba(242,189,112,.25); }
+.queue-empty { color: var(--leise); font-size: .86rem; }
+.queue-more { color: var(--leise); font: .75rem monospace; white-space: nowrap; }
+.sim-panel { margin-top: 12px; padding: 22px; border: 1px solid var(--linie); border-radius: 16px; background: rgba(17,28,38,.72); }
+.sim-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.sim-head h2 { font: 700 1.35rem Georgia, serif; }
+
+
+.sim-stats { display: flex; gap: 20px; margin-bottom: 10px; }
+.sim-stat { color: var(--leise); font: .68rem monospace; letter-spacing: .08em; text-transform: uppercase; }
+.sim-stat span { color: var(--tinte); font-weight: 700; }
+.factory-pipeline { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; min-height: 220px; }
+.pipeline-col { flex: 1 1 0; min-width: 110px; max-width: 170px; display: flex; flex-direction: column; border: 1px solid var(--linie); border-radius: 10px; background: rgba(0,0,0,.3); overflow: hidden; }
+.pipeline-col-header { padding: 6px 8px; font: 700 9px monospace; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid var(--linie); background: rgba(0,0,0,.2); text-align: center; }
+.pipeline-col-body { flex: 1; padding: 4px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+.pipeline-col.is-blocked { border-color: var(--rot); box-shadow: 0 0 12px rgba(240,124,119,.25); }
+.request-packet { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--linie); border-left: 4px solid var(--linie); background: rgba(21,34,45,.5); font: 9px monospace; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.request-packet:hover { transform: scale(1.03); box-shadow: 0 0 8px rgba(183,240,223,.08); }
+.request-packet:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pkt-ingress { border-left-color: #a371f7; }
+.pkt-queue { border-left-color: var(--tinte); }
+.pkt-worker { border-left-color: #4fc3f7; background: rgba(79,195,247,.08); }
+.pkt-provider { border-left-color: var(--gold); animation: pulse-border 1.2s infinite; }
+.pkt-success { border-left-color: var(--gruen); border-color: var(--gruen); background: rgba(113,224,173,.1); }
+.pkt-fail { border-left-color: var(--rot); border-color: var(--rot); background: rgba(240,124,119,.1); }
+.pkt-retry { border-left-color: #f0883e; opacity: .85; }
+.pkt-dead { border-left-color: #555; opacity: .5; text-decoration: line-through; }
+@keyframes pulse-border { 0%,100% { box-shadow: 0 0 0 0 rgba(242,189,112,.3); } 50% { box-shadow: 0 0 0 3px rgba(242,189,112,0); } }
+.worker-node { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; border: 1px solid var(--linie); border-radius: 8px; background: rgba(0,0,0,.2); min-height: 64px; gap: 4px; position: relative; overflow: hidden; }
+.worker-node.is-active { border-color: #4fc3f7; box-shadow: 0 0 16px rgba(79,195,247,.15); }
+.worker-node.is-error { border-color: var(--rot); animation: shake .5s ease; }
+.worker-label { font: 700 10px monospace; letter-spacing: .06em; color: var(--leise); text-transform: uppercase; }
+.worker-node.is-active .worker-label { color: #4fc3f7; }
+.worker-gear { width: 20px; height: 20px; color: var(--leise); }
+.worker-node.is-active .worker-gear { color: #4fc3f7; animation: gear-spin 2s linear infinite; }
+@keyframes gear-spin { 100% { transform: rotate(360deg); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+.penalty-box { border: 1px dashed var(--rot); border-radius: 8px; padding: 4px; background: rgba(240,124,119,.06); min-height: 36px; }
+.penalty-box .col-header { font: 700 8px monospace; color: var(--rot); text-align: center; padding: 2px; letter-spacing: .06em; text-transform: uppercase; }
+.trash-bin { border: 1px dashed #555; border-radius: 8px; padding: 4px; background: rgba(0,0,0,.2); min-height: 36px; }
+.trash-bin .col-header { font: 700 8px monospace; color: #555; text-align: center; padding: 2px; letter-spacing: .06em; text-transform: uppercase; }
+.cd-timer { font: 700 10px monospace; color: #f0883e; }
+.inspector-panel { margin-top: 12px; padding: 16px; border: 1px solid var(--linie); border-radius: 10px; background: rgba(0,0,0,.25); display: none; }
+.inspector-panel.is-open { display: block; }
+.inspector-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font: 700 11px monospace; color: var(--tinte); letter-spacing: .06em; text-transform: uppercase; }
+.inspector-trace { display: flex; flex-direction: column; gap: 3px; max-height: 160px; overflow-y: auto; font: 9px monospace; color: var(--leise); }
+.inspector-trace .trace-row { display: flex; gap: 8px; padding: 2px 0; border-left: 2px solid var(--linie); padding-left: 8px; }
+.inspector-trace .trace-row:first-child { border-left-color: var(--tinte); color: var(--schrift); }
+.latency-panel { margin-top: 12px; padding: 16px; border: 1px solid var(--linie); border-radius: 10px; background: rgba(0,0,0,.2); }
+.latency-panel h3 { margin: 0 0 8px; color: var(--schrift); font: 700 .9rem monospace; letter-spacing: .08em; text-transform: uppercase; }
+.latency-canvas-wrap { overflow: hidden; border: 1px solid var(--linie); border-radius: 8px; }
+.latency-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+.sim-live-badge { color: var(--tinte); font: .68rem monospace; letter-spacing: .08em; }
+.sim-live-badge.offline { color: var(--rot); }
+.sim-toggle-btn { padding: 4px 14px; border: 1px solid var(--linie); border-radius: 6px; background: rgba(0,0,0,.3); color: var(--leise); font: 700 .68rem monospace; cursor: pointer; transition: all .2s; letter-spacing: .06em; }
+.sim-toggle-btn:hover { border-color: var(--tinte); color: var(--tinte); }
+.sim-toggle-btn.is-on { border-color: var(--gold); color: var(--gold); background: rgba(242,189,112,.08); }
+.sim-toggle-btn.is-on:hover { border-color: var(--gold); color: var(--gold); }
+.key-panel { margin-top: 12px; padding: 18px 22px; border: 1px solid var(--linie); border-radius: 16px; background: rgba(17,28,38,.72); }
+.key-panel h2 { font: 700 1.2rem Georgia, serif; margin-bottom: 10px; }
+.key-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.key-row select, .key-row input { padding: 8px 12px; border: 1px solid var(--linie); border-radius: 8px; background: rgba(0,0,0,.3); color: var(--schrift); font: .9rem monospace; }
+.key-row select { min-width: 140px; }
+.key-row input[type=password] { flex: 1; min-width: 200px; max-width: 480px; }
+.key-row button { padding: 8px 18px; border: none; border-radius: 8px; background: var(--tinte); color: var(--nacht); font: 700 .85rem monospace; cursor: pointer; transition: background .2s; }
+.key-row button:hover { background: var(--gruen); }
+.key-saved { margin-top: 8px; color: var(--gruen); font: .72rem monospace; display: none; }
+.key-test-btn { background: rgba(242,189,112,.18); color: var(--gold); }
+.key-test-btn:hover { background: var(--gold); color: var(--nacht); }
+.key-test-status { margin-top: 6px; font: .72rem monospace; display: none; }
+.key-test-status.ok { color: var(--gruen); }
+.key-test-status.is-visible { display: block; }
+.key-test-status.err { color: var(--rot); }
+.routing-panel { margin-top: 12px; padding: 18px 22px; border: 1px solid var(--linie); border-radius: 16px; background: rgba(17,28,38,.72); }
+.routing-panel h2 { font: 700 1.2rem Georgia, serif; margin-bottom: 10px; }
+.routing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.routing-model { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--linie); border-radius: 8px; background: rgba(0,0,0,.15); font: .78rem monospace; }
+.routing-model-id { color: var(--tinte); font-weight: 700; }
+.routing-model-provider { color: var(--leise); font-size: .68rem; margin-left: 4px; }
+.routing-model-tags { display: flex; gap: 4px; margin-left: auto; }
+.routing-model-tag { padding: 2px 6px; border-radius: 4px; background: rgba(113,224,173,.12); color: var(--gruen); font-size: .62rem; }
+.routing-model-tag.free { background: rgba(242,189,112,.15); color: var(--gold); }
+.routing-auto-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; background: rgba(183,240,223,.15); color: var(--tinte); font: .68rem monospace; letter-spacing: .06em; margin-bottom: 12px; }
+.routing-auto-badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--tinte); box-shadow: 0 0 0 4px rgba(183,240,223,.12); }
+.claude-panel { margin-top: 12px; padding: 18px 22px; border: 1px solid var(--linie); border-radius: 16px; background: rgba(17,28,38,.72); }
+.claude-panel h2 { font: 700 1.2rem Georgia, serif; margin-bottom: 10px; }
+.claude-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.claude-row select, .claude-row button { padding: 8px 14px; border-radius: 8px; font: .85rem monospace; }
+.claude-row select { border: 1px solid var(--linie); background: rgba(0,0,0,.3); color: var(--schrift); min-width: 220px; }
+.claude-row button { border: none; background: var(--tinte); color: var(--nacht); font-weight: 700; cursor: pointer; transition: background .2s; }
+.claude-row button:hover { background: var(--gruen); }
+.claude-status { margin-top: 8px; font: .72rem monospace; display: none; }
+.claude-status.ok { color: var(--gruen); display: block; }
+.claude-status.err { color: var(--rot); display: block; }
+
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+@keyframes ring { 0% { transform: translateY(-50%) scale(.45); opacity: .8; } 100% { transform: translateY(-50%) scale(2.5); opacity: 0; } }
+@keyframes flicker { 0%,100% { opacity: .35; transform: scaleY(1); } 45% { opacity: 1; transform: scaleY(1.35); } }
+@keyframes flash { 0% { opacity: 1; transform: scale(.7); } 100% { opacity: 0; transform: scale(3); } }
+@keyframes lane { 0% { opacity: .55; } 100% { opacity: 1; } }
+@keyframes packet-enter { 0% { transform: scale(.6); opacity: .2; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes bounce-in { 0% { transform: scale(.4); opacity: 0; } 50% { transform: scale(1.15); } 70% { transform: scale(.92); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes packet-exit { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(.3); opacity: 0; } }
+.request-packet.is-new { animation: packet-enter .35s ease-out; }
+.request-packet.is-bounce { animation: bounce-in .5s ease-out; }
+.request-packet.is-exit { animation: packet-exit .3s ease-in forwards; pointer-events: none; }
+.pipeline-col-body.is-flash { animation: flash .4s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 760px) {
+  .shell { padding: 22px 16px 42px; }
+  .hero { display: block; }
+  .hero-copy { padding: 26px; }
+  .signal { min-height: 150px; border-top: 1px solid var(--linie); border-left: 0; }
+  .cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 430px) {
+  h1 { font-size: 2.7rem; }
+  .cards { grid-template-columns: 1fr; }
+  .card { min-height: 112px; }
+  .value { margin-top: 12px; }
+}
+
+</style>
+</head>
+<body data-zustand="down">
+<div class="shell">
+  <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+  <header class="masthead">
+    <div>
+      <div class="mark">LIMEN · Nachtwache</div>
+      <h1>Alles unter Kontrolle.</h1>
+      <p class="lead">Ein ruhiger Blick auf deine laufenden Gespräche — jede Bewegung hinterlässt eine Spur.</p>
+    </div>
+  </header>
+
+  <main id="inhalt">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="hero-kicker">Gerade eben</div>
+        <h2 id="hero-title">Jede Anfrage hinterlässt eine Spur.</h2>
+        <p class="hero-note" id="bewegung" aria-live="polite">Eine Anfrage ist gerade durch den Leitstand gegangen.</p>
+      </div>
+      <div class="signal" id="signal" aria-hidden="true">
+        <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </section>
+
+    <section class="cards" aria-label="Aktueller Überblick">
+      <article class="card">
+        <div class="label">Betrieb</div>
+        <div class="value state"><span class="state-dot" aria-hidden="true"></span><span id="zustand">Wird geladen</span></div>
+        <div class="subvalue" id="zustand-hinweis">Einen Moment.</div>
+      </article>
+      <article class="card">
+        <div class="label">Letzte Anfrage</div>
+        <div class="value last-request"><span class="last-request-dot" aria-hidden="true"></span><span id="letzte-anfrage">08:05:23</span><span class="activity-flash" id="aktivitaet" aria-hidden="true"></span></div>
+        <div class="subvalue">Beobachtung läuft</div>
+      </article>
+    </section>
+
+    <section class="key-panel" aria-labelledby="key-titel">
+      <h2 id="key-titel">Schlüssel</h2>
+      <div class="key-row">
+        <select id="key-provider" aria-label="Anbieter">
+          <option value="openrouter">OpenRouter</option>
+          <option value="nvidia">NVIDIA</option>
+          <option value="groq">Groq</option>
+        </select>
+        <input type="text" id="key-name" placeholder="Name (z.B. Horrorprinzessin)" autocomplete="off" aria-label="Schlüssel-Name" style="max-width:160px">
+        <input type="password" id="key-value" placeholder="API-Schlüssel eingeben…" autocomplete="off" aria-label="API-Schlüssel">
+        <button id="key-save">Speichern</button>
+        <button id="key-test" class="key-test-btn">Test</button>
+      </div>
+      <div class="key-saved" id="key-saved">✓ Gespeichert — Neustart erforderlich</div>
+      <div class="key-test-status" id="key-test-status"></div>
+    </section>
+
+    <section class="routing-panel" aria-labelledby="routing-titel">
+      <h2 id="routing-titel">Routing — Modelle</h2>
+      <div class="routing-auto-badge" id="routing-auto-badge">Auto-Routing aktiv — LIMEN wählt Modell nach Größe & Komplexität</div>
+      <div class="routing-grid" id="routing-grid">
+        <div class="routing-model"><span class="routing-model-id">Wird geladen…</span></div>
+      </div>
+    </section>
+
+    <section class="claude-panel" aria-labelledby="claude-titel">
+      <h2 id="claude-titel">Claude Code</h2>
+      <div class="claude-row">
+        <select id="claude-model" aria-label="Claude Modell">
+          <option value="">Modelle werden geladen…</option>
+        </select>
+        <button id="claude-config-btn">Config generieren</button>
+      </div>
+      <div class="claude-status" id="claude-status"></div>
+    </section>
+
+    <section class="queue-panel" aria-labelledby="warteschlange-titel">
+      <div class="queue-head">
+        <h2 id="warteschlange-titel">Warteschlange</h2>
+        <div class="queue-count" id="warteschlangen-zahl">—</div>
+      </div>
+      <div class="queue-lane" id="warteschlangen-spur" aria-label="Anfragen in der Warteschlange"></div>
+    </section>
+
+    <section class="sim-panel" aria-labelledby="sim-titel">
+      <div class="sim-head">
+        <h2 id="sim-titel">Factory Pipeline</h2>
+        <button class="sim-toggle-btn" id="sim-toggle" title="Simulation ein/aus">▶ Sim</button>
+        <span class="sim-live-badge" id="sim-live-badge">· verbunden</span>
+      </div>
+      <div class="sim-stats" id="sim-stats">
+        <div class="sim-stat">Durchsatz <span id="sim-durchsatz">0</span></div>
+        <div class="sim-stat">Aktiv <span id="sim-aktiv">0</span></div>
+        <div class="sim-stat">Fehler <span id="sim-timeouts">0</span></div>
+      </div>
+      <div class="factory-pipeline" id="factory-pipeline">
+        <!-- INCOMING -->
+        <div class="pipeline-col" id="col-incoming">
+          <div class="pipeline-col-header" style="color:#a371f7">Eingang</div>
+          <div class="pipeline-col-body" id="zone-incoming"></div>
+        </div>
+        <!-- QUEUE -->
+        <div class="pipeline-col" id="col-queue">
+          <div class="pipeline-col-header" style="color:var(--tinte)">Warteschlange <span id="q-cap" style="font-size:8px;color:var(--leise)">0/10</span></div>
+          <div class="pipeline-col-body" id="zone-queue"></div>
+        </div>
+        <!-- WORKER -->
+        <div class="pipeline-col" style="max-width:200px">
+          <div class="pipeline-col-header" style="color:#4fc3f7">Worker-Pool</div>
+          <div class="pipeline-col-body" style="gap:6px">
+            <div class="worker-node" id="worker-1">
+              <div class="worker-label">Alpha</div>
+              <svg class="worker-gear" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287-.947c.886.539 2.041.06 2.286-.947 1.56-.38 1.56-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+              <div class="worker-request" id="worker-1-req" style="font:8px monospace;color:var(--leise)">—</div>
+            </div>
+            <div class="worker-node" id="worker-2">
+              <div class="worker-label">Beta</div>
+              <svg class="worker-gear" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287-.947c.886.539 2.041.06 2.286-.947 1.56-.38 1.56-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+              <div class="worker-request" id="worker-2-req" style="font:8px monospace;color:var(--leise)">—</div>
+            </div>
+          </div>
+        </div>
+        <!-- PROVIDER -->
+        <div class="pipeline-col" id="col-provider">
+          <div class="pipeline-col-header" style="color:var(--gold)">Provider</div>
+          <div class="pipeline-col-body" id="zone-provider"></div>
+        </div>
+        <!-- PENALTY BOX (429) -->
+        <div class="pipeline-col" style="min-width:100px;max-width:130px">
+          <div class="pipeline-col-header" style="color:var(--rot)">429 Penalty</div>
+          <div class="pipeline-col-body" id="zone-penalty"></div>
+        </div>
+        <!-- SUCCESS -->
+        <div class="pipeline-col" style="min-width:90px;max-width:120px">
+          <div class="pipeline-col-header" style="color:var(--gruen)">200 OK</div>
+          <div class="pipeline-col-body" id="zone-success"></div>
+        </div>
+        <!-- TRASH (500) -->
+        <div class="pipeline-col" style="min-width:90px;max-width:120px">
+          <div class="pipeline-col-header" style="color:var(--rot)">500 Trash</div>
+          <div class="pipeline-col-body" id="zone-trash"></div>
+        </div>
+      </div>
+      <!-- INSPECTOR -->
+      <div class="inspector-panel" id="inspector-panel">
+        <div class="inspector-header">
+          <span>🔍 Request-Inspector</span>
+          <span id="inspector-id" style="font-weight:400;font-size:9px">—</span>
+          <button id="inspector-close" style="margin-left:auto;background:none;border:1px solid var(--linie);color:var(--leise);border-radius:4px;padding:2px 8px;cursor:pointer;font:9px monospace">✕</button>
+        </div>
+        <div class="inspector-trace" id="inspector-trace">
+          <div class="trace-row">Klicke einen Request-Paket für Details.</div>
+        </div>
+      </div>
+      <div class="latency-panel">
+        <h3>Latenz-Streudiagramm · jeder abgeschlossene API-Call</h3>
+        <div class="latency-canvas-wrap">
+          <canvas id="latency-canvas" width="720" height="180" aria-label="Streudiagramm der Latenz jedes verarbeiteten API-Calls"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+</div>
+<script defer>
+(() => {
+  const stateText = { ok: 'Ruhig', degraded: 'Aufmerksamkeit', down: 'Nicht erreichbar' };
+  const stateHint = { ok: 'Alles läuft wie erwartet.', degraded: 'Nicht alles ist bereit.', down: 'Die Verbindung ist unterbrochen.' };
+  let lastRequest = null;
+  let lastQueue = null;
+  let isRefreshing = false;
+
+  const byId = (id) => document.getElementById(id);
+  const timeFormat = new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  const animate = (element, className) => {
+    element.classList.remove(className);
+    void element.offsetWidth;
+    element.classList.add(className);
+  };
+  const renderQueue = (count) => {
+    const lane = byId('warteschlangen-spur');
+    lane.replaceChildren();
+    if (count === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'queue-empty';
+      empty.textContent = 'Die Warteschlange ist leer.';
+      lane.append(empty);
+      return;
+    }
+    const shown = Math.min(count, 18);
+    for (let index = 0; index < shown; index += 1) {
+      const token = document.createElement('span');
+      token.className = 'queue-token';
+      token.setAttribute('aria-hidden', 'true');
+      lane.append(token);
+    }
+    if (count > shown) {
+      const more = document.createElement('span');
+      more.className = 'queue-more';
+      more.textContent = `+ ${count - shown} weitere`;
+      lane.append(more);
+    }
+  };
+  const showOffline = () => {
+    document.body.dataset.zustand = 'down';
+    byId('zustand').textContent = stateText.down;
+    byId('zustand-hinweis').textContent = stateHint.down;
+    byId('letzte-anfrage').textContent = 'Nicht verfügbar';
+    byId('warteschlangen-zahl').textContent = 'Nicht verfügbar';
+    byId('warteschlangen-spur').replaceChildren();
+    const empty = document.createElement('span');
+    empty.className = 'queue-empty';
+    empty.textContent = 'Die Verbindung ist unterbrochen.';
+    byId('warteschlangen-spur').append(empty);
+    byId('bewegung').textContent = 'Der Leitstand wartet auf die Verbindung.';
+  };
+  const refresh = async () => {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    try {
+      const response = await fetch('/health', { cache: 'no-store' });
+      if (!response.ok) throw new Error('health');
+      const data = await response.json();
+      const rawState = typeof data.status === 'string' ? data.status : 'down';
+      const state = rawState in stateText ? rawState : 'down';
+      document.body.dataset.zustand = state;
+      byId('zustand').textContent = stateText[state];
+      byId('zustand-hinweis').textContent = stateHint[state];
+
+      if (data.last_request_at !== lastRequest) {
+        if (data.last_request_at) {
+          byId('letzte-anfrage').textContent = (
+            isNaN(new Date(data.last_request_at).getTime())
+            ? 'Ungültig'
+            : timeFormat.format(new Date(data.last_request_at))
+          );
+          byId('bewegung').textContent = 'Eine Anfrage ist gerade durch den Leitstand gegangen.';
+          animate(byId('signal'), 'is-moving');
+          animate(byId('aktivitaet'), 'is-moving');
+        }
+        lastRequest = data.last_request_at;
+      }
+      const rawQueue = Number(data.queue_depth);
+      const queue = Number.isFinite(rawQueue) ? Math.max(0, Math.floor(rawQueue)) : 0;
+      byId('warteschlangen-zahl').textContent = queue === 1 ? '1 Anfrage' : `${queue} Anfragen`;
+      if (queue !== lastQueue) {
+        renderQueue(queue);
+        if (lastQueue !== null) animate(byId('warteschlangen-spur'), 'is-moving');
+        lastQueue = queue;
+      }
+    } catch (_) {
+      showOffline();
+    } finally {
+      isRefreshing = false;
+    }
+  };
+  refresh();
+  window.setInterval(refresh, 2000);
+
+  // ── Key management ──
+  (() => {
+    const sel = byId('key-provider');
+    const nameInp = byId('key-name');
+    const valInp = byId('key-value');
+    const btn = byId('key-save');
+    const msg = byId('key-saved');
+    const testBtn = byId('key-test');
+    const testStatus = byId('key-test-status');
+    // Resolve a test model for a provider by querying /v1/models dynamically.
+    const resolveTestModel = async (provider) => {
+      try {
+        const resp = await fetch('/v1/models', { cache: 'no-store' });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        const matches = (data.data || []).filter(m =>
+          m.owned_by === provider && m.id !== 'auto' && !m.id.startsWith('claude-')
+        );
+        if (matches.length > 0) {
+          // Prefer free models
+          const free = matches.find(m => m.free);
+          return (free || matches[0]).id;
+        }
+        return null;
+      } catch (_) { return null; }
+    };
+    // Load stored key names and populate the name field on provider change.
+    const loadKeyName = () => {
+      const provider = sel.value;
+      fetch('/v1/_internal/keys/' + provider + '/name', {cache:'no-store'})
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(d => { if (d.name) nameInp.value = d.name; })
+        .catch(() => {});
+    };
+    loadKeyName();
+    sel.addEventListener('change', loadKeyName);
+    btn.addEventListener('click', async () => {
+      const provider = sel.value;
+      const key = valInp.value.trim();
+      const name = nameInp.value.trim() || key.slice(0, 12) + '…';
+      if (!key) return;
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        const resp = await fetch('/v1/_internal/keys/' + provider, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({key, name})
+        });
+        if (resp.ok) {
+          valInp.value = '';
+          msg.style.display = 'block';
+          setTimeout(() => { msg.style.display = 'none'; }, 4000);
+        }
+      } catch (_) {} finally {
+        btn.disabled = false;
+        btn.textContent = 'Speichern';
+      }
+    });
+    testBtn.addEventListener('click', async () => {
+      const provider = sel.value;
+      const model = await resolveTestModel(provider);
+      if (!model) { testStatus.textContent = '✗ Kein Modell für ' + provider; testStatus.className = 'key-test-status err is-visible'; testBtn.disabled = false; testBtn.textContent = 'Test'; return; }
+      testBtn.disabled = true;
+      testBtn.textContent = '…';
+      testStatus.style.display = 'none';
+      try {
+        const resp = await fetch('/v1/chat/completions', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({model, messages: [{role: 'user', content: 'OK'}], max_tokens: 1})
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          testStatus.textContent = '✓ Verbunden — ' + (data.model || model);
+          testStatus.className = 'key-test-status ok is-visible';
+        } else {
+          const err = await resp.json().catch(() => ({}));
+          testStatus.textContent = '✗ ' + ((err?.error?.type || resp.status || 'Fehler'));
+          testStatus.className = 'key-test-status err';
+        }
+      } catch (_) {
+        testStatus.textContent = '✗ Keine Verbindung';
+        testStatus.className = 'key-test-status err';
+      }
+      testStatus.classList.add('is-visible');
+      setTimeout(() => { testStatus.classList.remove('is-visible'); }, 6000);
+      testBtn.disabled = false;
+      testBtn.textContent = 'Test';
+    });
+    // Expose for canvas click-to-edit
+    window._focusKeyPanel = (provider) => {
+      sel.value = provider;
+      loadKeyName();
+      document.querySelector('.key-panel').scrollIntoView({behavior:'smooth'});
+    };
+  })();
+
+  // ── Routing model overview ──
+  (() => {
+    const grid = byId('routing-grid');
+    fetch('/v1/models', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        const models = (data.data || []).filter(m => m.id !== 'auto').slice(0, 12);
+        grid.innerHTML = '';
+        for (const m of models) {
+          const el = document.createElement('div');
+          el.className = 'routing-model';
+          const tags = (m.tags || []).map(t => `<span class="routing-model-tag${t === 'free' || m.free ? ' free' : ''}">${t}</span>`).join('');
+          const statusDot = m.status === 'active' ? '🟢' : m.status === 'cooldown' ? '🟡' : '🔴';
+          el.innerHTML = `<span>${statusDot} <span class="routing-model-id">${m.id}</span><span class="routing-model-provider">@${m.owned_by}</span></span><span class="routing-model-tags">${tags}</span>`;
+          grid.appendChild(el);
+        }
+        if (models.length === 0) {
+          grid.innerHTML = '<div class="routing-model"><span class="routing-model-id">Keine Modelle aktiv</span></div>';
+        }
+      }).catch(() => {});
+  })();
+
+  // ── Claude Code model selector ──
+  (() => {
+    const sel = byId('claude-model');
+    const btn = byId('claude-config-btn');
+    const status = byId('claude-status');
+    fetch('/v1/models', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        // Show all non-auto models; Claude Code discovers them via gateway.
+        const allModels = (data.data || []).filter(m => m.id !== 'auto');
+        sel.innerHTML = '';
+        for (const m of allModels) {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          const freeTag = m.free ? ' [FREE]' : '';
+          opt.textContent = m.id + ' @' + m.owned_by + freeTag;
+          sel.appendChild(opt);
+        }
+        if (allModels.length === 0) {
+          sel.innerHTML = '<option value="">Keine Modelle verfügbar</option>';
+        }
+      }).catch(() => {
+        sel.innerHTML = '<option value="">LIMEN nicht erreichbar</option>';
+      });
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.textContent = '…';
+      status.className = 'claude-status';
+      try {
+        const resp = await fetch('/v1/_internal/claude-config', { method: 'POST' });
+        if (resp.ok) {
+          status.textContent = '✓ Config geschrieben — ~/.claude/settings.json';
+          status.className = 'claude-status ok';
+        } else {
+          status.textContent = '✗ Fehler beim Schreiben der Config';
+          status.className = 'claude-status err';
+        }
+      } catch (_) {
+        status.textContent = '✗ Keine Verbindung';
+        status.className = 'claude-status err';
+      }
+      btn.disabled = false; btn.textContent = 'Config generieren';
+      setTimeout(() => { status.className = 'claude-status'; }, 5000);
+    });
+  })();
+
+  // ── Factory Pipeline: DOM-driven left-to-right request flow ──
+  (() => {
+    const latencyCanvas = byId('latency-canvas');
+    const latencyCtx = latencyCanvas.getContext('2d');
+    const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+    const MAX_LATENCY_MS = 600;
+    const MAX_QUEUE = 10;
+    const completedRequests = new Set();
+    let throughput = 0; let errors = 0; let isLive = false;
+    let latencyPoints = [];
+    let requestMap = {};        // id → { el, history[], state }
+    let queueReqs = [];         // FIFO id list
+    let workerSlots = { 'worker-1': null, 'worker-2': null };
+    let selectedReqId = null;
+
+    // ── DOM helpers ──
+    const zone = (id) => byId(id);
+    const makePacket = (id, shortId, stateClass, extraInfo) => {
+      const el = document.createElement('div');
+      el.className = 'request-packet ' + stateClass;
+      el.tabIndex = 0;
+      el.innerHTML = '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + shortId + '</span>' + (extraInfo ? '<span style="font-size:8px;color:var(--leise);white-space:nowrap">' + extraInfo + '</span>' : '');
+      el.addEventListener('click', () => {
+        selectedReqId = id;
+        document.querySelectorAll('.request-packet').forEach(p => p.style.outline = '');
+        el.style.outline = '1px solid var(--gold)';
+        renderInspector(id);
+      });
+      return el;
+    };
+
+    const renderInspector = (id) => {
+      const rec = requestMap[id];
+      const panel = zone('inspector-panel');
+      const trace = zone('inspector-trace');
+      const idLabel = zone('inspector-id');
+      if (!rec) {
+        panel.classList.remove('is-open');
+        return;
+      }
+      panel.classList.add('is-open');
+      idLabel.textContent = id;
+      const rows = [];
+      const hist = [...(rec.history || [])].reverse();
+      for (let i = 0; i < hist.length; i++) {
+        const isLatest = i === 0;
+        rows.push('<div class="trace-row"' + (isLatest ? '' : ' style="opacity:.6"') + '>' + hist[i].ts + ' ' + hist[i].msg + '</div>');
+      }
+      if (rows.length === 0) rows.push('<div class="trace-row">Keine Events.</div>');
+      trace.innerHTML = rows.join('');
+    };
+
+    zone('inspector-close').addEventListener('click', () => {
+      selectedReqId = null;
+      zone('inspector-panel').classList.remove('is-open');
+      document.querySelectorAll('.request-packet').forEach(p => p.style.outline = '');
+    });
+
+    const logEvent = (id, msg) => {
+      if (!requestMap[id]) return;
+      const now = new Date();
+      const ts = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      (requestMap[id].history = requestMap[id].history || []).push({ ts, msg });
+      if (selectedReqId === id) renderInspector(id);
+    };
+
+    // ── Worker management ──
+    const claimWorker = () => {
+      for (const [wkId, busy] of Object.entries(workerSlots)) {
+        if (!busy) return wkId;
+      }
+      return null;
+    };
+    const activateWorker = (wkId, reqId) => {
+      workerSlots[wkId] = reqId;
+      const node = zone(wkId);
+      node.classList.add('is-active');
+      zone(wkId + '-req').textContent = reqId.slice(0, 8);
+      zone(wkId + '-req').style.color = '#4fc3f7';
+    };
+    const deactivateWorker = (wkId) => {
+      workerSlots[wkId] = null;
+      const node = zone(wkId);
+      node.classList.remove('is-active', 'is-error');
+      zone(wkId + '-req').textContent = '—';
+      zone(wkId + '-req').style.color = 'var(--leise)';
+    };
+    const shakeWorker = (wkId) => {
+      const node = zone(wkId);
+      node.classList.add('is-error');
+      setTimeout(() => node.classList.remove('is-error'), 500);
+    };
+
+    // Update queue capacity display
+    const updateQueueCap = () => {
+      const c = queueReqs.length;
+      zone('q-cap').textContent = c + '/' + MAX_QUEUE;
+      zone('q-cap').style.color = c >= MAX_QUEUE ? 'var(--rot)' : 'var(--leise)';
+    };
+
+    // ── Garbage collection ──
+    const cleanupBin = (container, max) => {
+      while (container.children.length > max) {
+        const last = container.lastChild;
+        const id = last.dataset && last.dataset.reqId;
+        if (id) delete requestMap[id];
+        last.remove();
+      }
+    };
+
+    // ── Latency scatter plot (canvas, unchanged logic) ──
+    const drawLatencyScatter = () => {
+      const w = latencyCanvas.width; const h = latencyCanvas.height;
+      latencyCtx.clearRect(0, 0, w, h);
+      latencyCtx.fillStyle = 'rgba(11,17,24,.75)';
+      latencyCtx.fillRect(0, 0, w, h);
+      const pad = { left: 42, right: 14, top: 14, bottom: 28 };
+      const plotW = w - pad.left - pad.right; const plotH = h - pad.top - pad.bottom;
+      latencyCtx.strokeStyle = 'rgba(188,211,222,.16)'; latencyCtx.lineWidth = 1;
+      latencyCtx.beginPath(); latencyCtx.moveTo(pad.left, pad.top); latencyCtx.lineTo(pad.left, h - pad.bottom); latencyCtx.lineTo(w - pad.right, h - pad.bottom); latencyCtx.stroke();
+      latencyCtx.fillStyle = '#8ba0a7'; latencyCtx.font = '9px monospace';
+      latencyCtx.fillText('Latenz (ms) ↑', 8, 12);
+      latencyCtx.fillText('0', 26, h - pad.bottom + 3);
+      latencyCtx.fillText('600', 8, pad.top + 3);
+      latencyCtx.fillText('Zeit →', w - 50, h - 8);
+      for (const [index, point] of latencyPoints.slice(-80).entries()) {
+        const visibleCount = Math.max(1, Math.min(80, latencyPoints.length));
+        const x = pad.left + ((index + 1) / visibleCount) * plotW;
+        const y = h - pad.bottom - (clamp(point.latencyMs, 0, MAX_LATENCY_MS) / MAX_LATENCY_MS) * plotH;
+        latencyCtx.fillStyle = point.ok ? '#71e0ad' : '#f07c77';
+        latencyCtx.beginPath(); latencyCtx.arc(x, y, 4, 0, Math.PI * 2); latencyCtx.fill();
+      }
+    };
+
+    const recordLatency = (data, id, ok) => {
+      const latencyMs = Number(data.latency_ms) || (
+        Number(data.duration_seconds) > 0 ? Number(data.duration_seconds) * 1000 :
+        (Number(data.started_at) > 0 ? Math.max(0, performance.now() - Number(data.started_at)) : 0)
+      );
+      latencyPoints.push({ id, at: Date.now(), latencyMs, ok });
+      if (latencyPoints.length > 120) latencyPoints.shift();
+      drawLatencyScatter();
+    };
+
+    // ── Animation helpers ──
+    const animEnter = (el) => { el.classList.add('is-new'); setTimeout(() => el.classList.remove('is-new'), 360); };
+    const animBounce = (el) => { el.classList.add('is-bounce'); setTimeout(() => el.classList.remove('is-bounce'), 520); };
+    const flashCol = (colId) => { const c = zone(colId); if (c) { c.classList.add('is-flash'); setTimeout(() => c.classList.remove('is-flash'), 420); } };
+
+    // ── Main event handler ──
+    const handleEvent = (data) => {
+      const id = data.request_id || data.task_id || '';
+      const shortId = id.slice(0, 7);
+      const t = data.type;
+
+      if (t === 'routing.auto') {
+        const badge = byId('routing-auto-badge');
+        badge.textContent = 'Auto-Routing: ' + (data.category || '?') + ' · Score ' + (data.score || 0) + ' · ' + Math.round(data.context_tokens || 0) + ' tokens';
+        badge.style.animation = 'none'; void badge.offsetWidth;
+        badge.style.animation = 'flash .9s ease-out';
+      } else if (t === 'request.arrived' || t === 'request.enqueued') {
+        if (requestMap[id]) return;
+        const el = makePacket(id, shortId, 'pkt-ingress', data.model || '');
+        el.dataset.reqId = id;
+        requestMap[id] = { el };
+        logEvent(id, 'Eingang — ' + (data.model || '?'));
+        zone('zone-incoming').insertBefore(el, zone('zone-incoming').firstChild);
+        animEnter(el);
+        flashCol('zone-incoming');
+        // Move to queue after a tick
+        setTimeout(() => {
+          if (!requestMap[id]) return;
+          queueReqs.push(id);
+          el.className = 'request-packet pkt-queue';
+          zone('zone-queue').appendChild(el);
+          animEnter(el);
+          flashCol('zone-queue');
+          logEvent(id, 'Warteschlange');
+          updateQueueCap();
+          pollWorkers();
+        }, 300);
+      } else if (t === 'worker.claimed') {
+        const wkId = claimWorker();
+        const rId = queueReqs.shift();
+        if (!rId || !wkId) return;
+        updateQueueCap();
+        const rec = requestMap[rId];
+        if (!rec) return;
+        activateWorker(wkId, rId);
+        rec.el.className = 'request-packet pkt-worker';
+        animEnter(rec.el);
+        logEvent(rId, 'Worker ' + wkId + ' nimmt auf');
+        // After processing, dispatch to provider
+        setTimeout(() => {
+          if (!requestMap[rId]) return;
+          rec.el.className = 'request-packet pkt-provider';
+          zone('zone-provider').appendChild(rec.el);
+          animEnter(rec.el);
+          flashCol('zone-provider');
+          logEvent(rId, 'An Provider gesendet');
+          zone('zone-incoming').querySelectorAll('.request-packet[data-req-id="' + rId + '"]').forEach(e => e.remove());
+          zone('zone-queue').querySelectorAll('.request-packet[data-req-id="' + rId + '"]').forEach(e => e.remove());
+        }, 400);
+      } else if (t === 'provider.dispatched') {
+        // Already handled in worker.claimed flow; just log
+        logEvent(id, 'Provider-Dispatch — ' + (data.provider || '?') + ' Key#' + (data.key_index || 1));
+      } else if (t === 'provider.rate_limited') {
+        errors++;
+        const rId = id || Object.values(workerSlots).find(w => w) || queueReqs[0];
+        // Deactivate workers holding this request
+        for (const [wkId, busy] of Object.entries(workerSlots)) {
+          if (busy === rId) { shakeWorker(wkId); deactivateWorker(wkId); }
+        }
+        queueReqs = queueReqs.filter(q => q !== rId);
+        updateQueueCap();
+        const rec = requestMap[rId];
+        if (rec) {
+          rec.el.className = 'request-packet pkt-retry';
+          // Move to penalty box
+          zone('zone-penalty').insertBefore(rec.el, zone('zone-penalty').firstChild);
+          animBounce(rec.el);
+          flashCol('zone-penalty');
+          logEvent(rId, '🛑 429 Rate Limit — in Penalty-Box, Retry in ' + (data.retry_after || 5) + 's');
+          // Countdown display on the packet
+          const cdEl = document.createElement('span');
+          cdEl.className = 'cd-timer';
+          let remaining = data.retry_after || 5;
+          cdEl.textContent = remaining + 's';
+          rec.el.appendChild(cdEl);
+          const cdInterval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0 || !requestMap[rId]) {
+              clearInterval(cdInterval);
+              if (requestMap[rId]) {
+                rec.el.removeChild(cdEl);
+                queueReqs.unshift(rId);
+                rec.el.className = 'request-packet pkt-queue';
+                zone('zone-queue').appendChild(rec.el);
+                logEvent(rId, 'Retry — zurück in Warteschlange');
+                updateQueueCap();
+                pollWorkers();
+              }
+            } else {
+              cdEl.textContent = remaining + 's';
+            }
+          }, 1000);
+        }
+        for (const el of zone('zone-provider').querySelectorAll('.request-packet[data-req-id="' + rId + '"]')) el.remove();
+        byId('sim-timeouts').textContent = errors;
+      } else if (t === 'provider.responded') {
+        const completedId = id || Object.values(workerSlots).find(w => w);
+        if (!completedId || completedRequests.has(completedId)) return;
+        completedRequests.add(completedId);
+        throughput++;
+        // Deactivate workers
+        for (const [wkId, busy] of Object.entries(workerSlots)) {
+          if (busy === completedId) deactivateWorker(wkId);
+        }
+        const rec = requestMap[completedId];
+        if (rec) {
+          rec.el.className = 'request-packet pkt-success';
+          rec.el.innerHTML = '✓ ' + completedId.slice(0, 6);
+          zone('zone-success').insertBefore(rec.el, zone('zone-success').firstChild);
+          animEnter(rec.el);
+          flashCol('zone-success');
+          logEvent(completedId, '✅ 200 OK — ' + ((data.duration_seconds || 0) * 1000).toFixed(0) + 'ms');
+          cleanupBin(zone('zone-success'), 30);
+        }
+        recordLatency(data, completedId, true);
+        for (const el of zone('zone-provider').querySelectorAll('.request-packet[data-req-id="' + completedId + '"]')) el.remove();
+        for (const el of zone('zone-penalty').querySelectorAll('.request-packet[data-req-id="' + completedId + '"]')) el.remove();
+        byId('sim-durchsatz').textContent = throughput;
+      } else if (t === 'dispatch.failed' || t === 'task.failed') {
+        errors++;
+        const rId = id || Object.values(workerSlots).find(w => w);
+        for (const [wkId, busy] of Object.entries(workerSlots)) {
+          if (busy === rId) { shakeWorker(wkId); deactivateWorker(wkId); }
+        }
+        queueReqs = queueReqs.filter(q => q !== rId);
+        updateQueueCap();
+        const rec = requestMap[rId];
+        if (rec) {
+          rec.el.className = 'request-packet pkt-fail';
+          rec.el.innerHTML = '💥 ' + rId.slice(0, 6);
+          zone('zone-trash').insertBefore(rec.el, zone('zone-trash').firstChild);
+          animBounce(rec.el);
+          flashCol('zone-trash');
+          logEvent(rId, '💥 CRASH — ' + (data.failure_type || 'terminal fail'));
+          cleanupBin(zone('zone-trash'), 30);
+        }
+        recordLatency(data, rId, false);
+        for (const el of zone('zone-provider').querySelectorAll('.request-packet[data-req-id="' + rId + '"]')) el.remove();
+        byId('sim-timeouts').textContent = errors;
+      }
+      // Stats
+      byId('sim-aktiv').textContent = queueReqs.length + Object.values(workerSlots).filter(w => w).length;
+      // Cleanup stale entries (30s TTL)
+      if (Object.keys(requestMap).length > 80) {
+        const oldest = Object.keys(requestMap).slice(0, 20);
+        for (const k of oldest) {
+          requestMap[k].el.remove();
+          delete requestMap[k];
+        }
+      }
+    };
+
+    const pollWorkers = () => {
+      for (const wkId of Object.keys(workerSlots)) {
+        if (!workerSlots[wkId] && queueReqs.length > 0) {
+          handleEvent({ type: 'worker.claimed', request_id: queueReqs[0] });
+          break;
+        }
+      }
+    };
+
+    // ── SSE & Simulation ──
+    const badge = byId('sim-live-badge');
+    const toggleBtn = byId('sim-toggle');
+    let simTimer = null; let simActive = false; let simExplicit = false;
+    const providers = ['groq', 'openrouter', 'nvidia'];
+
+    const updateToggleUI = () => {
+      if (simActive) {
+        toggleBtn.textContent = '⏸ Sim';
+        toggleBtn.classList.add('is-on');
+        badge.textContent = '· simulation';
+      } else {
+        toggleBtn.textContent = '▶ Sim';
+        toggleBtn.classList.remove('is-on');
+        badge.textContent = isLive ? '· verbunden' : '· offline';
+      }
+    };
+
+    const stopSimulation = () => {
+      simActive = false;
+      simExplicit = false;
+      if (simTimer) { clearTimeout(simTimer); simTimer = null; }
+      updateToggleUI();
+    };
+
+    toggleBtn.addEventListener('click', () => {
+      if (simActive) {
+        stopSimulation();
+      } else {
+        simActive = true;
+        simExplicit = true;
+        updateToggleUI();
+        runSimStep();
+      }
+    });
+
+    const runSimStep = () => {
+      if (!simActive) return;
+      const id = 'sim-' + Math.random().toString(36).slice(2, 8);
+      const provider = providers[Math.floor(Math.random() * providers.length)];
+      handleEvent({ type: 'request.enqueued', request_id: id, model: 'auto', ts: performance.now() });
+      simTimer = setTimeout(() => {
+        if (!simActive) return;
+        const rId = queueReqs[0] || id;
+        handleEvent({ type: 'worker.claimed', request_id: rId, ts: performance.now() });
+        simTimer = setTimeout(() => {
+          if (!simActive) return;
+          const failRoll = Math.random();
+          if (failRoll < 0.15) {
+            handleEvent({ type: 'provider.rate_limited', request_id: rId, provider: provider, retry_after: 3 + Math.floor(Math.random() * 5), ts: performance.now() });
+          } else if (failRoll < 0.25) {
+            handleEvent({ type: 'dispatch.failed', request_id: rId, failure_type: 'provider_unreachable', ts: performance.now() });
+          } else {
+            const latency = 80 + Math.random() * 420;
+            handleEvent({ type: 'provider.responded', request_id: rId, provider: provider, duration_seconds: latency / 1000, latency_ms: latency, ts: performance.now() });
+          }
+          simTimer = setTimeout(runSimStep, 600 + Math.random() * 1000);
+        }, 400 + Math.random() * 400);
+      }, 300 + Math.random() * 400);
+    };
+
+    const startSimulation = () => { if (!simActive) { simActive = true; updateToggleUI(); runSimStep(); } };
+
+    const connectLive = () => {
+      const es = new EventSource('/v1/_internal/live-visualizer');
+      let idleTimer = setTimeout(() => { if (!simExplicit) startSimulation(); }, 3000);
+      es.onopen = () => {
+        isLive = true;
+        if (!simActive) { badge.textContent = '· verbunden'; badge.classList.remove('offline'); updateToggleUI(); }
+      };
+      es.onmessage = (e) => {
+        clearTimeout(idleTimer);
+        if (simActive && !simExplicit) stopSimulation();
+        if (!isLive) { isLive = true; badge.textContent = '· verbunden'; badge.classList.remove('offline'); updateToggleUI(); }
+        try { handleEvent(JSON.parse(e.data)); } catch (_) {}
+      };
+      es.onerror = () => {
+        es.close();
+        if (!simExplicit) stopSimulation();
+        badge.textContent = '· offline';
+        badge.classList.add('offline');
+        if (!simActive) updateToggleUI();
+        setTimeout(connectLive, 5000);
+      };
+    };
+
+    connectLive();
+  })();
+})();
+</script>
+</body>
+</html>

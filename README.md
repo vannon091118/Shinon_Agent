@@ -303,9 +303,12 @@ bash .agents/skills/goal-chain/scripts/test-gates.sh
 |----------|--------|
 | [Interface Specs](interface-specs/) | Component Contracts (shinon, promtguard, karma, goal-chain, limen) |
 | [Pipeline State Schema](interface-specs/pipeline-state.schema.sql) | `pipeline-state.db` DDL |
-| [WIRING.md](fusion-main/fusion/WIRING.md) | EventBus-Verdrahtung |
-| [plan.md](.goal/R20260812-033226-baue-das-control-plane-mvp-cli-desktop-a/plan.md) | Implementation Plan (26/26 DONE) |
-| [phase3_finish.log](.goal/R20260812-033226-baue-das-control-plane-mvp-cli-desktop-a/phase3_finish.log) | Test-Ergebnisse (15 Suites, 18/18 Gates) |
+| [WIRING.md](interface-specs/WIRING.md) | EventBus-Verdrahtung und Persistenzgrenzen |
+| [Component Contracts](interface-specs/) | Schnittstellenspezifikationen für die fünf Runtime-Komponenten |
+| [Goal-Chain Self-Test](.agents/skills/goal-chain/scripts/test-gates.sh) | Reproduzierbarer Gate-Routing-Test |
+| [LIMEN Tests](limen-main/tests/) | Provider-Routing-, Queue- und Resilience-Tests |
+
+> Laufzeitdaten wie `.goal/`, `pipeline-state.db` und die Goal-Chain-SQLite werden absichtlich nicht versioniert. Sie werden lokal durch die Setup-/Self-Test-Skripte erzeugt; veröffentlichte Reports müssen aus einem reproduzierbaren Lauf stammen.
 
 ---
 

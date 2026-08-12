@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SyxCraft Custom Room",
+  "type": "object",
+  "required": ["_ignoreVanilla", "ICON", "RESOURCES", "AREA_COSTS", "FLOOR", "MINI_COLOR", "VALUE_DEGRADE_PER_YEAR", "VALUE_PER_WORKER", "VALUE_WORK_SPEED", "BOOST", "CONSUMPTION", "WORK", "OUTPUT", "ITEMS", "UPGRADES", "EXPERIENCE_BONUS", "SPRITES", "GHOST_CONTRIBUTION"],
+  "properties": {
+    "_ignoreVanilla": {
+      "type": "boolean",
+      "const": true
+    },
+    "ICON": {
+      "type": "string",
+      "pattern": "^[0-9]+->[A-Z_]+->[A-Z_0-9]+$"
+    },
+    "RESOURCES": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "AREA_COSTS": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "FLOOR": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "MINI_COLOR": {
+      "type": "string",
+      "pattern": "^[0-9]+_[0-9]+_[0-9]+$"
+    },
+    "VALUE_DEGRADE_PER_YEAR": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "VALUE_PER_WORKER": {
+      "type": "number",
+      "minimum": 0
+    },
+    "VALUE_WORK_SPEED": {
+      "type": "number",
+      "minimum": 0
+    },
+    "BOOST": {
+      "type": "string",
+      "pattern": "^[A-Z_]+$"
+    },
+    "CONSUMPTION": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["RATE", "BONUS"],
+        "properties": {
+          "RATE": { "type": "number", "minimum": 0 },
+          "BONUS": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "WORK": {
+      "type": "object",
+      "required": ["SHIFT_OFFSET", "SOUND", "USES_TOOL", "FULFILLMENT"],
+      "properties": {
+        "SHIFT_OFFSET": { "type": "number", "minimum": 0, "maximum": 1 },
+        "SOUND": { "type": "string" },
+        "USES_TOOL": { "type": "boolean" },
+        "FULFILLMENT": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "OUTPUT": {
+      "type": "object",
+      "properties": {
+        "RESOURCE": { "type": "string" },
+        "BASE_RATE": { "type": "number", "minimum": 0 },
+        "BONUS_PER_LEVEL": { "type": "number", "minimum": 0 },
+        "MAX_WORKERS": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "ITEMS": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["COSTS", "STATS"],
+        "properties": {
+          "COSTS": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "STATS": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1 },
+            "minItems": 2
+          }
+        }
+      }
+    },
+    "UPGRADES": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["RESOURCE_MASK", "BOOST"],
+        "properties": {
+          "RESOURCE_MASK": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "BOOST": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "EXPERIENCE_BONUS": {
+      "type": "object",
+      "required": ["BONUS", "MAX_EMPLOYEES"],
+      "properties": {
+        "BONUS": { "type": "number", "minimum": 0 },
+        "MAX_EMPLOYEES": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "SPRITES": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "FPS": { "type": "integer", "minimum": 0 },
+          "SHADOW_LENGTH": { "type": "integer", "minimum": 0 },
+          "SHADOW_HEIGHT": { "type": "integer", "minimum": 0 },
+          "ROTATES": { "type": "boolean" },
+          "FRAMES": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "COLOR": {
+            "type": "object",
+            "properties": {
+              "R": { "type": "integer", "minimum": 0, "maximum": 255 },
+              "G": { "type": "integer", "minimum": 0, "maximum": 255 },
+              "B": { "type": "integer", "minimum": 0, "maximum": 255 }
+            }
+          }
+        }
+      }
+    },
+    "GHOST_CONTRIBUTION": {
+      "type": "object",
+      "required": ["TYPE", "BASE_RATE", "MAX", "PER_LEVEL"],
+      "properties": {
+        "TYPE": { "type": "string", "enum": ["CONTROL", "FEAR", "CONDITIONING"] },
+        "BASE_RATE": { "type": "number", "minimum": 0 },
+        "MAX": { "type": "number", "minimum": 0, "maximum": 1 },
+        "PER_LEVEL": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

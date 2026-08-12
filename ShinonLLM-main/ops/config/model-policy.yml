@@ -1,0 +1,35 @@
+# export function modelpolicyMain
+modelpolicyMain:
+  policyId: model-policy-v1
+  ownerDomain: ops
+  strictFailClosed: true
+  contract:
+    input: local runtime config
+    output: reproducible start/check execution
+    error: non-zero exit on gate failure
+  modelSlots:
+    primary:
+      backend: ollama
+      model: ollama-default
+      allowFallback: true
+      fallbackBackend: llamacpp
+      timeoutMs: 60000
+    fallback:
+      backend: llamacpp
+      model: llamacpp-default
+      allowFallback: false
+      timeoutMs: 30000
+  routerRules:
+    - name: prefer-primary-when-healthy
+      when:
+        backendAvailable: ollama
+      use: primary
+    - name: fallback-to-llamacpp-on-primary-failure
+      when:
+        backendFailure: ollama
+      use: fallback
+  limits:
+    maxRetries: 1
+    maxFallbackDepth: 1
+    maxConcurrentRequests: 1
+    requestTimeoutMs: 60000

@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "researcher-context-v1",
+  "title": "Researcher Context v1 (legacy)",
+  "description": "Output-Contract für Research-Agenten. V1 — legacy, wird von promptgen.py noch unterstützt.",
+  "type": "object",
+  "required": [
+    "schema",
+    "agent",
+    "collected_context",
+    "decisions",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "enum": ["researcher-context/v1"],
+      "description": "Muss exakt 'researcher-context/v1' sein"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^RES-\\d{3}$",
+      "description": "Research-Task-ID (z.B. RES-001)"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Name des Research-Agenten"
+    },
+    "roadmap_found": {
+      "type": "boolean",
+      "description": "Wurde eine Roadmap/README gefunden?"
+    },
+    "roadmap_phase": {
+      "type": "string",
+      "description": "Aktuelle Roadmap-Phase"
+    },
+    "collected_context": {
+      "type": "array",
+      "description": "Gesammelter Kontext aus Code-Analyse",
+      "items": {
+        "type": "object",
+        "required": ["category", "key", "value", "source"],
+        "properties": {
+          "category": { "type": "string", "description": "z.B. 'class', 'method', 'config', 'dependency'" },
+          "key": { "type": "string", "description": "Name des gefundenen Elements" },
+          "value": { "type": "string", "description": "Wert oder Kurzbeschreibung" },
+          "source": { "type": "string", "description": "Quelle (Dateipfad oder Klassennname)" },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"], "default": "medium" }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Entscheidungen die während der Research-Phase getroffen wurden",
+      "items": {
+        "type": "object",
+        "required": ["what", "why"],
+        "properties": {
+          "what": { "type": "string", "description": "Die Entscheidung" },
+          "why": { "type": "string", "description": "Begründung" },
+          "alternatives_rejected": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verworfene Alternativen"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "default": "medium"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Fundstellen im Code-Format: datei:zeile:inhalt",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_\\-/.]+:\\d+:.*$"
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Kurzzusammenfassung (1-3 Sätze)"
+    },
+    "original_prompt": {
+      "type": "string",
+      "description": "Der ursprüngliche User-Auftrag"
+    }
+  }
+}

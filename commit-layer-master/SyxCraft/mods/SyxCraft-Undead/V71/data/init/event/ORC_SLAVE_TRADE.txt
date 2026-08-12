@@ -1,0 +1,109 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: Orc Slave Trade Event — Orcs offer captive humans to Undead for credits + essence.
+# ENGINE_DEFAULTS: Requires ORC race, ORC_SLAVERY tech, captive human stockpile, Undead faction available.
+# LAST_ENTRY: Entry 1
+# FILE_CONTEXT: V71/data/init/event/ORC_SLAVE_TRADE.txt
+# VERSION: 0.1.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+ORC_SLAVE_RAID: {
+    ICON: 32->ORC->RAID,
+    DURATION: { DAYS: 7.0 },
+    
+    OCCURRENCE: {
+        RACE: { ORC: 1.0 },
+        REQUIRES: { EQUAL: { HAS_TECH: ORC_SLAVERY } },
+    },
+    
+    SELECTION: {
+        REGIONS: {
+            MAX_AMOUNT: { AMOUNT: 1 },
+            FILTERS: [
+                { EQUAL: { FACTION_IS_PLAYER: 0 } },
+                { GREATER: { POPULATION_RACE_HUMAN: 30 } },
+                { GREATER: { DISTANCE_TO_ORC_TERRITORY: 0 } },
+                { LESS: { DISTANCE_TO_ORC_TERRITORY: 50 } }
+            ]
+        }
+    },
+    
+    CHOICES: [
+        {
+            ACTIONS: [
+                { TYPE: EVENT, EVENT: SLAVE_RAID_SUCCESS },
+                { TYPE: POPULATION_CLASS_ADD, CLASS: SLAVE, RACE: HUMAN, AMOUNT: 15 },
+                { TYPE: CREDITS, AMOUNT: -2000 },
+                { TYPE: FACTION_RELATION, FACTION: TARGET, VALUE: -25 }
+            ]
+        },
+        {
+            ACTIONS: [
+                { TYPE: EVENT, EVENT: RAID_ABORTED }
+            ]
+        }
+    ]
+},
+
+SLAVE_RAID_SUCCESS: {
+    ICON: 32->ORC->SUCCESS,
+    DURATION: { DAYS: 30.0 },
+    
+    ON_SPAWN: {
+        ACTIONS: [
+            { TYPE: POPULATION_CLASS_ADD, CLASS: SLAVE, RACE: HUMAN, AMOUNT: 15 },
+            { TYPE: BOOST_PERM, PLAYER: { ORC_SLAVES_CAPTURED>ADD: 15 } }
+        ]
+    }
+},
+
+ORC_SLAVE_TRADE_OFFER: {
+    ICON: 32->TRADE->SLAVES,
+    DURATION: { DAYS: 1.0 },
+    
+    OCCURRENCE: {
+        RACE: { ORC: 1.0 },
+        REQUIRES: { GREATER: { POPULATION_CLASS_SLAVE_HUMAN: 10 } }
+    },
+    
+    SELECTION: {
+        FACTIONS: {
+            FILTERS: [
+                { EQUAL: { RACE: UNDEAD } },
+                { GREATER: { RELATION: -50 } }
+            ]
+        }
+    },
+    
+    CHOICES: [
+        {
+            ACTIONS: [
+                { TYPE: POPULATION_CLASS_TRANSFER, CLASS: SLAVE, RACE: HUMAN, AMOUNT: 20 },
+                { TYPE: CREDITS, AMOUNT: 3000 },
+                { TYPE: FACTION_RELATION, FACTION: UNDEAD, VALUE: 10 }
+            ]
+        },
+        {
+            ACTIONS: [
+                { TYPE: EVENT, EVENT: TRADE_DECLINED }
+            ]
+        }
+    ]
+},
+
+SLAVE_TRADE_ACCEPTED: {
+    ICON: 32->TRADE->SUCCESS,
+    DURATION: { DAYS: 1.0 },
+    
+    ON_SPAWN: {
+        ACTIONS: [
+            { TYPE: POPULATION_CLASS_TRANSFER, FROM: ORC, TO: UNDEAD, CLASS: SLAVE, RACE: HUMAN, AMOUNT: 20 }
+        ]
+    }
+},
+
+TRADE_DECLINED: {
+    ICON: 32->TRADE->DECLINE,
+    DURATION: { DAYS: 1.0 }
+}

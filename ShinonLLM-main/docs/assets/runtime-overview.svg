@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">ShinonLLM Runtime Overview</title>
+  <desc id="desc">Runtime-first flow: input, scoring, context compilation, model output, and gated memory updates.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1220" />
+      <stop offset="100%" stop-color="#1f2a44" />
+    </linearGradient>
+    <style>
+      .title { font: 700 42px Arial, sans-serif; fill: #f4f7ff; }
+      .subtitle { font: 500 20px Arial, sans-serif; fill: #cad4eb; }
+      .node { fill: #111b30; stroke: #6ea8ff; stroke-width: 2; rx: 14; }
+      .nodeText { font: 600 18px Arial, sans-serif; fill: #f4f7ff; }
+      .nodeSub { font: 500 14px Arial, sans-serif; fill: #c9d4ee; }
+      .arrow { stroke: #8fb5ff; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .note { font: 600 16px Arial, sans-serif; fill: #b8f7d4; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+      <polygon points="0,0 10,4 0,8" fill="#8fb5ff" />
+    </marker>
+  </defs>
+
+  <rect width="1200" height="620" fill="url(#bg)" />
+
+  <text x="60" y="70" class="title">ShinonLLM</text>
+  <text x="60" y="102" class="subtitle">The runtime thinks, the LLM formulates text.</text>
+
+  <rect x="60" y="160" width="200" height="120" class="node" />
+  <text x="160" y="205" text-anchor="middle" class="nodeText">Input</text>
+  <text x="160" y="232" text-anchor="middle" class="nodeSub">user request</text>
+
+  <rect x="310" y="160" width="230" height="120" class="node" />
+  <text x="425" y="205" text-anchor="middle" class="nodeText">Runtime Scanner</text>
+  <text x="425" y="232" text-anchor="middle" class="nodeSub">intent and priority</text>
+
+  <rect x="590" y="160" width="230" height="120" class="node" />
+  <text x="705" y="205" text-anchor="middle" class="nodeText">Context Compiler</text>
+  <text x="705" y="232" text-anchor="middle" class="nodeSub">bounded package</text>
+
+  <rect x="870" y="160" width="230" height="120" class="node" />
+  <text x="985" y="205" text-anchor="middle" class="nodeText">LLM</text>
+  <text x="985" y="232" text-anchor="middle" class="nodeSub">text generation only</text>
+
+  <rect x="590" y="360" width="230" height="120" class="node" />
+  <text x="705" y="405" text-anchor="middle" class="nodeText">Write Gate</text>
+  <text x="705" y="432" text-anchor="middle" class="nodeSub">contract validation</text>
+
+  <rect x="310" y="360" width="230" height="120" class="node" />
+  <text x="425" y="405" text-anchor="middle" class="nodeText">Memory Store</text>
+  <text x="425" y="432" text-anchor="middle" class="nodeSub">scored entries</text>
+
+  <path d="M260 220 H310" class="arrow" />
+  <path d="M540 220 H590" class="arrow" />
+  <path d="M820 220 H870" class="arrow" />
+  <path d="M985 280 V320 H705 V360" class="arrow" />
+  <path d="M590 420 H540" class="arrow" />
+  <path d="M425 360 V300 H705 V280" class="arrow" />
+
+  <text x="60" y="560" class="note">Determinism, replay checks, and explicit release gates keep behavior reproducible.</text>
+</svg>

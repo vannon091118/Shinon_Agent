@@ -1,0 +1,29 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: ESSENCE resource — magical essence, used for Undead maintenance and conversion rituals.
+# ENGINE_DEFAULTS: supply category, magical resource, Undead only.
+# LAST_ENTRY: Entry 1
+# FILE_CONTEXT: V71/data/init/resource/supply/ESSENCE.txt
+# VERSION: 0.1.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+RESOURCE: ESSENCE,
+MORALE_ADD: 0.2,
+HEALTH_EFFECT: 0.3,
+CONSUMPTION_PER_USER_DAY: 0.1,
+CONSUMPTION_PER_ITEM_DAY: 0.0,
+AMOUNT_PER_PERSON: 1,
+RACES: [UNDEAD],
+ICON: 32->UNDEAD->ESSENCE,
+VALUE: 500,
+WEIGHT: 0.1,
+SPRITE: ESSENCE,
+STACK_SIZE: 50,
+CATEGORY_DEFAULT: 1,
+EDIBLE: false,
+PROPERTIES: {
+    TRADEABLE: true,
+    MAGICAL: true,
+    PERISHABLE: false,
+},

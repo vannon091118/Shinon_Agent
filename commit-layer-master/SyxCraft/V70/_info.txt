@@ -1,0 +1,77 @@
+# V70 — Current Stable Baseline
+# Game Version: V70.0
+# Mod SDK Version: 0.1.4
+# Status: REFERENCE — SyxCraft Current Release
+# Last Updated: 2026-07-14
+
+## Engine Baseline (V70)
+
+### Laws & Government
+- Law Categories: Civic, Criminal, Military, Economic, Religious
+- Law enactment requires Government Points (GP) + building tiers
+- Law effects scale with Settlement Level + Culture
+
+### Slavery System (V70 - Pre-Reign of Terror)
+- Enslavement via Law + Crime punishment only
+- Slave Price fixed per Race (`SLAVE_PRICE` property)
+- Slave Trade NOT a diplomatic action
+- Slaves = Resource, not Population Class
+
+### Population Growth
+- Formula: `BASE * CLIMATE * TERRAIN * HOUSING`
+- `POPULATION.GROWTH` stat = multiplier
+- Migration separate from natural growth
+- No negative growth
+
+### Race Relations
+- Static `OTHER_RACES` in Race definition
+- Affects Immigration + Trade willingness
+- No dynamic events affecting relations
+
+### Tech Tree
+- 5 Categories: Civic, Military, Scientific, Religious, Economic
+- Costs scale with Era
+- No faction-specific trees
+
+---
+
+## SyxCraft V70 State (Current Release)
+
+### Races Defined
+| Race | Faction | Key Traits |
+|------|---------|------------|
+| HUMAN | Alliance | Balanced, Immigration boost, Farming affinity |
+| ORC | Horde | Melee +1.5, Heat resist, Mining +1.2, Meat only |
+| UNDEAD | Horde | Immortal, No food/sleep, Maintenance +1.5, Climate neutral |
+| NIGHT_ELF | Alliance | Learning +1.3, Ranged +1.2, Cold resist, Fruit/Meat |
+
+### Techs Defined
+| Tech | Category | Cost | Unlocks |
+|------|----------|------|---------|
+| BASIC_MINING | Civic | 30 | ROOM_MINE |
+| AGRICULTURE | Civic | 100 | VEGETABLE_FARM, GRAIN_FARM |
+| PASTURE | Civic | 150 (req AGRICULTURE) | LIVESTOCK_PEN |
+| TAILORING | Civic | 120 | TAILOR |
+| ALLIANCE_COMMAND | Civic | 50 (req BASIC_MINING 1) | ROOM_ALLIANCE_HQ |
+
+### Resources Defined
+- IRON, LEATHER, MEAT, SILVER, STEEL, STONE, VEGETABLES, WOOD (supply/minable/growable)
+
+### Rooms Defined
+- WAREHOUSE only
+
+---
+
+## Mod SDK Compatibility
+- sos-mod-sdk: 0.1.4
+- Game Version: V70.0
+- Java: 21
+
+---
+
+## Migration Notes for V71
+- `CAPTIVE_HUMAN` resource → Must migrate to new Slavery System
+- `ORC_SLAVERY` Tech → Must use new Diplomatic Slave Trade
+- `UNDEAD_CONVERSION` Event → Target Slave Population Class
+- `SLAVE_PRICE` in Race → Removed, use dynamic Law pricing
+- `UNDEAD.POPULATION.GROWTH: 0.0` → Works but needs LAW_MOD integration

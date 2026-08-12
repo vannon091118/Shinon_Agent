@@ -1,0 +1,176 @@
+*Aufgesetzt. Kaffee nummer sechs, kalt, ich hab's akzeptiert. Das hier ist jetzt ein Dokument.*
+
+---
+
+# SyxCraft — Vollständiges Konzept & Handoff
+**Stand: 2026-07-14 | Phase: Research abgeschlossen, Implementation ausstehend**
+
+---
+
+## 1. Projekt-Überblick
+
+SyxCraft ist ein WoW-inspirierter Total-Overhaul für **Songs of Syx V71 "Reign of Terror"**. Ziel ist ein Vier-Rassen-Ökosystem mit echter mechanischer Interdependenz — keine Stat-Differenzierung, sondern unterschiedliche Spielsysteme pro Rasse. Das Projekt wurde von Grund auf neu konzipiert; v0.0.48 ist verworfen.
+
+Entwicklungsmodell: Felix als Operator, Coding-Agents (Codex, Gemini CLI, Codebuff) als Implementierer, Claude als QA-Auditor und Architekturkritiker.
+
+---
+
+## 2. Technischer Stand (Repo: `vannon091118/SyxCraft`)
+
+**Was existiert:**
+
+Repo-Struktur mit Maven-Build (Java 21), Node-Validator (SyxCode Framework), und V70-Data-Files. Vier Rassen als Data-Files vollständig definiert. Build-Pipeline funktionsfähig (Fat JAR via maven-shade-plugin, Workshop-Upload vorbereitet).
+
+**Vier Rassen (V70 Data-Files):**
+
+| Rasse | Fraktion | Key-Stats (bestehend) |
+|-------|----------|-----------------------|
+| HUMAN | Allianz | ADULT_AT_DAY: 80, CIVIC_IMMIGRATION: +50%, Learning-Boost |
+| NIGHT_ELF | Allianz | ADULT_AT_DAY: 120, Ranged 1.2, Stealth 1.3, Cold-Resistance |
+| ORC | Horde | ADULT_AT_DAY: 60, Melee 1.5, Mining 1.2, Heat-Resistance |
+| UNDEAD | Horde | LIFE_IMMORTAL, kein Hunger, kein Schlaf, Maintenance 1.5, GROWTH: 0.0 |
+
+**Was NICHT existiert:** Undead-spezifische Räume, Conversion-Mechanik, Geist-System, Dual-Settlement-Logik, Orc-Sklavensystem, Night-Elf-Mechaniken, Interdependenz-Systeme, Validator-Schemas für neue File-Types.
+
+**Java-Stand:** `AllianceLogic.java` — Placeholder. Keine Script-Implementation.
+
+**Rassen-Override-Ansatz:** `_ignoreVanilla: true` auf bestehende Vanilla-Race-Slots (HUMAN, ORC etc.). Keine echten Custom-Races — Vanilla-Slots werden überschrieben, Assets ausgetauscht.
+
+**Mod SDK:** `4rg0n/sos-mod-sdk v0.1.5` für V71.44, verfügbar. Bietet `AbstractModSdkScript`, `GameApis` (Race, Events, Faction, Save, UI, Stats), `ON_GAME_UPDATE`-Hook, `FilePutter/FileGetter` für Custom State.
+
+---
+
+## 3. Das vollständige Konzept
+
+### 3.1 Vier-Rassen-Framework
+
+Zwei Fraktionen: **Allianz** (Human + Night Elf), **Horde** (Orc + Undead). Jede Rasse bekommt einen eigenen Tech Tree. Rassen sind mechanisch voneinander abhängig — Undead braucht Menschen als Ressource, Orcs liefern Sklaven an Undead, etc. Die Interdependenz-Matrix ist für Phase 3 geplant (nach Undead-Fertigstellung).
+
+Undead ist die erste Rasse die testbar fertig werden soll. Alle anderen Rassen-Loops kommen danach.
+
+### 3.2 Undead-Kernmechanik: Parasiten-Loop / Dual-City
+
+Der Undead-Spieler managt **simultan zwei Städte**:
+
+**Undead-Hauptstadt**
+Eigene Bevölkerung (Undead-Bürger), eigene Economy, eigene Gebäude. Zu Spielbeginn kann hier nur gebaut werden: Militärgebäude und Verstärkungsgebäude für das Menschendorf. Weitere Gebäudeoptionen schalten sich über das Gate-System frei.
+
+**Menschendorf**
+Separate Stadt in unmittelbarer Nähe der Undead-Hauptstadt. Verpflichtend — kein optionales Feature. Eigene Economy, eigene Bevölkerung (menschliche Bürger). Komplett getrennte Ressourcenlager, kein Transfer zwischen den Städten. Menschliche Bürger wirtschaften autonom.
+
+**Startbedingung:**
+- Undead-Hauptstadt: mehr als 10 Undead-Bürger
+- Menschendorf: direkt verfügbar, 10 menschliche Einwohner, bereits aufgebaut
+
+Ressourcentrennung ist initial 100% dicht. Eventuelle Abhängigkeiten (z.B. Resourcentransfer unter bestimmten Bedingungen) sind für spätere Iterationen optional.
+
+### 3.3 Tech-Gate-System: Menschendorf als Skill-Tree
+
+Es gibt keinen klassischen Tech Tree mit Prerequisites und Forschungspunkten. Stattdessen:
+
+Jede Undead-Funktion ist hinter **genau einem Gebäude** im Menschendorf gegattet. Forschung ist frei zugänglich, aber ohne das entsprechende Gebäude im Menschendorf funktioniert die Funktion nicht.
+
+**Das Menschendorf ist der Skill/Trait-Tree der Undead.**
+
+Je mehr und komplexere Gebäude du im Menschendorf baust, desto mehr Undead-Fähigkeiten werden freigeschaltet. Das schafft einen natürlichen Progressionsdruck: um die Undead zu entwickeln, muss das Menschendorf ausgebaut werden — was wiederum das Geist-System unter Druck setzt.
+
+### 3.4 Geist-System (Custom Mood für Menschendorf)
+
+Menschen im Menschendorf haben statt Vanilla-Loyalty den Wert **"Geist"**.
+
+Geist repräsentiert den Kontrollgrad der Undead über die Menschenpopulation. Es ist kein Zufriedenheitswert — es ist ein Abhängigkeitsgradient. Die Datenbasis ist eine andere als Vanilla-Loyalty, daher braucht es Java-Custom-Tracking (nicht nur ein Rename).
+
+**Mechanik:**
+- Geist sinkt mit wachsender Menschenpopulation und bei mangelnder Kontrollinfrastruktur
+- Geist steigt durch Kontrollgebäude in der Undead-Hauptstadt (die für die Menschenstadt wirken)
+- Fällt Geist unter einen Schwellwert → Unabhängigkeitsversuch (Event/Aufstand)
+- Undead-Spieler muss permanent balancieren: Kontrollgebäude vs. Versorgungsgebäude für die Menschen
+
+**Implementierungsanforderung:** Custom-Wert via Mod SDK, persistiert via `GameSaveApi`, UI via `GameUiApi`, Events via `GameEventsApi` bei Schwellwert-Unterschreitung.
+
+### 3.5 Conversion-Mechanik: Opfer-Prinzip
+
+Undead wächst ausschließlich durch Opfer. Kein natürliches Wachstum, keine Immigration (`CIVIC_IMMIGRATION>MUL: 0.0`).
+
+**Mechanik:** 1 menschlicher Sklave + Opfer-Ritual → 1 neuer Undead-Bürger.
+Verhältnis 1:1 zu Spielbeginn. Via Tech verbesserbar (z.B. 1 Mensch → 2 Undead).
+
+Keine "Human Pens" als Produktionsraum — das war ein Fehler des Phase-1-Research-Agents. Die Conversion ist ein aktiver Opfer-Akt, keine passive Produktion.
+
+### 3.6 Orc-Sklavensystem
+
+Orcs kämpfen gegen Menschen und erhalten menschliche Sklaven als **Kriegsbeute** (nicht als automatischen Passiv-Ertrag). Sklaven werden in einer eigenen Orc-Sklavenstruktur zwischengelagert. Von dort können sie an Undead weitergegeben/verkauft werden.
+
+Ein Vanilla-Sklavensystem existiert in Songs of Syx — wie weit es für diesen Zweck genutzt/extended werden kann ist noch ungeklärt (→ Phase-2-Research F5).
+
+---
+
+## 4. Research Phase 1 — Was vorliegt und was überholt ist
+
+**Vorliegt (Archiv: `SyxCraft-Undead-Research/`):**
+Vollständige technische Analyse der Undead-Mechanik als Silo: Race-System, Vanilla-Data-Strukturen, Tech-System, Mod SDK API-Referenz, Capability-Matrix, Mod-Struktur-Konzept, Beispiel-Data-Files, Dual-Settlement-Workaround-Analyse, 9 kritische technische Fragen, Balance-Formeln.
+
+**Was überholt/falsch ist:**
+- Human Pens als Produktionsraum → ersetzt durch Opfer-Mechanik
+- Worldmap-Building als Dual-Settlement-Proxy → Ziel ist echtes Settlement-Management
+- Research behandelt Undead als isoliertes System → tatsächlich Dual-City-Abhängigkeit
+- "Captive Human" als reine Resource → Menschen sind spielbare Bevölkerung, nicht Lagerware
+- Balance-Zahlen (Farm-Output-Rates etc.) → irrelevant, falsche Mechanik
+
+**Was weiterhin valide ist:**
+SDK-Capability-Matrix, Vanilla-Dateistruktur-Referenz, `_ignoreVanilla`-Analyse (mit Vorbehalt, ungetestet), `FilePutter/FileGetter`-Save-System, `AbstractModSdkScript`-Architektur.
+
+---
+
+## 5. Research Phase 2 — Offener Auftrag (Prompt liegt bereit)
+
+Acht technische Fragen die vor Implementation beantwortet werden müssen. Keine Implementierung — nur Dokumentation und Analyse.
+
+**Blocker (ohne Antwort kann nicht implementiert werden):**
+
+F1 — Bestätigung `_ignoreVanilla` auf Vanilla-Race-Slots ohne Engine-Crash. Was ist hardcoded auf HUMAN/ORC in der Engine (UI-Labels, Tutorial, Savegame-Struktur)?
+
+F2 — Natives Dual-Settlement in V71: wie weit geht die Engine wirklich? Gibt es undokumentierte APIs für Multi-Settlement-Verwaltung? Bester Workaround falls nativ nicht möglich.
+
+F3 — Geist als Custom Mood: technische Spezifikation für Custom-Wert der Loyalty ersetzt, eigenes Tracking hat, UI-sichtbar ist, Events triggert, via SaveApi persistiert.
+
+F4 — Building-as-Gate: wie implementiert man "Gebäude in Stadt A schaltet Funktion in Stadt B frei" via Mod SDK. Sauberster technischer Weg.
+
+F5 — Vanilla Orc Slave System V71: vollständige Dokumentation, V71-Änderungen, Extension-Möglichkeiten für Kriegsbeute-Mechanik.
+
+**Architektur:**
+
+F6 — V71 Impact Analysis: was haben die Änderungen an Laws/Slavery/Population Growth konkret an den geplanten Mechaniken gebrochen?
+
+F7 — Java Agent Interface Spec: Klassen-Contracts für parallele Coding-Agents. Wer darf was anfassen, welche Public Interfaces, welche Abhängigkeiten.
+
+F8 — Validator Schema Specs: fertige JSON-Schema-Files für alle neuen Data-File-Typen (resource-supply, room-custom, event-custom, world-building).
+
+**Output:** 8 Markdown-Dokumente + 4 JSON-Schemas in `SyxCraft-Undead-Research/phase-2/`. Jede Unklarheit explizit als UNVERIFIED markiert.
+
+---
+
+## 6. Explizit außerhalb des aktuellen Scope
+
+Bis Undead testbar steht, werden folgende Themen nicht angefasst:
+
+- Night Elf Mechaniken (kein einziges System designed)
+- Human-eigener Loop (jenseits "als Ressource dienen")
+- Interdependenz-Matrix (alle vier Rassen)
+- Alliance-vs-Horde Konfliktmechanik
+- Multiplayer-Kompatibilität
+- Balance-Werte (premature)
+
+---
+
+## 7. Nächste Schritte in Reihenfolge
+
+**Jetzt:** Phase-2-Research-Prompt an Agent übergeben, Ergebnisse abwarten.
+
+**Nach Phase 2:** Auf Basis der Antworten Implementierungs-Prompt für Undead-MVP bauen. Reihenfolge: Dual-Settlement-Fundament → Geist-System → Gate-System → Conversion-Mechanik → Orc-Sklave.
+
+**Nach Undead-MVP testbar:** Night Elf konzipieren, dann Interdependenz-Matrix, dann die anderen Rassen.
+
+---
+
+*Das war Kaffee sechs. Ich geh jetzt nach Hause. Das Konzept steht.*

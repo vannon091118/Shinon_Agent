@@ -1,0 +1,18 @@
+# Freebuff Desktop State
+.freebuff/
+*.db
+*.db-shm
+*.db-wal
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Python cache
+__pycache__/
+*.pyc

@@ -1,0 +1,178 @@
+[
+  {
+    "p_id": "p278",
+    "id": "plot-2026-07-06T00:28:58",
+    "timestamp": "2026-07-06 00:28:58",
+    "summary": "HOTFIX 404 Bug beheben hyphen preserve plus gitignore tracked exceptions",
+    "narrator": "Basher",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c273j16n2a2p2",
+    "ref_to": "plot-2026-07-05T21:33:16",
+    "prev_narrator": "Vannon"
+  },
+  {
+    "p_id": "p279",
+    "id": "plot-2026-07-06T00:29:53",
+    "timestamp": "2026-07-06 00:29:53",
+    "summary": "Domain Isolation Safeguards Scanner programm plus INDEX utils row ergaenzt",
+    "narrator": "Vannon",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c274j65n4a4p18",
+    "ref_to": "plot-2026-07-06T00:28:58",
+    "prev_narrator": "Basher"
+  },
+  {
+    "p_id": "p280",
+    "id": "plot-2026-07-06T00:29:59",
+    "timestamp": "2026-07-06 00:29:59",
+    "summary": "Commit Layer Overblocking Fix plus Freeze Plotchain Archive Felder",
+    "narrator": "Spark",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c275j36n9a6p17",
+    "ref_to": "plot-2026-07-06T00:29:53",
+    "prev_narrator": "Vannon"
+  },
+  {
+    "p_id": "p281",
+    "id": "plot-2026-07-06T00:30:04",
+    "timestamp": "2026-07-06 00:30:04",
+    "summary": "ARCHITECTURE Doku Forbidden Edges Domain Isolation Matrix dokumentiert",
+    "narrator": "Devin",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c276j94n6a6p22",
+    "ref_to": "plot-2026-07-06T00:29:59",
+    "prev_narrator": "Spark"
+  },
+  {
+    "p_id": "p282",
+    "id": "plot-2026-07-06T02:45:50",
+    "timestamp": "2026-07-06 02:45:50",
+    "summary": "v0.26 Release-Prep Konsolidierungs-Bump Full-Audit AGENTS-Kriterien Safety-gitignore Workshop-Cache",
+    "narrator": "Sage",
+    "model_id": "minimax-m3",
+    "composite": "c277j45n4a5p20",
+    "ref_to": "plot-2026-07-06T00:30:04",
+    "prev_narrator": "Devin"
+  },
+  {
+    "p_id": "p283",
+    "id": "plot-2026-07-06T02:47:59",
+    "timestamp": "2026-07-06 02:47:59",
+    "summary": "v0.26 Release-Prep Konsolidierungs-Bump Full-Audit AGENTS-Kriterien Safety-gitignore Workshop-Cache",
+    "narrator": "Vannon",
+    "model_id": "minimax-m3",
+    "composite": "c278j40n4a1p4",
+    "ref_to": "plot-2026-07-06T02:45:50",
+    "prev_narrator": "Sage"
+  },
+  {
+    "p_id": "p284",
+    "id": "plot-2026-07-06T03:12:25",
+    "timestamp": "2026-07-06 03:12:25",
+    "summary": "Game-Select-Cache-Hotfix v0.26 fuer RimWorld-Slider-Sync-SoS-Bug",
+    "narrator": "Ghost",
+    "model_id": "minimax-m3",
+    "composite": "c279j9n11a1p1",
+    "ref_to": "plot-2026-07-06T02:47:59",
+    "prev_narrator": "Vannon"
+  },
+  {
+    "p_id": "p285",
+    "id": "plot-2026-07-06T03:15:47",
+    "timestamp": "2026-07-06 03:15:47",
+    "summary": "Chronologischer Batch 1 von 4: tests/INDEX.md Aufnahme ins Repo weil verwaist seit v0.22",
+    "narrator": "Basher",
+    "model_id": "minimax-m3",
+    "composite": "c280j6n2a2p16",
+    "ref_to": "plot-2026-07-06T03:12:25",
+    "prev_narrator": "Ghost"
+  },
+  {
+    "p_id": "p286",
+    "id": "plot-2026-07-06T03:15:55",
+    "timestamp": "2026-07-06 03:15:55",
+    "summary": "Chronologischer Batch 2 von 4: plotchain/extract MJS-Skripte Aufnahme ins Repo weil Helper-Tools fuer Narrative-Pipeline",
+    "narrator": "Echo",
+    "model_id": "minimax-m3",
+    "composite": "c281j73n12a4p17",
+    "ref_to": "plot-2026-07-06T03:15:47",
+    "prev_narrator": "Basher"
+  },
+  {
+    "p_id": "p287",
+    "id": "plot-2026-07-06T03:16:03",
+    "timestamp": "2026-07-06 03:16:03",
+    "summary": "Chronologischer Batch 3 von 4: plotchain-delta und freebuff Audit-Logs Aufnahme als historische Nachweise",
+    "narrator": "Buffy",
+    "model_id": "minimax-m3",
+    "composite": "c282j77n1a4p13",
+    "ref_to": "plot-2026-07-06T03:15:55",
+    "prev_narrator": "Echo"
+  },
+  {
+    "p_id": "p288",
+    "id": "plot-2026-07-06T03:16:12",
+    "timestamp": "2026-07-06 03:16:12",
+    "summary": "Chronologischer Batch 4 von 4: v0.26 Smoke-Test-Outputs Aufnahme als Reproduktions-Beleg",
+    "narrator": "Spark",
+    "model_id": "minimax-m3",
+    "composite": "c283j7n9a5p15",
+    "ref_to": "plot-2026-07-06T03:16:03",
+    "prev_narrator": "Buffy"
+  },
+  {
+    "p_id": "p289",
+    "id": "plot-2026-07-06T03:18:11",
+    "timestamp": "2026-07-06 03:18:11",
+    "summary": "Chronologischer Batch 1 von 4: tests/INDEX.md Aufnahme weil verwaist seit v0.22",
+    "narrator": "Buffy",
+    "model_id": "minimax-m3",
+    "composite": "c284j54n1a5p5",
+    "ref_to": "plot-2026-07-06T03:16:12",
+    "prev_narrator": "Spark"
+  },
+  {
+    "p_id": "p290",
+    "id": "plot-2026-07-06T03:23:42",
+    "timestamp": "2026-07-06 03:23:42",
+    "summary": "Chronologischer Batch 4 von 4: logs/log.txt + logs/server_log.txt als historische Pre-Commit-Layer-Belege",
+    "narrator": "Vannon",
+    "model_id": "minimax-m3",
+    "composite": "c285j15n4a5p14",
+    "ref_to": "plot-2026-07-06T03:18:11",
+    "prev_narrator": "Buffy"
+  },
+  {
+    "p_id": "p291",
+    "id": "plot-2026-07-06T03:28:49",
+    "timestamp": "2026-07-06 03:28:49",
+    "summary": "RULES.md REGEL 15 hinzugefuegt: Phase-5-Reihenfolge F2-F4-F1-F3 ist verbindlich nach v0.30-Polish-Pass",
+    "narrator": "Buffy",
+    "model_id": "minimax-m3",
+    "composite": "c286j63n1a2p11",
+    "ref_to": "plot-2026-07-06T03:23:42",
+    "prev_narrator": "Vannon"
+  },
+  {
+    "p_id": "p292",
+    "id": "plot-2026-07-06T04:27:43",
+    "timestamp": "2026-07-06 04:27:43",
+    "summary": "Provider Uplink Dashboard + Scoring-System Overhaul",
+    "narrator": "Buffy",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c287j35n1a3p15",
+    "ref_to": "plot-2026-07-06T03:28:49",
+    "prev_narrator": "Vannon"
+  },
+  {
+    "p_id": "p293",
+    "id": "plot-2026-07-06T04:29:08",
+    "timestamp": "2026-07-06 04:29:08",
+    "summary": "Provider Uplink Dashboard + Scoring-System Overhaul",
+    "narrator": "Null",
+    "model_id": "nemotron-3-ultra-free",
+    "composite": "c288j1n11a6p21",
+    "ref_to": "plot-2026-07-06T04:27:43",
+    "prev_narrator": "Buffy"
+  }
+]

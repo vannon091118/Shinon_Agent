@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Validate tag, package versions, and changelog section
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const tag = process.env.GITHUB_REF_NAME;
+          const version = tag.replace(/^v/, "");
+
+          const files = ["package.json", "backend/package.json", "frontend/package.json"];
+          const mismatches = [];
+
+          for (const f of files) {
+            const data = JSON.parse(fs.readFileSync(f, "utf8"));
+            if (data.version !== version) mismatches.push(`${f}: ${data.version}`);
+          }
+
+          if (mismatches.length) {
+            console.error(`Tag version '${version}' must match all package.json versions.\nMismatches:\n- ${mismatches.join("\n- ")}`);
+            process.exit(1);
+          }
+
+          const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+          const header = `## [${version}]`;
+          if (!changelog.includes(header)) {
+            console.error(`CHANGELOG.md must contain a section '${header}' for tag ${tag}.`);
+            process.exit(1);
+          }
+          NODE
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Verify runtime gates
+        run: npm run verify:backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Extract release notes from changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { capture=1; next }
+            capture && $0 ~ "^## \\[" { capture=0 }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "::error::CHANGELOG.md section for version ${VERSION} exists but has no content."
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+

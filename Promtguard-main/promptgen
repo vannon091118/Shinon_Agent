@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Convenience wrapper: ./promptgen research|ingest|build|resume|handoff|context ...
+# Ruft promptgen.py im Projektkontext auf.
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$DIR/.promtset/tools/promptgen.py" "$@"

@@ -1,0 +1,86 @@
+# V71 — Reign of Terror
+# Game Version: V71.44
+# Mod SDK Version: 0.1.5
+# Status: ACTIVE — Current Live Version
+# Last Updated: 2026-07-14
+
+## Engine Changes (Reign of Terror)
+
+### Laws & Government System
+- **NEW:** Law Categories (Civic, Criminal, Military, Economic, Religious)
+- **CHANGED:** Law enactment now requires Government Points (GP) + specific building tiers
+- **CHANGED:** Law enactment UI completely redesigned
+
+### Slavery System Overhaul
+- **CHANGED:** Slavery is now a Law Category (Criminal) with tiers
+- **CHANGED:** Enslavement chance based on Law Tier + Crime Severity
+- **CHANGED:** Slaves are now a Population Class (not just resource)
+- **CHANGED:** Slave Trade is now Diplomatic Action (requires Embassy + Trade Agreement)
+- **REMOVED:** `SLAVE_PRICE` property from Race definition (now dynamic via Law)
+
+### Population Growth System
+- **CHANGED:** Growth Formula: `BASE_GROWTH * CLIMATE_MOD * TERRAIN_MOD * HOUSING_MOD * LAW_MOD`
+- **CHANGED:** `POPULATION.GROWTH` stat is now a multiplier (1.0 = vanilla)
+- **CHANGED:** `POPULATION.MAX` is now dynamic (Housing + Infrastructure)
+- **NEW:** `POPULATION.GROWTH` can be negative (population decline)
+- **NEW:** Migration system reworked (Immigration/Emigration as separate flows)
+
+### Race Relations
+- **CHANGED:** `OTHER_RACES` liking now affects Migration + Trade + Diplomacy
+- **NEW:** Race-specific Laws possible (e.g., "Undead Labor Act")
+
+---
+
+## Impact on SyxCraft Undead Mechanics
+
+| Mechanic | Status | Required Change |
+|----------|--------|-----------------|
+| `CAPTIVE_HUMAN` Resource | **BROKEN** | Must use new Slavery System (Law-based) |
+| `ORC_SLAVERY` Tech | **BROKEN** | Must use new Diplomatic Slave Trade |
+| `UNDEAD.POPULATION.GROWTH: 0.0` | **PARTIAL** | Works but needs `LAW_MOD` integration |
+| Conversion-only Population | **RISK** | New Migration system may allow natural growth |
+| `SLAVE_PRICE` in Race | **REMOVED** | Must use dynamic Law-based pricing |
+
+---
+
+## Required Fixes for V71 Compatibility
+
+### 1. `CAPTIVE_HUMAN` → New Slavery System
+```txt
+# OLD: Standalone Resource
+RESOURCE: CAPTIVE_HUMAN, RACES: [UNDEAD]
+
+# NEW: Integrated into Slavery Law
+# Slaves acquired via: Enslavement Law + Raids + Diplomatic Trade
+# Stored as: Population Class SLAVE (Race: HUMAN, Class: SLAVE)
+```
+
+### 2. `ORC_SLAVERY` → Diplomatic Slave Trade
+```txt
+# OLD: Tech unlocks Room + Events
+UNLOCKS_FACTION: [ ROOM_SLAVE_PEN ]
+
+# NEW: Diplomatic Action
+# Requires: Embassy + Trade Agreement + Slavery Law (Tier 2+)
+# Action: REQUEST_SLAVE_TRADE(target_faction, amount)
+```
+
+### 3. `UNDEAD_CONVERSION` Event
+```txt
+# CHANGE: Target is now Population Class SLAVE (Race: HUMAN)
+# Selection Filter: CLASS_SLAVE: 1, RACE: HUMAN
+# Result: CLASS_SLAVE -> CLASS_CITIZEN, RACE: UNDEAD
+```
+
+---
+
+## V71 Migration Checklist
+
+- [ ] Remove `SLAVE_PRICE` from all Race definitions
+- [ ] Convert `CAPTIVE_HUMAN` resource to Slavery Law integration
+- [ ] Rewrite `ORC_SLAVERY` as Diplomatic Trade Agreement
+- [ ] Update `UNDEAD_CONVERSION` to target Slave Population Class
+- [ ] Integrate `UNDEAD.POPULATION.GROWTH` with Law Modifiers
+- [ ] Test Migration/Emigration flows for Undead
+- [ ] Update `CAPTIVE_HUMAN` Resource → Population Class migration
+EOF

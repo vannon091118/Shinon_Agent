@@ -1,0 +1,62 @@
+{
+  "description": "Arcs als abstrakte ID-Map (A1..AN). Jeder Arc repräsentiert eine Projekt-Phase. Der aktive Arc ist über 'active' referenziert.",
+  "active": "a6",
+  "arcs": {
+    "a1": {
+      "id": "a1",
+      "name": "Der Turmbau zu Babel",
+      "version": "v0.19-v0.20",
+      "theme": "Aus 'drei Schritte' wurde ein KI-Übersetzungssystem mit 9 Providern, Web-Dashboard und Watermark-Defense.",
+      "status": "archived",
+      "first_p": "p1",
+      "last_p": "p153"
+    },
+    "a2": {
+      "id": "a2",
+      "name": "Die unsichtbaren Feinde",
+      "version": "v0.20-v0.21",
+      "theme": "Watermarks, stille Catches, Bugs die wochenlang unentdeckt blieben.",
+      "status": "archived",
+      "first_p": "p154",
+      "last_p": "p154"
+    },
+    "a3": {
+      "id": "a3",
+      "name": "Die große Aufräumaktion",
+      "version": "v0.21-v0.22",
+      "theme": "Doku-Konsolidierung, Dead-Code-Exorzismus, Architektur-Korrekturen.",
+      "status": "archived",
+      "first_p": "p155",
+      "last_p": "p159"
+    },
+    "a4": {
+      "id": "a4",
+      "name": "Der User weiß es besser",
+      "version": "v0.20-heute",
+      "theme": "Vannons Architektur-Korrekturen die sich jedes Mal als richtig erwiesen.",
+      "status": "archived",
+      "first_p": "p160",
+      "last_p": "p173"
+    },
+    "a5": {
+      "id": "a5",
+      "name": "v0.22 Stabilisierung",
+      "version": "v0.22-v0.25",
+      "theme": "Cleanup, Konsolidierung und Stabilisierung des Systems nach dem massiven v0.21 Audit. Repo aufräumen, Commit-Layer vereinfachen, Doku-Struktur schaffen.",
+      "span": "2026-06-22 → 2026-07-05",
+      "status": "archived",
+      "first_p": "p174",
+      "last_p": "p277"
+    },
+    "a6": {
+      "id": "a6",
+      "name": "v0.26 Scope-Finish",
+      "version": "v0.26-v0.30",
+      "theme": "GUI-Refactoring (Phase 2.7) abgeschlossen, RimWorld Phase 3.3 + Post-Phase 4 produktiv, Code-Audit-Wellen konsolidiert. Fokus auf Polish-Pass zur v0.30 — kein neues Spiel vor v0.30.",
+      "span": "2026-07-05 → v0.30",
+      "status": "active",
+      "first_p": "p278",
+      "last_p": null
+    }
+  }
+}

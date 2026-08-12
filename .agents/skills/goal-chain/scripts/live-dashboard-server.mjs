@@ -158,9 +158,9 @@ function getFullState() {
   );
 
   const decRows = queryDB(`
-    SELECT d.tid, d.decision_type, d.decision_value, d.created_at as timestamp
+    SELECT d.tid, d.decision_type, d.decision_value, d.timestamp as created_at
     FROM dispatcher_decisions d JOIN tasks t ON d.tid=t.tid ${where}
-    ORDER BY d.decision_id DESC LIMIT 5
+    ORDER BY d.timestamp DESC LIMIT 5
   `);
 
   const phaseRows = queryDB(
@@ -172,7 +172,7 @@ function getFullState() {
     SELECT d.tid, d.decision_type, d.decision_value, d.rationale
     FROM dispatcher_decisions d JOIN tasks t ON d.tid = t.tid ${where}
     AND d.decision_type IN ('ROOT_CAUSE', 'ROOT_CAUSE_RESET')
-    ORDER BY d.decision_id DESC
+    ORDER BY d.timestamp DESC
   `);
   const root_causes = {};
   for (const r of (rootCauseRows || [])) {

@@ -1,0 +1,2745 @@
+{
+  "genesis_composite": "c0j0n0a0p0",
+  "genesis_mood": "genesis",
+  "created": "2026-06-23",
+  "description": "Deterministische Composite-Chain. Jeder Commit schreibt Composite + Mood + Narrator fort. Mood[N] != Mood[N-1] garantiert. Narrator deterministisch via n-Feld (1=Buffy, 2=Basher, 3=Thinker, 4=Vannon, 5=Squizzle, 6=Devin, 7=Argos, 8=Ghost, 9=Spark, 10=Glitch, 11=Null, 12=Echo, 13=Flux, 14=Sage). NEU: model_id + prev_narrator fuer Cross-Narrator-Referenzen in Commit-Dialogen.",
+  "chain": [
+    {
+      "seq": 1,
+      "composite": "c1j64n3a4p20",
+      "commitHash": "ce0bbe9",
+      "mood": "selbstironisch",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:51"
+    },
+    {
+      "seq": 2,
+      "composite": "c2j91n1a5p3",
+      "commitHash": "d027d95",
+      "mood": "sarkastisch",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:51"
+    },
+    {
+      "seq": 3,
+      "composite": "c3j51n2a5p10",
+      "commitHash": "96d245a",
+      "mood": "erschöpft",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:51"
+    },
+    {
+      "seq": 4,
+      "composite": "c4j37n4a4p16",
+      "commitHash": "61ae99e",
+      "mood": "alarmiert",
+      "n": 4,
+      "timestamp": "2026-06-23T20:43:51"
+    },
+    {
+      "seq": 5,
+      "composite": "c5j66n1a2p19",
+      "commitHash": "a6af87a",
+      "mood": "müde-zufrieden",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:51"
+    },
+    {
+      "seq": 6,
+      "composite": "c6j18n2a1p12",
+      "commitHash": "244bd28",
+      "mood": "trocken",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:51"
+    },
+    {
+      "seq": 7,
+      "composite": "c7j98n2a3p10",
+      "commitHash": "5137e57",
+      "mood": "warm",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 8,
+      "composite": "c8j7n1a1p9",
+      "commitHash": "da770a7",
+      "mood": "alarmiert",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 9,
+      "composite": "c9j93n3a5p7",
+      "commitHash": "c5e3cdd",
+      "mood": "triumphierend",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 10,
+      "composite": "c10j24n2a4p19",
+      "commitHash": "db030f9",
+      "mood": "selbstironisch",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 11,
+      "composite": "c11j65n1a3p7",
+      "commitHash": "c4dc58d",
+      "mood": "neugierig",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 12,
+      "composite": "c12j87n2a3p14",
+      "commitHash": "49b1657",
+      "mood": "alarmiert",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 13,
+      "composite": "c13j73n1a1p6",
+      "commitHash": "7cdfa8b",
+      "mood": "triumphierend",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 14,
+      "composite": "c14j74n3a4p20",
+      "commitHash": "5fae0ce",
+      "mood": "selbstironisch",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 15,
+      "composite": "c15j75n2a1p1",
+      "commitHash": "f774b01",
+      "mood": "neugierig",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 16,
+      "composite": "c16j27n2a3p8",
+      "commitHash": "2288dc0",
+      "mood": "alarmiert",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 17,
+      "composite": "c17j77n2a2p15",
+      "commitHash": "8862c64",
+      "mood": "trocken",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 18,
+      "composite": "c18j5n3a3p19",
+      "commitHash": "911dee4",
+      "mood": "neugierig",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 19,
+      "composite": "c19j7n4a5p18",
+      "commitHash": "8c3c0d4",
+      "mood": "alarmiert",
+      "n": 4,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 20,
+      "composite": "c20j73n3a5p1",
+      "commitHash": "50da347",
+      "mood": "triumphierend",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 21,
+      "composite": "c21j99n2a1p15",
+      "commitHash": "2967398",
+      "mood": "warm",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 22,
+      "composite": "c22j93n4a4p6",
+      "commitHash": "fd632c9",
+      "mood": "triumphierend",
+      "n": 4,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 23,
+      "composite": "c23j75n3a2p10",
+      "commitHash": "087499f",
+      "mood": "neugierig",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 24,
+      "composite": "c24j49n3a4p17",
+      "commitHash": "08866f7",
+      "mood": "warm",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 25,
+      "composite": "c25j75n1a2p13",
+      "commitHash": "054b24b",
+      "mood": "neugierig",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 26,
+      "composite": "c26j15n1a5p4",
+      "commitHash": "711e519",
+      "mood": "müde-zufrieden",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 27,
+      "composite": "c27j67n2a2p2",
+      "commitHash": "2328046",
+      "mood": "alarmiert",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 28,
+      "composite": "c28j1n2a3p13",
+      "commitHash": "67808e2",
+      "mood": "sarkastisch",
+      "n": 2,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 29,
+      "composite": "c29j84n1a5p16",
+      "commitHash": "d1db5d4",
+      "mood": "selbstironisch",
+      "n": 1,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 30,
+      "composite": "c30j53n3a3p11",
+      "commitHash": "1a8d303",
+      "mood": "triumphierend",
+      "n": 3,
+      "timestamp": "2026-06-23T20:43:52"
+    },
+    {
+      "seq": 31,
+      "composite": "c31j16n4a5p4",
+      "commitHash": "8800888",
+      "mood": "müde-zufrieden",
+      "seed": 1580173660
+    },
+    {
+      "seq": 32,
+      "composite": "c32j14n1a4p7",
+      "commitHash": "d422fa6",
+      "mood": "selbstironisch",
+      "seed": 3715543922
+    },
+    {
+      "seq": 33,
+      "composite": "c33j29n4a4p21",
+      "commitHash": "3b1ee8b",
+      "mood": "warm",
+      "seed": 3609360641
+    },
+    {
+      "seq": 34,
+      "composite": "c34j73n2a1p2",
+      "commitHash": "15d83c1",
+      "mood": "triumphierend",
+      "seed": 43084470
+    },
+    {
+      "seq": 35,
+      "composite": "c35j96n2a1p2",
+      "commitHash": "5cb9878",
+      "mood": "müde-zufrieden",
+      "seed": 3161754097
+    },
+    {
+      "seq": 36,
+      "composite": "c36j83n2a4p18",
+      "commitHash": "2c315a4",
+      "mood": "triumphierend",
+      "seed": 1566069760
+    },
+    {
+      "seq": 37,
+      "composite": "c37j50n3a4p4",
+      "commitHash": "4e60fb4",
+      "mood": "sachlich",
+      "seed": 4170896143
+    },
+    {
+      "seq": 38,
+      "composite": "c38j48n9a2p1",
+      "commitHash": "c799852",
+      "mood": "trocken",
+      "seed": 4256654374,
+      "model_id": "mimo-v2.5-pro",
+      "prev_narrator": "Sage"
+    },
+    {
+      "seq": 39,
+      "hash": "a9bb6d1",
+      "composite": "c39j97n1a5p4",
+      "mood": "alarmiert",
+      "narrator": "Buffy",
+      "model_id": "Claude Sonnet 4.6",
+      "date": "2026-06-25 21:50:40"
+    },
+    {
+      "seq": 40,
+      "hash": "a4ff410",
+      "composite": "c40j43n10a3p23",
+      "mood": "triumphierend",
+      "narrator": "Glitch",
+      "model_id": "Claude Sonnet 4.6",
+      "date": "2026-06-25 21:56:32"
+    },
+    {
+      "seq": 41,
+      "hash": "f34358d",
+      "composite": "c41j100n6a2p40",
+      "mood": "sachlich",
+      "narrator": "Devin",
+      "model_id": "Claude Sonnet 4.6",
+      "date": "2026-06-25 22:07:27"
+    },
+    {
+      "seq": 42,
+      "hash": "0017361",
+      "composite": "c42j47n1a2p1",
+      "mood": "alarmiert",
+      "narrator": "Buffy",
+      "model_id": "Claude Sonnet 4.6",
+      "date": "2026-06-25 22:13:25"
+    },
+    {
+      "seq": 43,
+      "hash": "2f3e30a",
+      "composite": "c43j75n6a3p11",
+      "mood": "neugierig",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 22:29:53"
+    },
+    {
+      "seq": 44,
+      "hash": "638088a",
+      "composite": "c44j30n4a4p32",
+      "mood": "sachlich",
+      "narrator": "Vannon",
+      "model_id": "Gemini 3.5 Flash",
+      "date": "2026-06-25 22:35:06"
+    },
+    {
+      "seq": 45,
+      "hash": "1ec438a",
+      "composite": "c45j75n8a2p44",
+      "mood": "neugierig",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 22:35:45"
+    },
+    {
+      "seq": 46,
+      "hash": "fbbb968",
+      "composite": "c46j97n2a2p49",
+      "mood": "alarmiert",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 22:48:56"
+    },
+    {
+      "seq": 47,
+      "hash": "bc9c25c",
+      "composite": "c47j89n13a1p9",
+      "mood": "warm",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 22:51:36"
+    },
+    {
+      "seq": 48,
+      "hash": "d286d0d",
+      "composite": "c48j19n6a5p27",
+      "mood": "sachlich",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:03:50"
+    },
+    {
+      "seq": 49,
+      "hash": "fc89640",
+      "composite": "c49j90n9a2p19",
+      "mood": "sarkastisch",
+      "narrator": "Spark",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:08:38"
+    },
+    {
+      "seq": 50,
+      "hash": "db1197b",
+      "composite": "c50j53n10a4p25",
+      "mood": "triumphierend",
+      "narrator": "Glitch",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:18:40"
+    },
+    {
+      "seq": 51,
+      "hash": "46f5e21",
+      "composite": "c51j32n2a1p40",
+      "mood": "erschöpft",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:21:45"
+    },
+    {
+      "seq": 52,
+      "hash": "46faefb",
+      "composite": "c52j41n12a3p35",
+      "mood": "sarkastisch",
+      "narrator": "Echo",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:26:20"
+    },
+    {
+      "seq": 53,
+      "hash": "3c1ea40",
+      "composite": "c53j79n3a4p37",
+      "mood": "warm",
+      "narrator": "Thinker",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:29:00"
+    },
+    {
+      "seq": 54,
+      "hash": "a4dee64",
+      "composite": "c54j67n13a3p54",
+      "mood": "alarmiert",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:33:52"
+    },
+    {
+      "seq": 55,
+      "hash": "85e6fe5",
+      "composite": "c55j35n8a4p26",
+      "mood": "neugierig",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:40:05"
+    },
+    {
+      "seq": 56,
+      "hash": "88e14e5",
+      "composite": "c56j60n13a5p47",
+      "mood": "sachlich",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:42:50"
+    },
+    {
+      "seq": 57,
+      "hash": "0dcf8d9",
+      "composite": "c57j71n3a2p52",
+      "mood": "sarkastisch",
+      "narrator": "Thinker",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:51:44"
+    },
+    {
+      "seq": 58,
+      "hash": "7f541cf",
+      "composite": "c58j44n10a1p25",
+      "mood": "selbstironisch",
+      "narrator": "Glitch",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-25 23:57:26"
+    },
+    {
+      "seq": 59,
+      "hash": "f9c6591",
+      "composite": "c59j40n2a3p49",
+      "mood": "sachlich",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:02:48"
+    },
+    {
+      "seq": 60,
+      "hash": "13dbe51",
+      "composite": "c60j58n14a3p25",
+      "mood": "trocken",
+      "narrator": "Sage",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:07:28"
+    },
+    {
+      "seq": 61,
+      "hash": "520bb62",
+      "composite": "c61j14n7a1p60",
+      "mood": "selbstironisch",
+      "narrator": "Argos",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:10:23"
+    },
+    {
+      "seq": 62,
+      "hash": "96685a1",
+      "composite": "c62j8n14a5p19",
+      "mood": "trocken",
+      "narrator": "Sage",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:13:52"
+    },
+    {
+      "seq": 63,
+      "hash": "ce5059d",
+      "composite": "c63j97n4a1p21",
+      "mood": "alarmiert",
+      "narrator": "Vannon",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:15:12"
+    },
+    {
+      "seq": 64,
+      "hash": "7d3286d",
+      "composite": "c64j14n2a5p39",
+      "mood": "selbstironisch",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:17:31"
+    },
+    {
+      "seq": 65,
+      "hash": "1134705",
+      "composite": "c65j71n6a3p51",
+      "mood": "sarkastisch",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:21:16"
+    },
+    {
+      "seq": 66,
+      "hash": "aa01c18",
+      "composite": "c66j6n14a2p43",
+      "mood": "müde-zufrieden",
+      "narrator": "Sage",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:25:18"
+    },
+    {
+      "seq": 67,
+      "hash": "e168a8a",
+      "composite": "c67j33n13a5p23",
+      "mood": "triumphierend",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-26 00:32:36"
+    },
+    {
+      "seq": 68,
+      "hash": "285a236",
+      "composite": "c68j47n14a1p51",
+      "mood": "alarmiert",
+      "narrator": "Sage",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-29 13:56:28"
+    },
+    {
+      "seq": 69,
+      "hash": "3879555",
+      "composite": "c69j11n8a5p55",
+      "mood": "sarkastisch",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-29 14:29:13"
+    },
+    {
+      "seq": 70,
+      "hash": "57abe51",
+      "composite": "c70j100n13a2p59",
+      "mood": "sachlich",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-06-29 20:54:42"
+    },
+    {
+      "seq": 71,
+      "hash": "25e1851",
+      "composite": "c71j67n8a5p26",
+      "mood": "alarmiert",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-06-29 22:05:02"
+    },
+    {
+      "seq": 72,
+      "hash": "089987c",
+      "composite": "c72j31n12a3p9",
+      "mood": "sarkastisch",
+      "narrator": "Echo",
+      "model_id": "Claude Sonnet 4.6 Thinking",
+      "date": "2026-07-01 22:14:27"
+    },
+    {
+      "seq": 73,
+      "hash": "da50a4b",
+      "composite": "c73j74n12a2p57",
+      "mood": "selbstironisch",
+      "narrator": "Echo",
+      "model_id": "Claude Sonnet 4.6 Thinking",
+      "date": "2026-07-01 22:17:06"
+    },
+    {
+      "seq": 74,
+      "hash": "82a7a88",
+      "composite": "c74j89n6a5p29",
+      "mood": "warm",
+      "narrator": "Devin",
+      "model_id": "Claude Sonnet 4.6 Thinking",
+      "date": "2026-07-01 22:20:51"
+    },
+    {
+      "seq": 75,
+      "hash": "0f69fd8",
+      "composite": "c75j46n13a1p31",
+      "mood": "müde-zufrieden",
+      "narrator": "Flux",
+      "model_id": "Claude Sonnet 4.6 Thinking",
+      "date": "2026-07-01 22:33:18"
+    },
+    {
+      "seq": 76,
+      "hash": "74a54b4",
+      "composite": "c76j53n4a2p51",
+      "mood": "triumphierend",
+      "narrator": "Vannon",
+      "model_id": "Gemini 3.5 Flash",
+      "date": "2026-07-01 22:35:11"
+    },
+    {
+      "seq": 77,
+      "hash": "749d33b",
+      "composite": "c77j59n14a1p79",
+      "mood": "warm",
+      "narrator": "Sage",
+      "model_id": "Gemini 3.5 Flash",
+      "date": "2026-07-01 23:14:10"
+    },
+    {
+      "seq": 78,
+      "hash": "7c08120",
+      "composite": "c78j70n13a4p19",
+      "mood": "sachlich",
+      "narrator": "Flux",
+      "model_id": "Gemini 3.5 Flash",
+      "date": "2026-07-01 23:15:07"
+    },
+    {
+      "seq": 79,
+      "hash": "089987c",
+      "composite": "c79j56n1a5p52",
+      "mood": "müde-zufrieden",
+      "narrator": "Buffy",
+      "model_id": "Gemini 3.5 Flash",
+      "date": "2026-07-01 23:16:53"
+    },
+    {
+      "seq": 80,
+      "hash": "1f5cd69",
+      "composite": "c80j43n4a3p16",
+      "mood": "triumphierend",
+      "narrator": "Vannon",
+      "model_id": "Gemini 3.5 Flash",
+      "date": "2026-07-01 23:42:44"
+    },
+    {
+      "seq": 81,
+      "hash": "b85239a",
+      "composite": "c81j65n5a1p20",
+      "mood": "neugierig",
+      "narrator": "Squizzle",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 00:24:41"
+    },
+    {
+      "seq": 82,
+      "hash": "3613cba",
+      "composite": "c82j3n3a1p73",
+      "mood": "triumphierend",
+      "narrator": "Thinker",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 00:29:50"
+    },
+    {
+      "seq": 83,
+      "hash": "6c09990",
+      "composite": "c83j29n6a1p39",
+      "mood": "warm",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 00:39:08"
+    },
+    {
+      "seq": 84,
+      "hash": "cb8d2c7",
+      "composite": "c84j71n6a1p13",
+      "mood": "sarkastisch",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 00:48:34"
+    },
+    {
+      "seq": 85,
+      "hash": "6acfc46",
+      "composite": "c85j92n6a4p32",
+      "mood": "erschöpft",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 00:52:06"
+    },
+    {
+      "seq": 86,
+      "hash": "84215b2",
+      "composite": "c86j51n3a5p59",
+      "mood": "sarkastisch",
+      "narrator": "Thinker",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 01:04:35"
+    },
+    {
+      "seq": 87,
+      "hash": "19e6c4e",
+      "composite": "c87j48n13a3p35",
+      "mood": "trocken",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 01:09:48"
+    },
+    {
+      "seq": 88,
+      "hash": "3bfbbc9",
+      "composite": "c88j15n10a5p77",
+      "mood": "neugierig",
+      "narrator": "Glitch",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 01:15:10"
+    },
+    {
+      "seq": 89,
+      "hash": "9d3b65c",
+      "composite": "c89j55n4a2p52",
+      "mood": "müde-zufrieden",
+      "narrator": "Vannon",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 01:36:16"
+    },
+    {
+      "seq": 90,
+      "hash": "1699f58",
+      "composite": "c90j34n12a2p92",
+      "mood": "selbstironisch",
+      "narrator": "Echo",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 01:43:54"
+    },
+    {
+      "seq": 91,
+      "hash": "b5e6c91",
+      "composite": "c91j10n1a1p78",
+      "mood": "sachlich",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 02:14:03"
+    },
+    {
+      "seq": 92,
+      "hash": "935dd97",
+      "composite": "c92j61n1a1p59",
+      "mood": "sarkastisch",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 02:15:31"
+    },
+    {
+      "seq": 93,
+      "hash": "70178d5",
+      "composite": "c93j89n11a1p26",
+      "mood": "warm",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 02:34:14"
+    },
+    {
+      "seq": 94,
+      "hash": "91ce7a4",
+      "composite": "c94j25n9a5p27",
+      "mood": "neugierig",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 02:50:03"
+    },
+    {
+      "seq": 95,
+      "hash": "de138ca",
+      "composite": "c95j81n1a3p42",
+      "mood": "sarkastisch",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 02:54:36"
+    },
+    {
+      "seq": 96,
+      "hash": "4ef26c9",
+      "composite": "c96j39n8a5p99",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 02:59:18"
+    },
+    {
+      "seq": 97,
+      "hash": "3cd4d09",
+      "composite": "c97j68n12a2p78",
+      "mood": "trocken",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 03:06:30"
+    },
+    {
+      "seq": 98,
+      "hash": "da546d9",
+      "composite": "c98j54n7a4p64",
+      "mood": "selbstironisch",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 03:12:28"
+    },
+    {
+      "seq": 99,
+      "hash": "cbc8b99",
+      "composite": "c99j77n4a5p59",
+      "mood": "alarmiert",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 04:00:52"
+    },
+    {
+      "seq": 100,
+      "hash": "a4bfcb7",
+      "composite": "c100j81n7a3p24",
+      "mood": "sarkastisch",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 04:18:32"
+    },
+    {
+      "seq": 101,
+      "hash": "b1277c4",
+      "composite": "c101j36n6a3p5",
+      "mood": "müde-zufrieden",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 04:26:19"
+    },
+    {
+      "seq": 102,
+      "hash": "01ce413",
+      "composite": "c102j35n7a5p59",
+      "mood": "neugierig",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 04:28:47"
+    },
+    {
+      "seq": 103,
+      "hash": "c91cffd",
+      "composite": "c103j46n7a4p46",
+      "mood": "müde-zufrieden",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 04:36:34"
+    },
+    {
+      "seq": 104,
+      "hash": "a333028",
+      "composite": "c104j97n13a2p37",
+      "mood": "alarmiert",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 05:12:32"
+    },
+    {
+      "seq": 105,
+      "hash": "8caad81",
+      "composite": "c105j29n5a2p79",
+      "mood": "warm",
+      "narrator": "Squizzle",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 05:48:32"
+    },
+    {
+      "seq": 106,
+      "hash": "16b18bd",
+      "composite": "c106j35n4a2p24",
+      "mood": "neugierig",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 06:01:01"
+    },
+    {
+      "seq": 107,
+      "hash": "9fd524d",
+      "composite": "c107j12n6a4p92",
+      "mood": "erschöpft",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 06:30:42"
+    },
+    {
+      "seq": 108,
+      "hash": "e1d305e",
+      "composite": "c108j10n14a2p15",
+      "mood": "sachlich",
+      "narrator": "Sage",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 06:34:32"
+    },
+    {
+      "seq": 109,
+      "hash": "69a6f2f",
+      "composite": "c109j25n2a2p13",
+      "mood": "neugierig",
+      "narrator": "Basher",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 06:44:12"
+    },
+    {
+      "seq": 110,
+      "hash": "3733b05",
+      "composite": "c110j30n11a4p39",
+      "mood": "sachlich",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 06:47:46"
+    },
+    {
+      "seq": 111,
+      "hash": "005b7e0",
+      "composite": "c111j79n4a5p56",
+      "mood": "warm",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 07:01:08"
+    },
+    {
+      "seq": 112,
+      "hash": "2a2482b",
+      "composite": "c112j69n6a1p56",
+      "mood": "sachlich",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 08:08:46"
+    },
+    {
+      "seq": 113,
+      "hash": "a052e10",
+      "composite": "c113j35n8a3p96",
+      "mood": "neugierig",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 09:08:39"
+    },
+    {
+      "seq": 114,
+      "hash": "adea9ca",
+      "composite": "c114j15n4a2p22",
+      "mood": "müde-zufrieden",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 09:42:54"
+    },
+    {
+      "seq": 115,
+      "hash": "da53473",
+      "composite": "c115j77n11a1p56",
+      "mood": "alarmiert",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 10:10:22"
+    },
+    {
+      "seq": 116,
+      "hash": "013a2d3",
+      "composite": "c116j71n4a2p36",
+      "mood": "sarkastisch",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 10:33:09"
+    },
+    {
+      "seq": 117,
+      "hash": "f5f0fa1",
+      "composite": "c117j5n9a4p21",
+      "mood": "neugierig",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 10:40:20"
+    },
+    {
+      "seq": 118,
+      "hash": "3c440fc",
+      "composite": "c118j58n13a4p29",
+      "mood": "trocken",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 10:53:31"
+    },
+    {
+      "seq": 119,
+      "hash": "3af6136",
+      "composite": "c119j26n6a2p73",
+      "mood": "müde-zufrieden",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 10:59:37"
+    },
+    {
+      "seq": 120,
+      "hash": "ca0aebc",
+      "composite": "c120j99n6a1p19",
+      "mood": "warm",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:05:06"
+    },
+    {
+      "seq": 121,
+      "hash": "862853c",
+      "composite": "c121j79n2a1p37",
+      "mood": "sachlich",
+      "narrator": "Basher",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:13:12"
+    },
+    {
+      "seq": 122,
+      "hash": "862853c",
+      "composite": "c122j41n1a4p14",
+      "mood": "sarkastisch",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:14:30"
+    },
+    {
+      "seq": 123,
+      "hash": "013a2d3",
+      "composite": "c123j34n13a4p49",
+      "mood": "selbstironisch",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:20:55"
+    },
+    {
+      "seq": 124,
+      "hash": "77a3a5d",
+      "composite": "c124j92n10a2p75",
+      "mood": "erschöpft",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:26:41"
+    },
+    {
+      "seq": 125,
+      "hash": "77a3a5d",
+      "composite": "c125j40n9a3p18",
+      "mood": "sachlich",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:27:09"
+    },
+    {
+      "seq": 126,
+      "hash": "77a3a5d",
+      "composite": "c126j39n13a4p10",
+      "mood": "warm",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:27:37"
+    },
+    {
+      "seq": 127,
+      "hash": "013a2d3",
+      "composite": "c127j53n4a5p37",
+      "mood": "triumphierend",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:32:48"
+    },
+    {
+      "seq": 128,
+      "hash": "013a2d3",
+      "composite": "c128j32n8a3p44",
+      "mood": "erschöpft",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 11:33:44"
+    },
+    {
+      "seq": 129,
+      "hash": "fd07320",
+      "composite": "c129j94n3a4p38",
+      "mood": "selbstironisch",
+      "narrator": "Thinker",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:00:02"
+    },
+    {
+      "seq": 130,
+      "hash": "fd07320",
+      "composite": "c130j36n4a1p89",
+      "mood": "müde-zufrieden",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:02:23"
+    },
+    {
+      "seq": 131,
+      "hash": "fd07320",
+      "composite": "c131j93n5a4p35",
+      "mood": "triumphierend",
+      "narrator": "Squizzle",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:03:55"
+    },
+    {
+      "seq": 132,
+      "hash": "fd07320",
+      "composite": "c132j75n12a2p57",
+      "mood": "neugierig",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:07:22"
+    },
+    {
+      "seq": 133,
+      "hash": "a0061ea",
+      "composite": "c133j7n11a5p70",
+      "mood": "alarmiert",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:29:49"
+    },
+    {
+      "seq": 134,
+      "hash": "a0061ea",
+      "composite": "c134j90n10a5p107",
+      "mood": "sachlich",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:33:28"
+    },
+    {
+      "seq": 135,
+      "hash": "db73827",
+      "composite": "c135j15n9a4p36",
+      "mood": "neugierig",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:41:17"
+    },
+    {
+      "seq": 136,
+      "hash": "db73827",
+      "composite": "c136j29n8a1p134",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:50:10"
+    },
+    {
+      "seq": 137,
+      "hash": "db73827",
+      "composite": "c137j3n7a2p75",
+      "mood": "triumphierend",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-02 12:52:31"
+    },
+    {
+      "seq": 138,
+      "hash": "af0e57f",
+      "composite": "c138j62n2a4p115",
+      "mood": "erschöpft",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 14:51:00"
+    },
+    {
+      "seq": 139,
+      "hash": "af0e57f",
+      "composite": "c139j6n5a4p65",
+      "mood": "müde-zufrieden",
+      "narrator": "Squizzle",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 14:59:08"
+    },
+    {
+      "seq": 140,
+      "hash": "af0e57f",
+      "composite": "c140j25n8a3p45",
+      "mood": "neugierig",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:00:11"
+    },
+    {
+      "seq": 141,
+      "hash": "ba3578f",
+      "composite": "c141j62n7a1p80",
+      "mood": "erschöpft",
+      "narrator": "Argos",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:02:17"
+    },
+    {
+      "seq": 142,
+      "hash": "ba3578f",
+      "composite": "c142j100n7a3p140",
+      "mood": "sachlich",
+      "narrator": "Argos",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:03:42"
+    },
+    {
+      "seq": 143,
+      "hash": "4f87d1d",
+      "composite": "c143j38n14a3p28",
+      "mood": "trocken",
+      "narrator": "Sage",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:06:48"
+    },
+    {
+      "seq": 144,
+      "hash": "a593485",
+      "composite": "c144j100n5a1p128",
+      "mood": "sachlich",
+      "narrator": "Squizzle",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:07:53"
+    },
+    {
+      "seq": 145,
+      "hash": "666c4c3",
+      "composite": "c145j66n9a4p20",
+      "mood": "müde-zufrieden",
+      "narrator": "Spark",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:09:06"
+    },
+    {
+      "seq": 146,
+      "hash": "b5e548c",
+      "composite": "c146j2n2a4p27",
+      "mood": "erschöpft",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:10:37"
+    },
+    {
+      "seq": 147,
+      "hash": "16b02dd",
+      "composite": "c147j56n8a1p123",
+      "mood": "müde-zufrieden",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:14:44"
+    },
+    {
+      "seq": 148,
+      "hash": "0136026",
+      "composite": "c148j69n3a4p142",
+      "mood": "warm",
+      "narrator": "Thinker",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 15:29:57"
+    },
+    {
+      "seq": 149,
+      "hash": "74293fe",
+      "composite": "c149j98n10a1p144",
+      "mood": "trocken",
+      "narrator": "Glitch",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 16:07:22"
+    },
+    {
+      "seq": 150,
+      "hash": "16516c9",
+      "composite": "c150j37n11a1p152",
+      "mood": "alarmiert",
+      "narrator": "Null",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 18:37:20"
+    },
+    {
+      "seq": 151,
+      "hash": "16516c9",
+      "composite": "c151j3n9a4p148",
+      "mood": "triumphierend",
+      "narrator": "Spark",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 18:39:02"
+    },
+    {
+      "seq": 152,
+      "hash": "b751ad3",
+      "composite": "c152j83n8a1p127",
+      "mood": "selbstironisch",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 18:51:07"
+    },
+    {
+      "seq": 153,
+      "hash": "f849950",
+      "composite": "c153j41n9a1p105",
+      "mood": "sarkastisch",
+      "narrator": "Spark",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:01:40"
+    },
+    {
+      "seq": 154,
+      "hash": "f849950",
+      "composite": "c154j30n4a5p77",
+      "mood": "sachlich",
+      "narrator": "Vannon",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:02:50"
+    },
+    {
+      "seq": 155,
+      "hash": "f849950",
+      "composite": "c155j54n6a4p128",
+      "mood": "selbstironisch",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:07:30"
+    },
+    {
+      "seq": 156,
+      "hash": "5fed355",
+      "composite": "c156j10n9a3p160",
+      "mood": "sachlich",
+      "narrator": "Spark",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:10:29"
+    },
+    {
+      "seq": 157,
+      "hash": "e645212",
+      "composite": "c157j78n11a4p102",
+      "mood": "trocken",
+      "narrator": "Null",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:13:21"
+    },
+    {
+      "seq": 158,
+      "hash": "ae96ee9",
+      "composite": "c158j51n8a4p87",
+      "mood": "sarkastisch",
+      "narrator": "Ghost",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:18:32"
+    },
+    {
+      "seq": 159,
+      "hash": "ea18206",
+      "composite": "c159j85n13a5p102",
+      "mood": "neugierig",
+      "narrator": "Flux",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:23:22"
+    },
+    {
+      "seq": 160,
+      "hash": "d41441a",
+      "composite": "c160j73n6a4p141",
+      "mood": "triumphierend",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:26:50"
+    },
+    {
+      "seq": 161,
+      "hash": "8814b57",
+      "composite": "c161j69n7a1p83",
+      "mood": "warm",
+      "narrator": "Argos",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:39:38"
+    },
+    {
+      "seq": 162,
+      "hash": "8814b57",
+      "composite": "c162j85n10a5p47",
+      "mood": "neugierig",
+      "narrator": "Glitch",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:41:05"
+    },
+    {
+      "seq": 163,
+      "hash": "11d5208",
+      "composite": "c163j45n11a2p105",
+      "mood": "müde-zufrieden",
+      "narrator": "Null",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-02 19:47:09"
+    },
+    {
+      "seq": 164,
+      "hash": "1ffd174",
+      "composite": "c164j1n9a3p61",
+      "mood": "sarkastisch",
+      "narrator": "Spark",
+      "model_id": "claude-sonnet-4.6",
+      "date": "2026-07-02 23:21:15"
+    },
+    {
+      "seq": 165,
+      "hash": "9b6d940",
+      "composite": "c165j38n5a2p116",
+      "mood": "trocken",
+      "narrator": "Squizzle",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 01:22:05"
+    },
+    {
+      "seq": 166,
+      "hash": "9b6d940",
+      "composite": "c166j1n7a4p99",
+      "mood": "sarkastisch",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 01:23:09"
+    },
+    {
+      "seq": 167,
+      "hash": "9b6d940",
+      "composite": "c167j12n11a4p91",
+      "mood": "erschöpft",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 01:24:16"
+    },
+    {
+      "seq": 168,
+      "hash": "e4ed1e1",
+      "composite": "c168j3n5a3p100",
+      "mood": "triumphierend",
+      "narrator": "Squizzle",
+      "model_id": "mimo-v2",
+      "date": "2026-07-03 02:45:47"
+    },
+    {
+      "seq": 169,
+      "hash": "e4ed1e1",
+      "composite": "c169j5n8a3p5",
+      "mood": "neugierig",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2",
+      "date": "2026-07-03 02:46:42"
+    },
+    {
+      "seq": 170,
+      "hash": "f6375d0",
+      "composite": "c170j23n2a2p19",
+      "mood": "triumphierend",
+      "narrator": "Basher",
+      "model_id": "mimo-v2",
+      "date": "2026-07-03 03:21:08"
+    },
+    {
+      "seq": 171,
+      "hash": "4627772",
+      "composite": "c171j24n3a5p13",
+      "mood": "selbstironisch",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 05:40:20"
+    },
+    {
+      "seq": 172,
+      "hash": "4627772",
+      "composite": "c172j76n10a1p8",
+      "mood": "müde-zufrieden",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 05:40:42"
+    },
+    {
+      "seq": 173,
+      "hash": "f62d85e",
+      "composite": "c173j79n10a3p14",
+      "mood": "warm",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 05:47:06"
+    },
+    {
+      "seq": 174,
+      "hash": "ea4cc03",
+      "composite": "c174j44n12a4p6",
+      "mood": "selbstironisch",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 05:52:24"
+    },
+    {
+      "seq": 175,
+      "hash": "ea4cc03",
+      "composite": "c175j25n3a2p17",
+      "mood": "neugierig",
+      "narrator": "Thinker",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 05:53:06"
+    },
+    {
+      "seq": 176,
+      "hash": "ea4cc03",
+      "composite": "c176j17n12a1p4",
+      "mood": "alarmiert",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 05:53:45"
+    },
+    {
+      "seq": 177,
+      "hash": "1a7a80b",
+      "composite": "c177j56n10a2p18",
+      "mood": "müde-zufrieden",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 06:38:34"
+    },
+    {
+      "seq": 178,
+      "hash": "ee77bc0",
+      "composite": "c178j27n6a2p1",
+      "mood": "alarmiert",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 06:50:57"
+    },
+    {
+      "seq": 179,
+      "hash": "4ef7192",
+      "composite": "c179j72n4a5p5",
+      "mood": "erschöpft",
+      "narrator": "Vannon",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 07:38:43"
+    },
+    {
+      "seq": 180,
+      "hash": "4ef7192",
+      "composite": "c180j67n11a1p22",
+      "mood": "alarmiert",
+      "narrator": "Null",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 07:40:27"
+    },
+    {
+      "seq": 181,
+      "hash": "dc14a73",
+      "composite": "c181j94n2a4p7",
+      "mood": "selbstironisch",
+      "narrator": "Basher",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 11:40:21"
+    },
+    {
+      "seq": 182,
+      "hash": "6a1dccd",
+      "composite": "c182j29n2a2p4",
+      "mood": "warm",
+      "narrator": "Basher",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 11:47:44"
+    },
+    {
+      "seq": 183,
+      "hash": "36fa386",
+      "composite": "c183j89n4a3p5",
+      "mood": "sachlich",
+      "narrator": "Vannon",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 11:48:14"
+    },
+    {
+      "seq": 184,
+      "hash": "5d82d19",
+      "composite": "c184j86n6a3p22",
+      "mood": "müde-zufrieden",
+      "narrator": "Devin",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 11:48:51"
+    },
+    {
+      "seq": 185,
+      "hash": "ee6c0bb",
+      "composite": "c185j56n8a3p8",
+      "mood": "alarmiert",
+      "narrator": "Ghost",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 11:49:46"
+    },
+    {
+      "seq": 186,
+      "hash": "deb44c5",
+      "composite": "c186j48n8a5p3",
+      "mood": "trocken",
+      "narrator": "Ghost",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 11:58:52"
+    },
+    {
+      "seq": 187,
+      "hash": "3aa1388",
+      "composite": "c187j68n3a4p5",
+      "mood": "warm",
+      "narrator": "Basher",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 12:04:15"
+    },
+    {
+      "seq": 188,
+      "hash": "3aa1388",
+      "composite": "c188j25n11a4p18",
+      "mood": "neugierig",
+      "narrator": "Null",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 12:04:33"
+    },
+    {
+      "seq": 189,
+      "hash": "3aa1388",
+      "composite": "c189j50n4a5p14",
+      "mood": "sachlich",
+      "narrator": "Vannon",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 12:04:50"
+    },
+    {
+      "seq": 190,
+      "hash": "c2a5330",
+      "composite": "c190j94n4a5p11",
+      "mood": "selbstironisch",
+      "narrator": "Vannon",
+      "model_id": "claude-sonnet-4-6-thinking",
+      "date": "2026-07-03 12:06:34"
+    },
+    {
+      "seq": 191,
+      "hash": "21ef40d",
+      "composite": "c191j16n6a5p23",
+      "mood": "müde-zufrieden",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-03 13:33:54"
+    },
+    {
+      "seq": 192,
+      "hash": "66073ba",
+      "composite": "c192j22n2a2p13",
+      "mood": "erschöpft",
+      "narrator": "Basher",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-03 15:58:53"
+    },
+    {
+      "seq": 193,
+      "hash": "7743b6f",
+      "composite": "c193j35n11a5p20",
+      "mood": "neugierig",
+      "narrator": "Null",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 19:55:58"
+    },
+    {
+      "seq": 194,
+      "hash": "7743b6f",
+      "composite": "c194j98n12a4p6",
+      "mood": "trocken",
+      "narrator": "Echo",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 19:58:27"
+    },
+    {
+      "seq": 195,
+      "hash": "7743b6f",
+      "composite": "c195j2n10a5p2",
+      "mood": "erschöpft",
+      "narrator": "Glitch",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 20:02:51"
+    },
+    {
+      "seq": 196,
+      "hash": "7743b6f",
+      "composite": "c196j62n3a3p2",
+      "mood": "triumphierend",
+      "narrator": "Thinker",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 20:04:16"
+    },
+    {
+      "seq": 197,
+      "hash": "ca87760",
+      "composite": "c197j80n6a1p6",
+      "mood": "sachlich",
+      "narrator": "Devin",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 20:29:14"
+    },
+    {
+      "seq": 198,
+      "hash": "ca87760",
+      "composite": "c198j98n10a2p5",
+      "mood": "trocken",
+      "narrator": "Glitch",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 20:31:41"
+    },
+    {
+      "seq": 199,
+      "hash": "79bb576",
+      "composite": "c199j17n2a5p14",
+      "mood": "alarmiert",
+      "narrator": "Basher",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 21:51:43"
+    },
+    {
+      "seq": 200,
+      "hash": "79bb576",
+      "composite": "c200j49n3a5p20",
+      "mood": "warm",
+      "narrator": "Thinker",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 21:56:54"
+    },
+    {
+      "seq": 201,
+      "hash": "79bb576",
+      "composite": "c201j90n5a5p22",
+      "mood": "sachlich",
+      "narrator": "Squizzle",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:04:27"
+    },
+    {
+      "seq": 202,
+      "hash": "a52077b",
+      "composite": "c202j70n10a5p1",
+      "mood": "sarkastisch",
+      "narrator": "Basher",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:26:11"
+    },
+    {
+      "seq": 203,
+      "hash": "a52077b",
+      "composite": "c203j2n5a1p8",
+      "mood": "erschöpft",
+      "narrator": "Basher",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:26:49"
+    },
+    {
+      "seq": 204,
+      "hash": "a52077b",
+      "composite": "c204j64n6a4p10",
+      "mood": "selbstironisch",
+      "narrator": "Devin",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:28:24"
+    },
+    {
+      "seq": 205,
+      "hash": "a52077b",
+      "composite": "c205j2n8a5p20",
+      "mood": "erschöpft",
+      "narrator": "Ghost",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:29:33"
+    },
+    {
+      "seq": 206,
+      "hash": "82a4f1c",
+      "composite": "c206j91n13a1p14",
+      "mood": "sarkastisch",
+      "narrator": "Flux",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:46:24"
+    },
+    {
+      "seq": 207,
+      "hash": "82a4f1c",
+      "composite": "c207j33n7a4p22",
+      "mood": "triumphierend",
+      "narrator": "Argos",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:47:23"
+    },
+    {
+      "seq": 208,
+      "hash": "bcf3400",
+      "composite": "c208j90n1a3p14",
+      "mood": "sachlich",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:53:57"
+    },
+    {
+      "seq": 209,
+      "hash": "bcf3400",
+      "composite": "c209j46n1a1p6",
+      "mood": "müde-zufrieden",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 22:54:55"
+    },
+    {
+      "seq": 210,
+      "hash": "280b761",
+      "composite": "c210j97n3a5p16",
+      "mood": "alarmiert",
+      "narrator": "Thinker",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:01:05"
+    },
+    {
+      "seq": 211,
+      "hash": "3333f35",
+      "composite": "c211j57n6a2p20",
+      "mood": "trocken",
+      "narrator": "Devin",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:07:43"
+    },
+    {
+      "seq": 212,
+      "hash": "3333f35",
+      "composite": "c212j6n12a1p10",
+      "mood": "müde-zufrieden",
+      "narrator": "Echo",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:08:39"
+    },
+    {
+      "seq": 213,
+      "hash": "09375a0",
+      "composite": "c213j86n1a2p17",
+      "mood": "alarmiert",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:13:16"
+    },
+    {
+      "seq": 214,
+      "hash": "13cb013",
+      "composite": "c214j90n1a1p10",
+      "mood": "sachlich",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:20:09"
+    },
+    {
+      "seq": 215,
+      "hash": "13cb013",
+      "composite": "c215j94n12a1p3",
+      "mood": "selbstironisch",
+      "narrator": "Echo",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:20:48"
+    },
+    {
+      "seq": 216,
+      "hash": "0d3f9eb",
+      "composite": "c216j88n1a1p22",
+      "mood": "trocken",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-03 23:28:46"
+    },
+    {
+      "seq": 217,
+      "hash": "7f77acd",
+      "composite": "c217j76n12a1p9",
+      "mood": "müde-zufrieden",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 23:37:03"
+    },
+    {
+      "seq": 218,
+      "hash": "4e16063",
+      "composite": "c218j48n6a5p10",
+      "mood": "trocken",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 23:44:18"
+    },
+    {
+      "seq": 219,
+      "hash": "25cdb23",
+      "composite": "c219j78n9a2p7",
+      "mood": "warm",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 23:57:43"
+    },
+    {
+      "seq": 220,
+      "hash": "25cdb23",
+      "composite": "c220j98n10a4p4",
+      "mood": "trocken",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-03 23:58:59"
+    },
+    {
+      "seq": 221,
+      "hash": "3544ee5",
+      "composite": "c221j77n11a5p13",
+      "mood": "alarmiert",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 00:20:20"
+    },
+    {
+      "seq": 222,
+      "hash": "3544ee5",
+      "composite": "c222j6n5a2p17",
+      "mood": "müde-zufrieden",
+      "narrator": "Squizzle",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 00:21:02"
+    },
+    {
+      "seq": 223,
+      "hash": "61505f8",
+      "composite": "c223j31n9a4p10",
+      "mood": "sarkastisch",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 00:31:55"
+    },
+    {
+      "seq": 224,
+      "hash": "cfc5ba1",
+      "composite": "c224j51n7a2p20",
+      "mood": "erschöpft",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 00:36:30"
+    },
+    {
+      "seq": 225,
+      "hash": "28977dc",
+      "composite": "c225j85n12a1p5",
+      "mood": "neugierig",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 00:39:34"
+    },
+    {
+      "seq": 226,
+      "hash": "8ef663a",
+      "composite": "c226j88n14a5p18",
+      "mood": "trocken",
+      "narrator": "Sage",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 02:21:08"
+    },
+    {
+      "seq": 227,
+      "hash": "bfc664f",
+      "composite": "c227j58n4a4p14",
+      "mood": "warm",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 02:28:40"
+    },
+    {
+      "seq": 228,
+      "hash": "bfc664f",
+      "composite": "c228j28n1a1p24",
+      "mood": "trocken",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 02:29:50"
+    },
+    {
+      "seq": 229,
+      "hash": "e2a89ac",
+      "composite": "c229j16n4a4p5",
+      "mood": "müde-zufrieden",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 02:40:24"
+    },
+    {
+      "seq": 230,
+      "hash": "c4c411c",
+      "composite": "c230j98n9a2p6",
+      "mood": "trocken",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 02:50:40"
+    },
+    {
+      "seq": 231,
+      "hash": "7a47f27",
+      "composite": "c231j69n7a5p17",
+      "mood": "warm",
+      "narrator": "Argos",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-04 06:14:13"
+    },
+    {
+      "seq": 232,
+      "hash": "7a64c7c",
+      "composite": "c232j98n8a2p3",
+      "mood": "trocken",
+      "narrator": "Ghost",
+      "model_id": "gpt-5.4",
+      "date": "2026-07-04 07:30:46"
+    },
+    {
+      "seq": 233,
+      "hash": "7a64c7c",
+      "composite": "c233j1n4a4p16",
+      "mood": "sarkastisch",
+      "narrator": "Vannon",
+      "model_id": "gpt-5.4",
+      "date": "2026-07-04 07:31:33"
+    },
+    {
+      "seq": 234,
+      "hash": "b169345",
+      "composite": "c234j80n7a3p17",
+      "mood": "sachlich",
+      "narrator": "Argos",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:06:55"
+    },
+    {
+      "seq": 235,
+      "hash": "517aca2",
+      "composite": "c235j84n9a1p20",
+      "mood": "selbstironisch",
+      "narrator": "Spark",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:30:19"
+    },
+    {
+      "seq": 236,
+      "hash": "517aca2",
+      "composite": "c236j50n12a3p13",
+      "mood": "sachlich",
+      "narrator": "Echo",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:30:44"
+    },
+    {
+      "seq": 237,
+      "hash": "202cd8e",
+      "composite": "c237j15n14a5p6",
+      "mood": "neugierig",
+      "narrator": "Sage",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:38:14"
+    },
+    {
+      "seq": 238,
+      "hash": "e075ea9",
+      "composite": "c238j30n7a2p14",
+      "mood": "sachlich",
+      "narrator": "Argos",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:48:50"
+    },
+    {
+      "seq": 239,
+      "hash": "d2ce390",
+      "composite": "c239j27n7a4p1",
+      "mood": "alarmiert",
+      "narrator": "Argos",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:52:16"
+    },
+    {
+      "seq": 240,
+      "hash": "dd5f221",
+      "composite": "c240j25n14a5p15",
+      "mood": "neugierig",
+      "narrator": "Sage",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 08:58:02"
+    },
+    {
+      "seq": 241,
+      "hash": "247cc61",
+      "composite": "c241j54n6a1p11",
+      "mood": "selbstironisch",
+      "narrator": "Devin",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:01:35"
+    },
+    {
+      "seq": 242,
+      "hash": "7385d0e",
+      "composite": "c242j32n8a3p5",
+      "mood": "erschöpft",
+      "narrator": "Ghost",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:06:17"
+    },
+    {
+      "seq": 243,
+      "hash": "df84ae7",
+      "composite": "c243j54n2a1p14",
+      "mood": "selbstironisch",
+      "narrator": "Basher",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:09:48"
+    },
+    {
+      "seq": 244,
+      "hash": "810f6f9",
+      "composite": "c244j83n11a2p3",
+      "mood": "triumphierend",
+      "narrator": "Null",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:14:21"
+    },
+    {
+      "seq": 245,
+      "hash": "4626984",
+      "composite": "c245j69n13a4p20",
+      "mood": "warm",
+      "narrator": "Flux",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:17:41"
+    },
+    {
+      "seq": 246,
+      "hash": "b802c89",
+      "composite": "c246j86n9a1p11",
+      "mood": "müde-zufrieden",
+      "narrator": "Spark",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:33:42"
+    },
+    {
+      "seq": 247,
+      "hash": "b802c89",
+      "composite": "c247j17n4a4p11",
+      "mood": "alarmiert",
+      "narrator": "Vannon",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:34:24"
+    },
+    {
+      "seq": 248,
+      "hash": "b802c89",
+      "composite": "c248j67n10a5p16",
+      "mood": "trocken",
+      "narrator": "Glitch",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:40:59"
+    },
+    {
+      "seq": 249,
+      "hash": "496f31f",
+      "composite": "c249j41n13a1p4",
+      "mood": "sarkastisch",
+      "narrator": "Flux",
+      "model_id": "minimax-m3",
+      "date": "2026-07-04 09:41:56"
+    },
+    {
+      "seq": 250,
+      "hash": "388812d",
+      "composite": "c250j89n12a3p9",
+      "mood": "warm",
+      "narrator": "Echo",
+      "model_id": "deepseek-v4",
+      "date": "2026-07-05 15:51:29"
+    },
+    {
+      "seq": 251,
+      "hash": "d39cff2",
+      "composite": "c251j25n12a3p18",
+      "mood": "neugierig",
+      "narrator": "Echo",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-05 16:28:04"
+    },
+    {
+      "seq": 252,
+      "hash": "d39cff2",
+      "composite": "c252j66n12a1p24",
+      "mood": "müde-zufrieden",
+      "narrator": "Echo",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-05 16:28:42"
+    },
+    {
+      "seq": 253,
+      "hash": "d39cff2",
+      "composite": "c253j43n6a2p4",
+      "mood": "triumphierend",
+      "narrator": "Devin",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-05 16:29:14"
+    },
+    {
+      "seq": 254,
+      "hash": "a9ef338",
+      "composite": "c254j99n11a3p2",
+      "mood": "warm",
+      "narrator": "Null",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-05 16:36:45"
+    },
+    {
+      "seq": 255,
+      "hash": "c22c934",
+      "composite": "c255j22n5a2p6",
+      "mood": "erschöpft",
+      "narrator": "Squizzle",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-05 16:58:41"
+    },
+    {
+      "seq": 256,
+      "hash": "3b869f9",
+      "composite": "c256j14n4a2p19",
+      "mood": "selbstironisch",
+      "narrator": "Vannon",
+      "model_id": "deepseek-v4-pro",
+      "date": "2026-07-05 17:38:01"
+    },
+    {
+      "seq": 257,
+      "hash": "899090c",
+      "composite": "c257j17n8a3p7",
+      "mood": "alarmiert",
+      "narrator": "Buffy",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 19:23:18"
+    },
+    {
+      "seq": 258,
+      "hash": "899090c",
+      "composite": "c258j76n5a2p9",
+      "mood": "müde-zufrieden",
+      "narrator": "Squizzle",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 19:23:40"
+    },
+    {
+      "seq": 259,
+      "hash": "59dfd95",
+      "composite": "c259j88n8a5p13",
+      "mood": "trocken",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 19:52:44"
+    },
+    {
+      "seq": 260,
+      "hash": "c682b75",
+      "composite": "c260j29n8a5p4",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 19:56:22"
+    },
+    {
+      "seq": 261,
+      "hash": "2df5fd3",
+      "composite": "c261j90n11a2p7",
+      "mood": "sachlich",
+      "narrator": "Null",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 19:58:57"
+    },
+    {
+      "seq": 262,
+      "hash": "fdafac9",
+      "composite": "c262j89n8a4p21",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:09:50"
+    },
+    {
+      "seq": 263,
+      "hash": "f35665d",
+      "composite": "c263j51n12a5p15",
+      "mood": "sarkastisch",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:12:58"
+    },
+    {
+      "seq": 264,
+      "hash": "76e27bb",
+      "composite": "c264j89n9a3p17",
+      "mood": "warm",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:31:07"
+    },
+    {
+      "seq": 265,
+      "hash": "76e27bb",
+      "composite": "c265j3n10a1p13",
+      "mood": "triumphierend",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:33:01"
+    },
+    {
+      "seq": 266,
+      "hash": "6e7297d",
+      "composite": "c266j18n6a2p14",
+      "mood": "trocken",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:36:16"
+    },
+    {
+      "seq": 267,
+      "hash": "6e7297d",
+      "composite": "c267j19n8a3p11",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:37:02"
+    },
+    {
+      "seq": 268,
+      "hash": "92829c1",
+      "composite": "c268j37n13a2p7",
+      "mood": "alarmiert",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 20:54:56"
+    },
+    {
+      "seq": 269,
+      "hash": "9b4f555",
+      "composite": "c269j49n12a5p24",
+      "mood": "warm",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 21:07:17"
+    },
+    {
+      "seq": 270,
+      "hash": "91ab0a8",
+      "composite": "c270j87n13a1p20",
+      "mood": "alarmiert",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 21:08:22"
+    },
+    {
+      "seq": 271,
+      "hash": "c6d7671",
+      "composite": "c271j49n12a3p14",
+      "mood": "warm",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 21:29:51"
+    },
+    {
+      "seq": 272,
+      "hash": "7de8585",
+      "composite": "c272j93n4a5p18",
+      "mood": "triumphierend",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-05 21:33:16"
+    },
+    {
+      "seq": 273,
+      "hash": "514a301",
+      "composite": "c273j16n2a2p2",
+      "mood": "müde-zufrieden",
+      "narrator": "Basher",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-06 00:28:58"
+    },
+    {
+      "seq": 274,
+      "hash": "a160b3e",
+      "composite": "c274j65n4a4p18",
+      "mood": "neugierig",
+      "narrator": "Vannon",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-06 00:29:53"
+    },
+    {
+      "seq": 275,
+      "hash": "690dae6",
+      "composite": "c275j36n9a6p17",
+      "mood": "müde-zufrieden",
+      "narrator": "Spark",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-06 00:29:59"
+    },
+    {
+      "seq": 276,
+      "hash": "ba42047",
+      "composite": "c276j94n6a6p22",
+      "mood": "selbstironisch",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5-pro",
+      "date": "2026-07-06 00:30:04"
+    },
+    {
+      "seq": 277,
+      "hash": "364baa9",
+      "composite": "c277j45n4a5p20",
+      "mood": "neugierig",
+      "narrator": "Sage",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 02:45:50"
+    },
+    {
+      "seq": 278,
+      "hash": "364baa9",
+      "composite": "c278j40n4a1p4",
+      "mood": "sachlich",
+      "narrator": "Vannon",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 02:47:59"
+    },
+    {
+      "seq": 279,
+      "hash": "993b44c",
+      "composite": "c279j9n11a1p1",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:12:25"
+    },
+    {
+      "seq": 280,
+      "hash": "993b44c",
+      "composite": "c280j6n2a2p16",
+      "mood": "müde-zufrieden",
+      "narrator": "Basher",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:15:47"
+    },
+    {
+      "seq": 281,
+      "hash": "1d8add4",
+      "composite": "c281j73n12a4p17",
+      "mood": "triumphierend",
+      "narrator": "Echo",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:15:55"
+    },
+    {
+      "seq": 282,
+      "hash": "1d8add4",
+      "composite": "c282j77n1a4p13",
+      "mood": "alarmiert",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:16:03"
+    },
+    {
+      "seq": 283,
+      "hash": "d0e3987",
+      "composite": "c283j7n9a5p15",
+      "mood": "trocken",
+      "narrator": "Spark",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:16:12"
+    },
+    {
+      "seq": 284,
+      "hash": "d0e3987",
+      "composite": "c284j54n1a5p5",
+      "mood": "selbstironisch",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:18:11"
+    },
+    {
+      "seq": 285,
+      "hash": "7ecc548",
+      "composite": "c285j15n4a5p14",
+      "mood": "neugierig",
+      "narrator": "Vannon",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:23:42"
+    },
+    {
+      "seq": 286,
+      "hash": "858cb62",
+      "composite": "c286j63n1a2p11",
+      "mood": "triumphierend",
+      "narrator": "Buffy",
+      "model_id": "minimax-m3",
+      "date": "2026-07-06 03:28:49"
+    },
+    {
+      "seq": 287,
+      "hash": "8abb4e6",
+      "composite": "c287j35n1a3p15",
+      "mood": "neugierig",
+      "narrator": "Buffy",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 04:27:43"
+    },
+    {
+      "seq": 288,
+      "hash": "8abb4e6",
+      "composite": "c288j1n11a6p21",
+      "mood": "sarkastisch",
+      "narrator": "Null",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 04:29:08"
+    },
+    {
+      "seq": 289,
+      "hash": "8abb4e6",
+      "composite": "c289j99n1a1p17",
+      "mood": "warm",
+      "narrator": "Buffy",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 04:31:21"
+    },
+    {
+      "seq": 290,
+      "hash": "29cfd5f",
+      "composite": "c290j27n1a1p4",
+      "mood": "alarmiert",
+      "narrator": "Buffy",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 04:41:36"
+    },
+    {
+      "seq": 291,
+      "hash": "1761c50",
+      "composite": "c291j5n5a3p20",
+      "mood": "neugierig",
+      "narrator": "Squizzle",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 04:57:20"
+    },
+    {
+      "seq": 292,
+      "hash": "1761c50",
+      "composite": "c292j76n8a3p9",
+      "mood": "müde-zufrieden",
+      "narrator": "Ghost",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 04:59:06"
+    },
+    {
+      "seq": 293,
+      "hash": "f35656d",
+      "composite": "c293j63n10a2p14",
+      "mood": "triumphierend",
+      "narrator": "Glitch",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 05:19:12"
+    },
+    {
+      "seq": 294,
+      "hash": "f35656d",
+      "composite": "c294j64n8a4p21",
+      "mood": "selbstironisch",
+      "narrator": "Ghost",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 05:20:30"
+    },
+    {
+      "seq": 295,
+      "hash": "12614e7",
+      "composite": "c295j72n14a5p7",
+      "mood": "erschöpft",
+      "narrator": "Sage",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 05:52:18"
+    },
+    {
+      "seq": 296,
+      "hash": "886741c",
+      "composite": "c296j37n6a2p13",
+      "mood": "alarmiert",
+      "narrator": "Devin",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 06:17:49"
+    },
+    {
+      "seq": 297,
+      "hash": "886741c",
+      "composite": "c297j89n3a5p9",
+      "mood": "warm",
+      "narrator": "Thinker",
+      "model_id": "nemotron-3-ultra-free",
+      "date": "2026-07-06 06:19:10"
+    },
+    {
+      "seq": 298,
+      "hash": "a38e85f",
+      "composite": "c298j95n6a6p2",
+      "mood": "neugierig",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:02:15"
+    },
+    {
+      "seq": 299,
+      "hash": "a38e85f",
+      "composite": "c299j57n12a2p5",
+      "mood": "alarmiert",
+      "narrator": "Echo",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:03:44"
+    },
+    {
+      "seq": 300,
+      "hash": "8161485",
+      "composite": "c300j55n10a4p15",
+      "mood": "neugierig",
+      "narrator": "Glitch",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:17:16"
+    },
+    {
+      "seq": 301,
+      "hash": "820067d",
+      "composite": "c301j35n6a2p14",
+      "mood": "müde-zufrieden",
+      "narrator": "Devin",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:19:56"
+    },
+    {
+      "seq": 302,
+      "hash": "820067d",
+      "composite": "c302j64n14a5p10",
+      "mood": "selbstironisch",
+      "narrator": "Sage",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:21:13"
+    },
+    {
+      "seq": 303,
+      "hash": "f839170",
+      "composite": "c303j50n14a1p15",
+      "mood": "sachlich",
+      "narrator": "Sage",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:43:26"
+    },
+    {
+      "seq": 304,
+      "hash": "f839170",
+      "composite": "c304j15n13a5p13",
+      "mood": "neugierig",
+      "narrator": "Flux",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:50:27"
+    },
+    {
+      "seq": 305,
+      "hash": "f524de2",
+      "composite": "c305j79n2a4p11",
+      "mood": "warm",
+      "narrator": "Basher",
+      "model_id": "mimo-v2.5",
+      "date": "2026-07-06 07:52:34"
+    },
+    {
+      "seq": 306,
+      "hash": "da909ce",
+      "composite": "c306j57n2a4p23",
+      "mood": "alarmiert",
+      "narrator": "Basher",
+      "model_id": "mimo-v2",
+      "date": "2026-07-14 20:18:22"
+    },
+    {
+      "seq": 307,
+      "hash": "aaa37d6",
+      "composite": "c307j58n12a3p14",
+      "mood": "trocken",
+      "narrator": "Echo",
+      "model_id": "mimo-v2",
+      "date": "2026-07-14 20:25:26"
+    },
+    {
+      "seq": 308,
+      "hash": "9582745",
+      "composite": "c308j28n8a6p25",
+      "mood": "warm",
+      "narrator": "Ghost",
+      "model_id": "mimo-v2",
+      "date": "2026-07-14 20:28:35"
+    },
+    {
+      "seq": 309,
+      "hash": "c7a137f",
+      "composite": "c309j3n2a3p15",
+      "mood": "triumphierend",
+      "narrator": "Basher",
+      "model_id": "mimo-v2",
+      "date": "2026-07-14 20:39:06"
+    }
+  ]
+}

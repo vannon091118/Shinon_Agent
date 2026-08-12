@@ -1,0 +1,77 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: Human Farm Establishment Event — triggers when Necromancy Human Farm tech is researched.
+# ENGINE_DEFAULTS: Requires UNDEAD race, NECROMANCY_HUMAN_FARM tech, valid region.
+# LAST_ENTRY: Entry 2
+# FILE_CONTEXT: V71/data/init/event/HUMAN_FARM_ESTABLISH.txt
+# VERSION: 0.2.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+FOUND_HUMAN_FARM: {
+    ICON: 32->UNDEAD->FARM,
+    DURATION: { DAYS: 1.0 },
+    
+    OCCURRENCE: {
+        RACE: { UNDEAD: 1.0 },
+        REQUIRES: { EQUAL: { HAS_TECH: NECROMANCY_HUMAN_FARM } },
+        MAX_SPAWNS: 1
+    },
+    
+    TAGS: { ALLOW_NOT: [HAS_HUMAN_FARM] },
+    
+    SELECTION: {
+        REGIONS: {
+            MAX_AMOUNT: { AMOUNT: 1 },
+            MIN_AMOUNT: { AMOUNT: 1 },
+            FILTERS: [
+                { GREATER: { PROP_TERRAIN_PLAINS: 0.3 } },
+                { LESS: { IS_CAPITAL: 1 } }
+            ]
+        }
+    },
+    
+    CHOICES: [
+        {
+            ACTIONS: [
+                { TYPE: EVENT, EVENT: HUMAN_FARM_ESTABLISHED },
+                { TYPE: SETTLEMENT_ADD, BUILDING: WORLD_HUMAN_FARM },
+                { TYPE: BOOST_PERM, USE_SELECTION_REGIONS: true, PLAYER: { HAS_HUMAN_FARM>SET: 1 } },
+                { TYPE: RESOURCE_ADD, RESOURCE: CAPTIVE_HUMAN, AMOUNT: 10 }
+            ]
+        }
+    ]
+}
+
+HUMAN_FARM_ESTABLISHED: {
+    ICON: 32->UNDEAD->FARM_ESTABLISHED,
+    DURATION: { DAYS: 30.0 },
+    
+    ON_SPAWN: {
+        ACTIONS: [
+            { TYPE: BOOST_PERM, PLAYER: { HUMAN_FARM_COUNT>ADD: 1 } }
+        ]
+    }
+}
+
+HUMAN_FARM_EXPANDED: {
+    ICON: 32->UNDEAD->FARM_EXPANDED,
+    DURATION: { DAYS: 7.0 },
+    
+    ON_SPAWN: {
+        ACTIONS: [
+            { TYPE: BOOST_PERM, PLAYER: { HUMAN_FARM_LEVEL>ADD: 1 } }
+        ]
+    }
+}
+
+HUMAN_FARM_STRUGGLING: {
+    ICON: 32->UNDEAD->FARM_STRUGGLING,
+    DURATION: { DAYS: 30.0 },
+    
+    ON_SPAWN: {
+        ACTIONS: [
+            { TYPE: BOOST, PLAYER: { HUMAN_FARM_PRODUCTION>MUL: 0.5 } }
+        ]
+    }
+}

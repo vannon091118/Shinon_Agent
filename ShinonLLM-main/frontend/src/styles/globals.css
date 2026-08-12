@@ -1,0 +1,154 @@
+/* globalsMain: global style entrypoint marker for blueprint validation */
+:root {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --bg-elev: #111936;
+  --text: #e6edf7;
+  --text-muted: #b5c2d8;
+  --danger: #ff6b6b;
+  --border: #263250;
+  --focus: #6fa8ff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(1200px 600px at 20% -10%, #1d2b57 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: #8ec5ff;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.chat-shell {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.chat-shell__header h2 {
+  margin: 0;
+}
+
+.chat-shell__header p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}
+
+.chat-shell__messages {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 10px;
+}
+
+.chat-shell__message {
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.chat-shell__message--assistant {
+  border-color: #35548d;
+}
+
+.chat-shell__message-role {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.chat-shell__error {
+  border: 1px solid #9d2e2e;
+  background: #4b1515;
+  color: #ffd7d7;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.chat-shell__composer {
+  display: grid;
+  gap: 10px;
+}
+
+.chat-shell__model {
+  display: grid;
+  gap: 6px;
+  max-width: 360px;
+}
+
+.chat-shell__model span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.chat-shell__model select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #0a1329;
+  color: var(--text);
+}
+
+.chat-shell__composer textarea {
+  resize: vertical;
+  min-height: 100px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: #0a1329;
+  color: var(--text);
+}
+
+.chat-shell__composer button {
+  justify-self: start;
+  border: 1px solid #3f6fb6;
+  background: #2b4d82;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.chat-shell__composer button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .chat-shell {
+    padding: 14px;
+  }
+
+  .chat-shell__composer button {
+    width: 100%;
+  }
+}

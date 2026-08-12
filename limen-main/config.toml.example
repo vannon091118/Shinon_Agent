@@ -1,0 +1,175 @@
+# LIMEN — example configuration
+# Kopiere nach ~/.config/limen/config.toml und editiere.
+# Secrets gehören in diese owner-only Datei oder in die Umgebung, nie in Git.
+
+[server]
+host = "127.0.0.1"            # LIMEN lehnt Nicht-Localhost ab
+port = 8000
+worker_count = 1               # Phase 1; später bewusst erhöhen
+log_level = "info"
+max_body_size_kb = 256
+
+[database]
+path = "~/.limen/state.db"
+wal_mode = true
+busy_timeout_ms = 30000
+sync_mode = "normal"
+
+[timeouts]
+connect_seconds = 5
+write_seconds = 30
+read_seconds = 120
+pool_seconds = 5
+max_request_wait_seconds = 30
+
+[retry]
+max_attempts = 3
+max_wait_seconds = 60
+backoff_seconds = [1, 2, 5]
+jitter_ratio = 0.2
+respect_retry_after = true
+retry_before_first_stream_chunk_only = true
+
+[audit]
+# Audit-Token niemals als CLI-Argument übergeben.
+audit_token_secret = "REPLACE_ME_WITH_RANDOM_HEX"
+
+[audit.webhook]
+enabled = false
+url = ""
+events = ["task.failed", "key.state_changed", "worker.dead"]
+timeout_seconds = 3
+retry_count = 2
+
+[queue]
+# Admission control: max pending queue entries before 503.
+max_pending = 500
+max_wait_seconds = 30
+lease_seconds = 60
+
+[anthropic]
+# Freies Modell-Alias-Mapping: jeder Key → ein LIMEN-Modell.
+# Der Key ist das, was der Client (Claude Code, CLI-Agent) als Modellnamen sendet.
+# Der Value ist das tatsächliche LIMEN-Modell oder "" für generisches Auto-Fallback.
+# KEINE hardcoded Keys — definiere deine eigenen.
+# Beispiele:
+#   sonnet = "llama-3.3-70b-versatile"
+#   opus = ""
+#   mein-eigenes-alias = "gemma-4-26b"
+
+[idempotency]
+# Dedup: requests with the same fingerprint return cached results.
+ttl_hours = 24
+max_result_kb = 256
+
+
+# ─── Provider Registry ──────────────────────────────────────────────────
+# Genau eine deklarative Registry. Provider-Sonderlogik bleibt im Adapter.
+# `limit_scope = account` oder `unknown` bedeutet: Keys NICHT multiplizieren.
+
+[providers.groq]
+enabled = true
+base_url = "https://api.groq.com/openai/v1"
+priority = 1
+limit_scope = "unknown"
+account_id = "groq-account-main"
+keys = ["gsk-your-key-1"]
+models = ["llama-3.3-70b-versatile"]
+capabilities = ["chat", "json"]
+soft_rpm = 28
+soft_itpm = 5500
+soft_otpm = 5500
+
+[providers.nvidia]
+enabled = false
+base_url = "https://integrate.api.nvidia.com/v1"
+priority = 2
+limit_scope = "unknown"
+account_id = "nvidia-account-main"
+keys = []
+models = []
+capabilities = ["chat", "json"]
+soft_rpm = 35
+soft_itpm = 4000
+soft_otpm = 4000
+
+[providers.github]
+enabled = false
+base_url = "https://models.inference.ai.azure.com"
+priority = 3
+limit_scope = "unknown"
+account_id = "github-account-main"
+keys = []
+models = []
+capabilities = ["chat", "json"]
+soft_rpm = 12
+soft_itpm = 4000
+soft_otpm = 4000
+
+[providers.openrouter]
+enabled = false
+base_url = "https://openrouter.ai/api/v1"
+priority = 4
+limit_scope = "account"
+account_id = "openrouter-account-main"
+keys = []
+models = []
+capabilities = ["chat", "json"]
+soft_rpm = 18
+soft_itpm = 4000
+soft_otpm = 4000
+
+# ─── Model Registry ─────────────────────────────────────────────────────
+# Optional: ein eigener Block pro Modell. Provider bleiben separat konfiguriert.
+# `free` ist eine lokale Verfügbarkeitsmarkierung, keine Preisgarantie.
+
+[models.groq_fast]
+provider = "groq"
+model_id = "llama-3.3-70b-versatile"
+enabled = true
+free = true
+priority = 1
+max_context_tokens = 131072
+capabilities = ["chat", "json"]
+escalation_group = "default"
+source_url = "https://console.groq.com/docs/models"
+verified_at = "2026-08-08"
+
+[models.openrouter_free]
+provider = "openrouter"
+model_id = "openai/gpt-oss-120b:free"
+enabled = false
+free = true
+priority = 4
+max_context_tokens = 131072
+capabilities = ["chat", "code"]
+escalation_group = "default"
+source_url = "https://openrouter.ai/models"
+verified_at = ""
+
+# ─── Legacy provider model list ─────────────────────────────────────────
+# Wenn [models.*] genutzt wird, bilden diese Blöcke die Deployments.
+# Ohne [models.*] bleibt `providers.<name>.models` kompatibel.
+
+[[routing.model_patterns]]
+pattern = "llama-3.*"
+providers = ["groq", "nvidia", "github"]
+default_model = "llama-3.3-70b-versatile"
+required_capabilities = ["chat"]
+
+[[routing.model_patterns]]
+pattern = ".*"
+providers = ["groq", "nvidia", "github", "openrouter"]
+required_capabilities = ["chat"]
+
+[security]
+reject_non_localhost = true
+config_mode = "owner-only"
+database_mode = "owner-only"
+redact_provider_bodies = true
+redact_authorization_headers = true
+
+[emergency_fallback]
+mode = "fail_fast_503"            # Queue mode erst ab Phase 3
+max_wait_seconds = 30
+max_pending_in_queue = 500

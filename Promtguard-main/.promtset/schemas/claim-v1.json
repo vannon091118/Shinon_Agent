@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "claim-v1",
+  "title": "Claim Entry",
+  "description": "Append-only Eintrag für claim-log.jsonl. Jede Research-Aussage ist ein Claim bis verifiziert. ID-Format: CLAIM-{PREFIX}-{SEQ:03d}. Latest-wins per ID (Updates überschreiben NICHT — sie werden als neue Zeile mit gleicher ID angehängt).",
+  "type": "object",
+  "required": ["id", "claim", "status", "source_res", "timestamp"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^CLAIM-[A-Z]{3,5}-\\d{3}$",
+      "description": "Globale, deterministische Claim-ID, z.B. CLAIM-SYX-001, CLAIM-GEN-042"
+    },
+    "claim": {
+      "type": "string",
+      "description": "Claim-Text als distinkte Aussage (z.B. 'perHeadTax hat kein Hard Cap außerhalb UI'). Eine Aussage = ein Claim — nicht mehrere."
+    },
+    "evidence": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_\\-/.\\*]+\\.\\w+:\\d+:.*$",
+      "description": "Fundstelle im Format datei.java:zeile:code. Pflicht bei Status unverified (Behauptung) und verified (Beleg), empfohlen bei refuted/refined."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["unverified", "verified", "refuted", "refined"],
+      "description": "Verifikations-Zustand. unverified=Default direkt nach Erzeugung; verified=positiv verifiziert; refuted=widerlegt; refined=präzisiert/neu formuliert."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "default": "medium",
+      "description": "Wie sicher ist die ursprüngliche Behauptung? Wird bei verify/refute nicht überschrieben (Quelle: Source-Agent)."
+    },
+    "source_res": {
+      "type": "string",
+      "pattern": "^RES-\\d{3}$",
+      "description": "RES-NNN aus dem dieser Claim extrahiert wurde."
+    },
+    "source_decision_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optional: 0-basierter Index in decisions[] wenn aus Decision extrahiert."
+    },
+    "claim_origin": {
+      "type": "string",
+      "enum": ["decision-extraction", "explicit-declaration", "manual"],
+      "default": "decision-extraction",
+      "description": "Wie wurde der Claim erzeugt? decision-extraction = auto aus decisions[]; explicit-declaration = aus claims[] Feld des Research-JSON; manual = User via claim-verify/claim-add Subcommand."
+    },
+    "verified_by_res": {
+      "type": "string",
+      "pattern": "^RES-\\d{3}$",
+      "description": "RES-NNN die den Claim verifiziert/widerlegt/verfeinert hat."
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 Zeitpunkt der Verifikation."
+    },
+    "verified_evidence": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_\\-/.\\*]+\\.\\w+:\\d+:.*$",
+      "description": "Neue file:line:code als Beleg der Verifikation/Widerlegung."
+    },
+    "alternatives_rejected": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Verworfene Alternativen (von Decision vererbt; bei Verification optional)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 Zeitpunkt der Claim-Erzeugung."
+    },
+    "promtset_version": {
+      "type": "string",
+      "default": "2.0.0"
+    }
+  }
+}

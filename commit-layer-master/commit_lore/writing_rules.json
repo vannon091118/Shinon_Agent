@@ -1,0 +1,132 @@
+{
+  "rules": {
+    "docu_in_code_commit": {
+      "description": "Dokumentation (CHANGELOG.md, AGENTS.md, PLAN.md, INDEX.md, HANDSHAKE.md, README.md, _Info.txt) ist IMMER Teil des Code-Commits — nie ein eigener Commit. Der author_system.js-Workflow staged CHANGELOG.md automatisch mit. Root-Markdown-Dateien werden mit den Code-Änderungen committed die sie dokumentieren. Reine Doku-Commits sind verboten. Fokus liegt auf Code-Anpassungen.",
+      "required": true,
+      "enforcement": "author_system.js: CHANGELOG.md wird automatisch in den Commit aufgenommen (git add CHANGELOG.md vor git commit). AGENTS.md §U-2: CHANGELOG-PERSISTENZ. Kein separater Doku-Commit erlaubt."
+    },
+    "workplace_tone": {
+      "description": "Jeder Commit ist ein Arbeitstag im Repo. Beschreibe was gemacht wurde, warum, und was als naechstes kommt. Klar, praezise, menschlich. Kein Theater, keine vorgeschriebenen Toene. Das Repo ist ein Arbeitsplatz — die Commits fuehren Tagebuch ueber die Arbeit.",
+      "required": true
+    },
+    "commit_diary": {
+      "description": "Zusammenfassung der an diesem Commit erledigten Arbeit. Was wurde geaendert, warum, welche Auswirkung hat es?",
+      "required": true,
+      "min_words": {
+        "STANDARD": 120,
+        "TEST-ASSET": 20,
+        "TRIVIAL": 10,
+        "LORE-ONLY": 20,
+        "RESTRUCTURE": 100,
+        "HOTFIX": 20
+      },
+      "_cMin_override_2026_07_06_note": "Overblocking-Befund 2026-07-06: STANDARD-Commits mit Puffer-y-Narratoren (Buffy n=1, narratorMin=136) wurden bei 120-130 Woertern geblockt weil cMin = Math.max(narratorMin, catMinWords) = Math.max(136, 40) = 136 galt. Fix in verify_commit_msg.js: Cat-Config-Override fuer STANDARD — wenn commit_diary.min_words.STANDARD explizit gesetzt ist (jetzt 120), gewinnt dieser Wert ueber narratorMin. Sanity-Floor 20 verhindert Over-Loosening, ABER: Werte 0-19 fallen still auf die alte Math.max-Formel zurueck (Beispiel: STANDARD=15 -> cMin = Math.max(136, 15) = 136 statt 15) — Konfiguration MUSS >=20 sein damit Override wirkt, sonst ist der Overblocking-Bug ohne Warnung reaktiviert. Analoges Concept wie cMax-Override (RESTRUCTURE -> catMaxWords, ohne Sanity-Floor). Andere Kategorien unveraendert.",
+      "max_words": {
+        "STANDARD": 2000,
+        "TEST-ASSET": 1000,
+        "TRIVIAL": 500,
+        "LORE-ONLY": 800,
+        "RESTRUCTURE": 1000,
+        "HOTFIX": 500
+      },
+      "bullet_policy": {
+        "STANDARD": "max_5_lines_or_30_percent",
+        "TEST-ASSET": "max_10_lines_or_50_percent",
+        "TRIVIAL": "allowed",
+        "LORE-ONLY": "max_10_lines_or_50_percent",
+        "RESTRUCTURE": "allowed",
+        "HOTFIX": "allowed"
+      },
+      "storytelling_required": {
+        "STANDARD": false,
+        "TEST-ASSET": false,
+        "TRIVIAL": false,
+        "LORE-ONLY": true,
+        "RESTRUCTURE": false,
+        "HOTFIX": false
+      },
+      "files_skip_threshold": 20,
+      "auto_detect_info": {
+        "_note": "Regeln sind in verify_commit_msg.js hardcodiert. Änderungen hier haben KEINE Auswirkung — reine Dokumentation.",
+        "RESTRUCTURE": "staged_files > 15 OR message_contains(restruktur|verschoben|moved|umstruktur)",
+        "HOTFIX": "word_count < 60 AND message_contains(fix|hotfix|bugfix|patch)",
+        "TRIVIAL": "word_count < 30 AND staged_files <= 3"
+      },
+      "stretching_policy": "Keine kuenstliche Streckung. Wenn kurz, dann kurz. Bullet-Points erlaubt, aber in Moderation (max 5 Zeilen oder 30% bei Standard-Commits)."
+    },
+    "body_text_format": {
+      "description": "Die .body_text.txt Datei (via --bodyfile uebergeben) kann fließenden Text oder (in Moderation) Bullet-Points enthalten. Keine uebermaessigen Listen. Fokus auf Klarheit und Kausalitaet.",
+      "required": true,
+      "format": "flexibel",
+      "enforcement": "verify_commit_msg.js prueft auf uebermaessige Bullet-Points."
+    },
+    "story_generation": {
+      "description": "Commit-Nachrichten koennen organische, deutsche Geschichten sein, aber es ist nicht zwingend. Kreative Freiheit vor strengen Regeln — Hauptsache klar und kausal.",
+      "required": false,
+      "enforcement": "story_generator.js bietet Unterstuetzung, aber Fallback-Text ist immer okay."
+    },
+    "model_signature": {
+      "description": "Commit message muss den ausfuehrenden Agenten ausweisen.",
+      "required": true,
+      "token_format": "[MODEL:<model-name>]",
+      "regex": "\\[MODEL:([a-z0-9._\\-]+)\\]"
+    },
+    "impulse_token": {
+      "description": "Der [IMPULSE:<user-input>] Token dokumentiert den Auftrag der diesen Commit ausgeloest hat.",
+      "required": true,
+      "token_format": "[IMPULSE:<user-input>]",
+      "regex": "\\[IMPULSE:(.{5,}?)\\]",
+      "min_length": 5
+    },
+    "narrator_token": {
+      "description": "[NARRATOR:<Name>] Pflicht-Token. Der Erzähler wird deterministisch aus dem Composite-Hash n-Feld abgeleitet (1=Buffy, 2=Basher, 3=Thinker, 4=Vannon, 5=Squizzle, 6=Devin, 7=Argos, 8=Ghost, 9=Spark, 10=Glitch, 11=Null, 12=Echo, 13=Flux, 14=Sage). Die Commit-Message MUSS aus der Perspektive dieses Charakters geschrieben sein — mit dessen Stimme, Wortwahl und Denkmustern.",
+      "required": true,
+      "token_format": "[NARRATOR:<Buffy|Basher|Thinker|Vannon|Squizzle|Devin|Argos|Ghost|Spark>]",
+      "regex": "\\[NARRATOR:(Buffy|Basher|Thinker|Vannon|Squizzle|Devin|Argos|Ghost|Spark|Glitch|Null|Echo|Flux|Sage)\\]",
+      "source": "character_sheets.json → characters[n].name",
+      "enforcement": "verify_commit_msg.js prüft: Token existiert, Name matcht Composite n-Feld, charakterspezifische Wortzahl + Sprachmuster"
+    },
+    "file_references": {
+      "description": "Alle staged Files muessen in der Commit-Nachricht referenziert werden (basename oder stem reicht).",
+      "required": true
+    },
+    "composite_token": {
+      "description": "[COMPOSITE:cXjXnXaXpX] Pflicht-Token. Kodiert Commit-Sequenz, narrative Anweisung, Narrator, Arc- und Plot-Referenz. Deterministisch aus vorherigem Composite + Commit-Hash abgeleitet.",
+      "required": true,
+      "token_format": "[COMPOSITE:c<seq>j<narrative>n<narrator>a<arc>p<plot>]",
+      "regex": "\\[COMPOSITE:(c\\d+j\\d+n\\d+a\\d+p\\d+)\\]"
+    },
+    "seed_chain": {
+      "description": "Die Composite-Chain muss deterministisch konsistent sein. composite[N] == derive(composite[N-1], commitHash). Wird von verify_commit_msg.js geprueft.",
+      "required": true
+    },
+    "changelog_anchor": {
+      "description": "Jeder CHANGELOG.md-Eintrag MUSS Commit-Hash + Composite-Hash enthalten. Format: > **Commit:** `hash` | **Composite:** `cXjXnXaXpX`",
+      "required": true
+    },
+    "optional_elements": {
+      "sidejoke": {
+        "description": "Freiwillig: Ein Sidejoke kann eingebaut werden. Kein fixer Pool mehr — generativ pro Commit.",
+        "required": false
+      },
+      "arc_reference": {
+        "description": "Freiwaehlbar: Verweis auf den aktuellen Arc oder einen archivierten Arc. Wird jetzt ueber den Composite-Hash referenziert.",
+        "required": false
+      },
+      "narrator_attitudes": {
+        "description": "Die Disposition (Verhältnisse) des Erzählers. Jeder Narrator hat persistente Basis-Werte (Attitudes 0-10) wie code_love, cleanup_resentment, doku_irritation, criticism_tendency, praise_tendency, verbosity_bias and optimism. Diese werden durch tagesaktuelle Mood-Deltas modifiziert. Die finalen Attitudes definieren, WAS den Charakter an diesem Commit stört oder freut — und damit den allgemeinen Ton der Message.",
+        "required": false,
+        "_note": "Prompt-Regel (kein Verifikations-Check in verify_commit_msg.js). Die Attitudes werden von derive_composite.js berechnet und als Kontext für das LLM ausgegeben.",
+        "source": "character_sheets.json → characters[n].attitudes + narrative_params.json → attitude_modifiers[mood]"
+      },
+      "cross_narrator_reference": {
+        "description": "Jeder Commit sollte mindestens einmal den vorherigen Erzaehler oder dessen Model namentlich erwaehnen — aber es ist nicht zwingend.",
+        "required": false,
+        "min_mentions": 0,
+        "dialog_min_mentions": 0,
+        "token_format": "[PREV_NARRATOR:<Name>] und [PREV_MODEL:<model-name>] werden von derive_composite.js ausgegeben und koennen im narrativen Text referenziert werden.",
+        "enforcement": "verify_commit_msg.js prueft NICHT mehr darauf."
+      }
+    }
+  }
+}

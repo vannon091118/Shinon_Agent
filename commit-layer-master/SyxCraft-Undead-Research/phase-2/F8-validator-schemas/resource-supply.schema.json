@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SyxCraft Supply Resource",
+  "type": "object",
+  "required": ["_ignoreVanilla", "RESOURCE", "MORALE_ADD", "HEALTH_EFFECT", "CONSUMPTION_PER_USER_DAY", "CONSUMPTION_PER_ITEM_DAY", "AMOUNT_PER_PERSON", "RACES", "ICON", "VALUE", "WEIGHT", "SPRITE", "STACK_SIZE", "CATEGORY_DEFAULT", "EDIBLE", "PROPERTIES"],
+  "properties": {
+    "_ignoreVanilla": {
+      "type": "boolean",
+      "const": true
+    },
+    "RESOURCE": {
+      "type": "string",
+      "pattern": "^[A-Z_][A-Z0-9_]*$"
+    },
+    "MORALE_ADD": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "HEALTH_EFFECT": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "CONSUMPTION_PER_USER_DAY": {
+      "type": "number",
+      "minimum": 0
+    },
+    "CONSUMPTION_PER_ITEM_DAY": {
+      "type": "number",
+      "minimum": 0
+    },
+    "AMOUNT_PER_PERSON": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "RACES": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "ICON": {
+      "type": "string",
+      "pattern": "^[0-9]+->[A-Z_]+->[A-Z_0-9]+$"
+    },
+    "VALUE": {
+      "type": "number",
+      "minimum": 0
+    },
+    "WEIGHT": {
+      "type": "number",
+      "minimum": 0
+    },
+    "SPRITE": {
+      "type": "string"
+    },
+    "STACK_SIZE": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "CATEGORY_DEFAULT": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "EDIBLE": {
+      "type": "boolean"
+    },
+    "PROPERTIES": {
+      "type": "object",
+      "properties": {
+        "TRADEABLE": { "type": "boolean" },
+        "PERISHABLE": { "type": "boolean" },
+        "CONVERTIBLE": { "type": "boolean" },
+        "MAGICAL": { "type": "boolean" },
+        "REGENERATES": { "type": "boolean" }
+      }
+    }
+  }
+}

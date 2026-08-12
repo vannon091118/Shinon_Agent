@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SyxCraft Custom World Building",
+  "type": "object",
+  "required": ["_ignoreVanilla", "BUILDING", "CATEGORY", "ICON", "COSTS", "BUILD_TIME_DAYS", "REQUIRES_TECH", "MAX_PER_REGION", "REQUIRES_TERRAIN", "PRODUCTION", "MAINTENANCE", "UPGRADES", "EVENTS"],
+  "properties": {
+    "_ignoreVanilla": { "type": "boolean", "const": true },
+    "BUILDING": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" },
+    "CATEGORY": { "type": "string", "enum": ["CIVIC", "AGRICULTURE", "MILITARY", "MINE", "PASTURE", "RELIGION", "INFRA", "GLOBAL"] },
+    "ICON": { "type": "string", "pattern": "^[0-9]+->[A-Z_]+->[A-Z_0-9]+$" },
+    "COSTS": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "BUILD_TIME_DAYS": { "type": "integer", "minimum": 1 },
+    "REQUIRES_TECH": { "type": "string" },
+    "MAX_PER_REGION": { "type": "integer", "minimum": 0 },
+    "REQUIRES_TERRAIN": { "type": "object", "additionalProperties": { "type": "number" } },
+    "PRODUCTION": {
+      "type": "object",
+      "required": ["RESOURCE", "BASE_RATE", "SCALING", "MAX_LEVEL", "REQUIRES_POPULATION"],
+      "properties": {
+        "RESOURCE": { "type": "string" },
+        "BASE_RATE": { "type": "number", "minimum": 0 },
+        "SCALING": { "type": "object", "additionalProperties": { "type": "number" } },
+        "MAX_LEVEL": { "type": "integer", "minimum": 1 },
+        "REQUIRES_POPULATION": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "MAINTENANCE": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "UPGRADES": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["LEVEL", "COSTS", "RATE_MULT"],
+        "properties": {
+          "LEVEL": { "type": "integer", "minimum": 2 },
+          "COSTS": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+          "RATE_MULT": { "type": "number", "minimum": 1 }
+        }
+      }
+    },
+    "EVENTS": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["TRIGGER", "EVENT"],
+        "properties": {
+          "TRIGGER": { "type": "string", "enum": ["LEVEL_UP", "LOW_RESOURCES", "COMPLETED", "DESTROYED"] },
+          "EVENT": { "type": "string" }
+        }
+      }
+    }
+  }
+}

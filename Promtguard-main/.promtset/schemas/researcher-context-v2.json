@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "researcher-context-v2",
+  "title": "Researcher Context v2 (aktuell)",
+  "description": "Output-Contract für Research-Agenten. V2 — bevorzugtes Format mit atomarem Task-Prompt.",
+  "type": "object",
+  "required": [
+    "schema",
+    "agent",
+    "collected_context",
+    "decisions",
+    "atomic_task_prompt",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "enum": ["researcher-context/v2"],
+      "description": "Muss exakt 'researcher-context/v2' sein"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^RES-\\d{3}$",
+      "description": "Research-Task-ID (z.B. RES-001)"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Name des Research-Agenten"
+    },
+    "roadmap_found": {
+      "type": "boolean",
+      "description": "Wurde eine Roadmap/README gefunden?"
+    },
+    "roadmap_phase": {
+      "type": "string",
+      "description": "Aktuelle Roadmap-Phase"
+    },
+    "collected_context": {
+      "type": "object",
+      "description": "Gesammelter Kontext aus Code-Analyse, gruppiert nach Kategorien",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "line", "method", "content"],
+            "properties": {
+              "file": { "type": "string", "description": "Dateipfad relativ zum Projektroot" },
+              "line": { "type": "integer", "description": "Zeilennummer im Code" },
+              "method": { "type": "string", "description": "Methoden-/Klassenname" },
+              "content": { "type": "string", "description": "Der relevante Code-Ausschnitt" },
+              "context": { "type": "string", "description": "Zusätzlicher Kontext (z.B. 'Callback-Kette', 'Hauptschleife')" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "live_testing_threshold": {
+      "type": "object",
+      "description": "Bewertung ob Live-Testing nötig ist",
+      "properties": {
+        "reasoning": { "type": "string", "description": "Begründung der Entscheidung" },
+        "testing_boundary": { "type": "string", "description": "Grenze: ab wann ist Live-Testing nötig?" },
+        "needs_live_testing": { "type": "boolean", "default": false }
+      }
+    },
+    "atomic_task_prompt": {
+      "type": "object",
+      "description": "Der finale atomare Task-Prompt (R03) für den Coder",
+      "required": ["was", "abgrenzung", "target_agent"],
+      "properties": {
+        "was": { "type": "string", "description": "Was genau soll der Coder tun? GENAU EINE Sache (R03)." },
+        "scope_in": { "type": "string", "description": "Was ist im Scope?" },
+        "scope_out": { "type": "array", "items": { "type": "string" }, "description": "Was ist NICHT im Scope (R09)?" },
+        "abgrenzung": { "type": "string", "description": "Abgrenzung zu anderen Tasks" },
+        "live_testing_required": { "type": "boolean", "default": false },
+        "target_agent": { "type": "string", "default": "implementer-1", "description": "Ziel-Agent (z.B. 'coder-1', 'implementer-2')" }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Entscheidungen während der Research-Phase (R05)",
+      "items": {
+        "type": "object",
+        "required": ["what", "why"],
+        "properties": {
+          "what": { "type": "string", "description": "Die Entscheidung" },
+          "why": { "type": "string", "description": "Begründung" },
+          "evidence": { "type": "string", "description": "Fundstelle im Format file:line:content" },
+          "alternatives_rejected": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verworfene Alternativen mit Grund"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "default": "medium"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Fundstellen im Code-Format: datei:zeile:inhalt",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_\\-/.]+:\\d+:.*$"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "description": "Optional: Explizite Claim-Deklarationen. Jeder Eintrag IST ein Claim (R13), bis er per verified_claims[] verifiziert wurde. decisions[] erzeugt ohnehin bereits Claims — claims[] ist für zusätzliche, entscheidungs-freie Behauptungen.",
+      "items": {
+        "type": "object",
+        "required": ["claim", "evidence"],
+        "properties": {
+          "claim": { "type": "string", "description": "Atomare, falsifizierbare Aussage (eine Behauptung pro Claim)" },
+          "evidence": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-/.\\*]+\\.\\w+:\\d+:.*$" },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"], "default": "medium" }
+        }
+      }
+    },
+    "verified_claims": {
+      "type": "array",
+      "description": "Optional: Verifikations-/Widerlegungs-Updates für bestehende Claims aus früheren Researches. Bei ingest werden die referenzierten CLAIM-IDs in claim-log.jsonl aktualisiert (neue Zeile, gleiche ID — latest-wins per ID).",
+      "items": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "claim_id": { "type": "string", "pattern": "^CLAIM-[A-Z]{3,5}-\\d{3}$", "description": "Direkte CLAIM-ID. Bevorzugt." },
+          "claim_index": { "type": "integer", "description": "Alternative Referenz: Index in decisions[] oder claims[] der aktuellen Research." },
+          "claim": { "type": "string", "description": "Bei refined: die neue, präzisere Formulierung." },
+          "status": { "type": "string", "enum": ["verified", "refuted", "refined"] },
+          "evidence": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-/.\\*]+\\.\\w+:\\d+:.*$", "description": "Beleg-Widerlegungs-Datei:Zeile" },
+          "alternatives_rejected": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Kurzzusammenfassung (1-3 Sätze)"
+    },
+    "original_prompt": {
+      "type": "string",
+      "description": "Der ursprüngliche User-Auftrag"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Metadaten zum Research-Durchlauf",
+      "properties": {
+        "files_scanned": { "type": "integer" },
+        "total_lines_analyzed": { "type": "integer" },
+        "execution_time_ms": { "type": "integer" },
+        "tools_used": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

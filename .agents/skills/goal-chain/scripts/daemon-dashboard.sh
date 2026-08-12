@@ -92,6 +92,8 @@ if [[ -f "$PID_FILE" ]]; then
 fi
 
 # Start via Python daemonizer (double-fork, survives all shell exits)
+export PZ_ROOT="$ROOT"
+export PZ_PORT="$PORT"
 python3 << 'PYEOF' &
 import os, sys, time
 
@@ -122,9 +124,9 @@ daemonize()
 import subprocess
 log = open("/tmp/live-dashboard-daemon.log", "a")
 proc = subprocess.Popen(
-    [sys.executable, ".agents/skills/goal-chain/scripts/live-dashboard-server.py", "4200"],
+    [sys.executable, ".agents/skills/goal-chain/scripts/live-dashboard-server.py", os.environ.get("PZ_PORT", "4200")],
     stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-    cwd="/home/vannon/Schreibtisch/projects/PZ",
+    cwd=os.environ["PZ_ROOT"],
     start_new_session=True,
 )
 pid = proc.pid

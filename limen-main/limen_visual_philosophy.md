@@ -1,0 +1,11 @@
+# Threshold Cartography
+
+A visual language of measured passage: invisible systems become legible through the pressure they exert on space. Forms are not illustrations of machinery but traces of force—bright bodies held at a threshold, a carrier crossing a narrow seam, and dispersed points recording what has already passed. The composition should feel discovered rather than explained, an instrument panel translated into a quiet art object.
+
+Space is divided by a disciplined vertical gate. Before it, repetition accumulates: small signals compress into a field whose order is strained but never chaotic. Beyond it, one clear trajectory carries attention toward a sparse constellation. The gate is the central fact of the work, expressed as absence, interval, and tension rather than as a literal barrier. Every distance is intentional; every empty zone gives the eye time to register transfer.
+
+Color behaves as material and evidence. A near-black mineral ground holds a restrained blue-green current, while a single warm amber passage marks the carried request. Red appears only as a rare interruption, never as decoration. Lines are thin, exact, and slightly luminous, as if etched into smoked glass. The result should be meticulously crafted: layers, transparencies, grain, and edge control must suggest painstaking calibration by someone at the absolute top of their field.
+
+Rhythm comes from countless small repetitions—queued circles, measured ticks, faint grid intersections, and a constellation of latency marks. Their differences matter more than their sameness. Scale shifts from almost microscopic marks to one calm structural gesture, allowing the eye to move from congestion to release. A few clinical labels act as visual coordinates, not prose; text is sparse, essential, and integrated into the geometry.
+
+Balance is achieved through asymmetry held under strict control: density on the left, a singular crossing in the middle, and a patient scatter on the right. Nothing should look casually placed. The final image must feel painstakingly refined, the product of deep expertise and countless hours of looking, adjusting, and looking again. It is an art object about attention itself—proof that an ephemeral passage can be studied, mapped, and made beautiful without losing its tension.

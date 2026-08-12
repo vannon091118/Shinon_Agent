@@ -1,0 +1,156 @@
+[
+  {
+    "p_id": "p160",
+    "id": "plot-2026-07-02T19:07:30",
+    "timestamp": "2026-07-02 19:07:30",
+    "summary": "Archive-Cleanup: PLOT_LORE nach commit-layer, AGENTS/TREE/CHANGELOG auf Redirect-Stubs, KNOWN_BUGS auf 2 aktive Bugs, LIVE_INDEX/MASTER_DOC aktualisiert",
+    "narrator": "Devin",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c155j54n6a4p128",
+    "ref_to": "plot-2026-07-02T19:02:50",
+    "prev_narrator": "Vannon"
+  },
+  {
+    "p_id": "p161",
+    "id": "plot-2026-07-02T19:10:29",
+    "timestamp": "2026-07-02 19:10:29",
+    "summary": "jest.config.js Kommentar korrigiert: Migration zu 6.6% statt 'langfristiger Fix', ehrlicher Status im Kommentar",
+    "narrator": "Spark",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c156j10n9a3p160",
+    "ref_to": "plot-2026-07-02T19:07:30",
+    "prev_narrator": "Devin"
+  },
+  {
+    "p_id": "p162",
+    "id": "plot-2026-07-02T19:13:21",
+    "timestamp": "2026-07-02 19:13:21",
+    "summary": "INDEX.md LOC-Angaben gegen tatsächliche Zeilenzahlen korrigiert: Translation +32%, GUI +27%, DB +96%",
+    "narrator": "Null",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c157j78n11a4p102",
+    "ref_to": "plot-2026-07-02T19:10:29",
+    "prev_narrator": "Spark"
+  },
+  {
+    "p_id": "p163",
+    "id": "plot-2026-07-02T19:18:32",
+    "timestamp": "2026-07-02 19:18:32",
+    "summary": "jest.config.js testMatch erweitert: von 1/14 auf 14/14 Testdateien (smoke, e2e, contract, test, _test Patterns)",
+    "narrator": "Ghost",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c158j51n8a4p87",
+    "ref_to": "plot-2026-07-02T19:13:21",
+    "prev_narrator": "Null"
+  },
+  {
+    "p_id": "p164",
+    "id": "plot-2026-07-02T19:23:22",
+    "timestamp": "2026-07-02 19:23:22",
+    "summary": "ROADMAP.md + PLAN.md aktualisiert: AGENTS-Ref korrigiert, Doku-Modularisierung und Archive-Cleanup in DONE-INDEX, Jest testMatch Status",
+    "narrator": "Flux",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c159j85n13a5p102",
+    "ref_to": "plot-2026-07-02T19:18:32",
+    "prev_narrator": "Ghost"
+  },
+  {
+    "p_id": "p165",
+    "id": "plot-2026-07-02T19:26:50",
+    "timestamp": "2026-07-02 19:26:50",
+    "summary": "Zombie-Bugs + Geister-Keys bereinigt: BU-019 und BU-025 im Code laengst resolved, FCM+Player2 Keys aus .env.example entfernt",
+    "narrator": "Devin",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c160j73n6a4p141",
+    "ref_to": "plot-2026-07-02T19:23:22",
+    "prev_narrator": "Flux"
+  },
+  {
+    "p_id": "p166",
+    "id": "plot-2026-07-02T19:39:38",
+    "timestamp": "2026-07-02 19:39:38",
+    "summary": "FCM+Player2 Zombie-Referenzen komplett entfernt: 14 i18n-Dateien, README.md, TUTORIAL.txt, tests/fulltest_run.js",
+    "narrator": "Argos",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c161j69n7a1p83",
+    "ref_to": "plot-2026-07-02T19:26:50",
+    "prev_narrator": "Devin"
+  },
+  {
+    "p_id": "p167",
+    "id": "plot-2026-07-02T19:41:05",
+    "timestamp": "2026-07-02 19:41:05",
+    "summary": "FCM+Player2 Zombie-Referenzen komplett entfernt: 14 i18n-Dateien, README.md, TUTORIAL.txt, tests/fulltest_run.js",
+    "narrator": "Glitch",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c162j85n10a5p47",
+    "ref_to": "plot-2026-07-02T19:39:38",
+    "prev_narrator": "Argos"
+  },
+  {
+    "p_id": "p168",
+    "id": "plot-2026-07-02T19:47:09",
+    "timestamp": "2026-07-02 19:47:09",
+    "summary": "Pre-commit Bug-Konsistenz-Check: verify_commit_msg.js CHECK 8 gleicht PLAN.md gegen KNOWN_BUGS_REPORT.md ab, warnt bei Zombie-Bugs",
+    "narrator": "Null",
+    "model_id": "deepseek-v4-pro",
+    "composite": "c163j45n11a2p105",
+    "ref_to": "plot-2026-07-02T19:41:05",
+    "prev_narrator": "Glitch"
+  },
+  {
+    "p_id": "p169",
+    "id": "plot-2026-07-02T23:21:15",
+    "timestamp": "2026-07-02 23:21:15",
+    "summary": "GUI ist halbfertig, sieht nach Template aus — kontrastreich, Minispiel volleinbinden, UX instinktiv",
+    "narrator": "Spark",
+    "model_id": "claude-sonnet-4.6",
+    "composite": "c164j1n9a3p61",
+    "ref_to": "plot-2026-07-02T19:47:09",
+    "prev_narrator": "Null"
+  },
+  {
+    "p_id": "p170",
+    "id": "plot-2026-07-03T01:22:05",
+    "timestamp": "2026-07-03 01:22:05",
+    "summary": "GUI entrümpelt — Minigame nur im Game-Tab, 1 AudioContext statt 3, Percussion-System, Section-Dividers, Bugfixes",
+    "narrator": "Squizzle",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c165j38n5a2p116",
+    "ref_to": "plot-2026-07-02T23:21:15",
+    "prev_narrator": "Spark"
+  },
+  {
+    "p_id": "p171",
+    "id": "plot-2026-07-03T01:23:09",
+    "timestamp": "2026-07-03 01:23:09",
+    "summary": "GUI entrümpelt — Minigame nur im Game-Tab, 1 AudioContext statt 3, Percussion-System, Section-Dividers, Bugfixes",
+    "narrator": "Argos",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c166j1n7a4p99",
+    "ref_to": "plot-2026-07-03T01:22:05",
+    "prev_narrator": "Squizzle"
+  },
+  {
+    "p_id": "p172",
+    "id": "plot-2026-07-03T01:24:16",
+    "timestamp": "2026-07-03 01:24:16",
+    "summary": "GUI entrümpelt — Minigame nur im Game-Tab, 1 AudioContext statt 3, Percussion-System, Section-Dividers, Bugfixes",
+    "narrator": "Null",
+    "model_id": "mimo-v2.5-pro",
+    "composite": "c167j12n11a4p91",
+    "ref_to": "plot-2026-07-03T01:23:09",
+    "prev_narrator": "Argos"
+  },
+  {
+    "p_id": "p173",
+    "id": "plot-2026-07-03T02:45:47",
+    "timestamp": "2026-07-03 02:45:47",
+    "summary": "Phase 2.5: GUI Polish, Mod Loader Lite, Custom Prompter, Prompt Optimization",
+    "narrator": "Squizzle",
+    "model_id": "mimo-v2",
+    "composite": "c168j3n5a3p100",
+    "ref_to": "plot-2026-07-03T01:24:16",
+    "prev_narrator": "Null"
+  }
+]

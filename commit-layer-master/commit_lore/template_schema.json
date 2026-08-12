@@ -1,0 +1,76 @@
+{
+  "description": "Template-Schema für kausale Prompt-Composition. Platzhalter-Syntax: {{VARIABLE}}. Rekursive Substitution unterstützt.",
+  "version": "1.0.0",
+  "placeholder_syntax": "{{VARIABLE_NAME}}",
+  "rules": {
+    "case_sensitive": false,
+    "recursive_substitution": true,
+    "max_recursion_depth": 10,
+    "missing_variable_behavior": "keep_placeholder"
+  },
+  "variable_categories": {
+    "character": {
+      "NAME": "Character name (e.g., Basher, Buffy)",
+      "ROLE": "Character role (e.g., Terminal Bot, Orchestrator)",
+      "VOICE_TRAITS": "Character voice traits description"
+    },
+    "mood": {
+      "MOOD": "Current mood (e.g., sachlich, alarmiert, triumphierend)",
+      "INTRO_PHRASE": "Mood-specific opening phrase",
+      "OUTCOME_PHRASE": "Mood-specific closing phrase"
+    },
+    "relationship": {
+      "PREV_NARRATOR": "Previous narrator name",
+      "RELATIONSHIP_STATE": "Relationship state (fresh_pair, established_duo, conflict_pair, trusted_team)",
+      "RELATIONSHIP_TEXT": "Pre-computed relationship description"
+    },
+    "domain": {
+      "DOMAIN": "Primary domain (e.g., GUI, DB, Translation)",
+      "SECONDARY_DOMAIN": "Secondary domain (optional)",
+      "DOMAIN_RESONANCE": "Domain resonance (native_domain, foreign_domain, cross_domain_expert)",
+      "DOMAIN_TEXT": "Pre-computed domain description"
+    },
+    "sequence": {
+      "SEQUENCE_PHASE": "Sequence phase (arc_opening, arc_mid, arc_climax, arc_resolution)",
+      "THEME": "Current narrative theme",
+      "PROGRESS": "Arc progress percentage",
+      "SEQUENCE_TEXT": "Pre-computed sequence description"
+    },
+    "code": {
+      "CHANGE_TYPE": "Change type (bugfix, feature, refactor, docs)",
+      "COMPLEXITY": "Complexity level (low, medium, high)",
+      "FILES": "Comma-separated file list",
+      "TECHNICAL_SUMMARY": "Technical summary of changes",
+      "IMPULSE": "User impulse/description"
+    },
+    "narrative": {
+      "TRANSITION_TEXT": "Cross-narrator transition phrase",
+      "OPENING_TEXT": "Story opening phrase",
+      "CLOSING_TEXT": "Story closing phrase"
+    }
+  },
+  "template_structure": {
+    "character_template": {
+      "base_template": "{{INTRO_PHRASE}} {{TRANSITION_TEXT}} {{DOMAIN_TEXT}} {{TECHNICAL_SUMMARY}} {{FILES}} {{OUTCOME_PHRASE}}",
+      "mood_modifiers": {
+        "MOOD": {
+          "INTRO_PHRASE": "mood-specific intro",
+          "OUTCOME_PHRASE": "mood-specific outcome"
+        }
+      }
+    },
+    "relationship_template": "{{RELATIONSHIP_TEXT}}",
+    "domain_template": "{{DOMAIN_TEXT}}",
+    "sequence_template": "{{SEQUENCE_TEXT}}"
+  },
+  "example_usage": {
+    "template": "{{INTRO_PHRASE}} {{TRANSITION_TEXT}} {{DOMAIN_TEXT}} {{TECHNICAL_SUMMARY}}",
+    "variables": {
+      "INTRO_PHRASE": "Ausführung:",
+      "TRANSITION_TEXT": "Buffy hat den Grundstein gelegt — jetzt bauen wir weiter.",
+      "DOMAIN_TEXT": "Meine Domain: GUI. Routine.",
+      "TECHNICAL_SUMMARY": "CSS Fix für Terminal-Tab visibility"
+    },
+    "result": "Ausführung: Buffy hat den Grundstein gelegt — jetzt bauen wir weiter. Meine Domain: GUI. Routine. CSS Fix für Terminal-Tab visibility"
+  }
+}

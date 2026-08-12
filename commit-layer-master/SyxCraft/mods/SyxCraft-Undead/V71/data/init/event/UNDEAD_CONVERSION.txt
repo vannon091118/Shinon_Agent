@@ -1,0 +1,67 @@
+# LLM.entry
+# STRUCTURE_EXPLANATION: Undead Conversion Event — converts captured Humans (SLAVE class) into Undead citizens.
+# ENGINE_DEFAULTS: Requires NECROMANCY_HUMAN_FARM tech, consumes SLAVE (HUMAN) population + ESSENCE.
+# LAST_ENTRY: Entry 2
+# FILE_CONTEXT: V71/data/init/event/UNDEAD_CONVERSION.txt
+# VERSION: 0.2.0
+# FLAGS: DATA_NEW, VERIFIED
+# FLAG_COUNT: 2
+
+_ignoreVanilla: true,
+UNDEAD_CONVERSION: {
+    ICON: 32->UNDEAD->CONVERT,
+    DURATION: { DAYS: 1.0 },
+    
+    OCCURRENCE: {
+        RACE: { UNDEAD: 1.0 },
+        REQUIRES: { 
+            GREATER: { 
+                POPULATION_CLASS_SLAVE_HUMAN: 10, 
+                RESOURCE_ESSENCE: 1 
+            } 
+        }
+    },
+    
+    TAGS: { ALLOW_NOT: [CHAIN_ONGOING] },
+    
+    SELECTION: {
+        SUBJECTS: {
+            USE_AS_ICON: true,
+            FILTERS: [ 
+                { EQUAL: { CLASS_SLAVE: 1, RACE: HUMAN } } 
+            ],
+            MAX_AMOUNT: { RELATIVE: 0.1 }
+        }
+    },
+    
+    CHOICES: [
+        {
+            ACTIONS: [
+                { TYPE: POPULATION_CLASS_CHANGE, FROM: SLAVE, TO: CITIZEN, RACE: UNDEAD, AMOUNT: { RELATIVE: 0.1 } },
+                { TYPE: EVENT, EVENT: UNDEAD_RISE },
+                { TYPE: POPULATION_CLASS_ADD, CLASS: SLAVE, RACE: HUMAN, AMOUNT: { RELATIVE: -0.1 } },
+                { TYPE: RESOURCE_ADD, RESOURCE: ESSENCE, AMOUNT: -1 },
+                { TYPE: BOOST_PERM, PLAYER: { UNDEAD_CONVERSION_COOLDOWN>SET: 1 } }
+            ]
+        },
+        {
+            ACTIONS: [ { TYPE: EVENT, EVENT: CONVERSION_CANCELLED } ]
+        }
+    ]
+}
+
+UNDEAD_RISE: {
+    ICON: 32->UNDEAD->RISE,
+    DURATION: { DAYS: 5.0 },
+    
+    ON_SPAWN: {
+        ACTIONS: [
+            { TYPE: BOOST_PERM, PLAYER: { UNDEAD_CONVERSION_EFFICIENCY>ADD: 0.05 } }
+        ]
+    }
+}
+
+CONVERSION_CANCELLED: {
+    ICON: 32->UNDEAD->CANCEL,
+    DURATION: { DAYS: 1.0 }
+}

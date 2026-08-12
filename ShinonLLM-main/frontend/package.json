@@ -1,0 +1,26 @@
+{
+  "name": "frontend-runtime",
+  "private": true,
+  "version": "0.2.3a",
+  "type": "module",
+  "main": "./src/app/page.tsx",
+  "scripts": {
+    "build": "next build",
+    "start": "next start -p 3000",
+    "dev": "next dev -p 3000",
+    "test": "next build"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "typescript": "^6.0.2"
+  }
+}
+
+

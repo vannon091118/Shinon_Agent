@@ -1,0 +1,40 @@
+# V69 — Intermediate
+# Game Version: V69.x
+# Mod SDK Version: 0.1.3
+# Status: LEGACY — Pre-Reign of Terror
+# Last Updated: 2026-07-14
+
+## Engine Baseline (V69)
+
+### Laws & Government
+- Basic Law System (Categories exist, no GP cost)
+- Law effects static (no scaling)
+
+### Slavery System
+- Enslavement via Court punishment only
+- Fixed `SLAVE_PRICE` per Race
+- No Slave Markets, no Raid-based acquisition
+
+### Population
+- Growth Formula: `BASE * CLIMATE * TERRAIN * HOUSING`
+- `POPULATION.GROWTH` multiplier
+- Immigration + Natural Growth combined
+
+### Race Relations
+- Static `OTHER_RACES` in Race file
+- No dynamic events
+
+### Tech Tree
+- 5 Categories, linear progression
+- No Era scaling, no Faction-specific trees
+
+## SyxCraft V69 State
+- Same as V70 but without ALLIANCE_COMMAND tech
+- UNDEAD race defined but no mechanics
+- Mod SDK 0.1.3
+
+---
+
+## Migration to V70
+- Add ALLIANCE_COMMAND tech
+- Update Mod SDK to 0.1.4
