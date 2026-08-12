@@ -78,6 +78,23 @@ from fusion.shinon.shinon_engine import (
     ShinonIdentity,
     DEFAULT_IDENTITY,
 )
+from fusion.shinon.shinon_prosa import (
+    NarrativeSpec,
+    RenderedProsa,
+    CritiquePoint,
+    CritiqueResult,
+    MOODS,
+    normalize_tone,
+    spec_hash,
+    pick_block,
+    build_prompt,
+    build_fallback,
+    build_model_command,
+    render,
+    render_critique,
+    clamp_sentences,
+    count_sentences,
+)
 
 __all__ = [
     # Patterns
@@ -104,4 +121,9 @@ __all__ = [
     # Engine
     "ShinonEngine", "ShinonInput", "ShinonOutput", "CharacterContext",
     "ShinonIdentity", "DEFAULT_IDENTITY",
+    # Prosa (pure NarrativeSpec -> Text renderer)
+    "NarrativeSpec", "RenderedProsa", "CritiquePoint", "CritiqueResult",
+    "MOODS", "normalize_tone", "spec_hash", "pick_block", "build_prompt",
+    "build_fallback", "build_model_command", "render", "render_critique",
+    "clamp_sentences", "count_sentences",
 ]

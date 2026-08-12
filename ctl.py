@@ -60,7 +60,7 @@ DASHBOARD_SERVER = PROJECT_ROOT / ".agents" / "skills" / "goal-chain" / "scripts
 
 # ─── Port Assignments ─────────────────────────────────────────────────
 COMPONENT_PORTS: Dict[str, int] = {
-    "limen": 8000,
+    "limen": 8001,
     "shinon-ui": 4300,
     "dashboard": 4200,
 }

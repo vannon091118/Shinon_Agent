@@ -4,7 +4,7 @@
 
 [server]
 host = "127.0.0.1"            # LIMEN lehnt Nicht-Localhost ab
-port = 8000
+port = 8001
 worker_count = 1               # Phase 1; später bewusst erhöhen
 log_level = "info"
 max_body_size_kb = 256

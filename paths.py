@@ -93,6 +93,8 @@ GOALCHAIN_DIR  = DATA_DIR / "goal-chain"
 GOALCHAIN_DB   = GOALCHAIN_DIR / "tid-state.db"
 LOGS_DIR       = SHINON_HOME / "logs"
 PIDS_DIR       = SHINON_HOME / "pids"
+MODELS_DIR     = SHINON_HOME / "models"
+BIN_DIR        = SHINON_HOME / "bin"
 
 # ─── Project layout (source — never moves) ────────────────────────────
 PROJECT_VENV     = PROJECT_ROOT / ".venv"
@@ -122,7 +124,7 @@ LEGACY_KEY_STORE_PATHS = (
 def ensure_layout() -> None:
     """Create the central directories (idempotent). Owner-only perms on POSIX."""
     for d in (CONFIG_DIR, LIMEN_DIR, KARMA_DIR, SHINON_DIR, GOALCHAIN_DIR,
-              LOGS_DIR, PIDS_DIR, SHINON_HOME):
+              LOGS_DIR, PIDS_DIR, MODELS_DIR, BIN_DIR, SHINON_HOME):
         d.mkdir(parents=True, exist_ok=True)
         if platform.system() != "Windows":
             try:
@@ -147,6 +149,8 @@ def explain() -> str:
         f"                  └─ goal-chain/  {GOALCHAIN_DB.name}\n"
         f"  Logs:         {LOGS_DIR.relative_to(SHINON_HOME) if SHINON_HOME in LOGS_DIR.parents else LOGS_DIR}\n"
         f"  PIDs:         {PIDS_DIR.relative_to(SHINON_HOME) if SHINON_HOME in PIDS_DIR.parents else PIDS_DIR}\n"
+        f"  Models:       {MODELS_DIR.relative_to(SHINON_HOME) if SHINON_HOME in MODELS_DIR.parents else MODELS_DIR}/\n"
+        f"  Bin:          {BIN_DIR.relative_to(SHINON_HOME) if SHINON_HOME in BIN_DIR.parents else BIN_DIR}/\n"
         f"  Project root: {PROJECT_ROOT}\n"
     )
 

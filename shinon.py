@@ -24,15 +24,21 @@
 from __future__ import annotations
 
 import os
-import platform
+
 import subprocess
 import sys
 import time
 import webbrowser
 from pathlib import Path
 
+import paths as P  # single source of truth: central data location ($SHINON_HOME)
+
 PROJECT_ROOT = Path(__file__).resolve().parent
-CONFIG_DIR = PROJECT_ROOT / "config"
+# Install-Marker + Configs liegen jetzt ZENTRAL in $SHINON_HOME/config
+# (~/.shinon/config), NICHT mehr im Projekt-Verzeichnis. Beide Referenzen
+# muessen mit install.py + paths.py konsistent sein, sonst looped
+# `./shinon start` ewig auf "Shinon ist noch nicht installiert".
+CONFIG_DIR = P.CONFIG_DIR
 
 # ─── ANSI Colours ─────────────────────────────────────────────────────
 def _supports_colour() -> bool:
@@ -335,12 +341,14 @@ Dein AI-Control-Center f\u00fcr Prompt-Engineering und API-Management.
 
 def cmd_help() -> int:
     print(HELP_BANNER)
-    print(f"  {CYAN}Pfade (im Projekt, nicht in $HOME):{NC}")
-    print(f"    Config:    {CONFIG_DIR.relative_to(PROJECT_ROOT)}/")
-    print(f"    Daten:     {(PROJECT_ROOT / 'data').relative_to(PROJECT_ROOT)}/")
-    print(f"    Logs:      {(PROJECT_ROOT / 'data' / 'logs').relative_to(PROJECT_ROOT)}/")
-    print(f"    PIDs:      {(PROJECT_ROOT / 'data' / 'pids').relative_to(PROJECT_ROOT)}/")
-    print(f"    Venv:      .venv/")
+    print(f"  {CYAN}Pfade (zentral in $SHINON_HOME):{NC}")
+    print(f"    SHINON_HOME: {P.SHINON_HOME}")
+    print(f"    Config:    {P.CONFIG_DIR}/")
+    print(f"    Daten:     {P.DATA_DIR}/")
+    print(f"    Logs:      {P.LOGS_DIR}/")
+    print(f"    PIDs:      {P.PIDS_DIR}/")
+    print(f"    Keys:      {P.KEYS_FILE}")
+    print(f"    Venv:      .venv/ (Projekt)")
     print()
     return 0
 
