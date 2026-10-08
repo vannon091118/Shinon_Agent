@@ -1,0 +1,12 @@
+name = "notion-session-runner"
+main = "src/index.js"
+compatibility_date = "2026-10-09"
+
+[vars]
+NOTION_VERSION = "2022-06-28"
+
+# Configure secrets out-of-band:
+#   npx wrangler secret put NOTION_TOKEN
+#   npx wrangler secret put WEBHOOK_SECRET
+#
+# This scaffold is read-only and does not start agent execution.
