@@ -1,0 +1,3 @@
+# Copy to .dev.vars locally; never commit real values.
+NOTION_TOKEN=secret_replace_with_internal_notion_integration_token
+WEBHOOK_SECRET=replace_with_a_long_random_secret
