@@ -16,7 +16,7 @@ android {
     }
 
     signingConfigs {
-        release {
+        create("release") {
             // Release-Keystore wird NIE im Repo liegen. Stattdessen:
             //   1. .jks-Datei lokal (nie nach git) — Konvertierung via Base64:
             //      base64 -w0 my-release-key.jks > my-release-key.b64
@@ -28,6 +28,9 @@ android {
             //      - SHINON_KEY_ALIAS_PASS (Alias-Passwort)
             //   3. Der CI-Workflow dekodiert das Keystore-Base64 temporär
             //      in der Runner-Umgebung (niemals im Repo, niemals im Log).
+            //
+            // SigningConfig-Datensatz: storeFile, storePassword, keyAlias,
+            // keyPassword (die vier Werte, die die APK signiert).
             storeFile = file(System.getenv("SHINON_KEYSTORE_PATH") ?: "keystore/release.jks")
             storePassword = System.getenv("SHINON_KEYSTORE_PASS") ?: System.getenv("SHINON_KEYSTORE_PASS_DEFAULT") ?: ""
             keyAlias = System.getenv("SHINON_KEYSTORE_ALIAS") ?: ""
@@ -39,7 +42,7 @@ android {
         release {
             isMinifyEnabled = true
             isDebuggable = false
-            signingConfig = signingConfigs.release
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-rules-opt.txt"), "proguard-rules.pro")
         }
         debug {
