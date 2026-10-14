@@ -212,7 +212,7 @@ class ShinonService : Service() {
                 restartAttempts++
                 Log.w(TAG, "Prozess endete (Exit $exitCode) — Versuch $restartAttempts/$MAX_RESTART_ATTEMPTS")
                 Thread {
-                    TimeUnit.sleep(RESTART_DELAY_MS)
+                    Thread.sleep(RESTART_DELAY_MS)
                     if (running) restartEngine()
                 }.start()
             }

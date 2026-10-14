@@ -66,9 +66,8 @@ class ShinonKeystore(private val app: Application) {
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.PADDING_MODE_NONE)
+                .setEncryptionPaddings(KeyProperties.PADDING_RSA_OAEP)
                 .setKeySize(256)
-                .setRandomizedEncryptionIVsEnabled(true)
                 .setUnwrapAlgorithm("AES")
                 .build()
             val keyGen = javax.crypto.KeyGenerator.getInstance("AES", "AndroidKeyStore")
