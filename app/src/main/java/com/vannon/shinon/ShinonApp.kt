@@ -66,9 +66,12 @@ class ShinonKeystore(private val app: Application) {
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.PADDING_RSA_OAEP)
+                // AES-GCM verschlüsselt blockweise ohne Padding. Der frühere
+                // Wert PADDING_RSA_OAEP existiert in KeyProperties nicht und
+                // wäre für einen AES-Schlüssel auch sachlich falsch; für
+                // AES-GCM ist ENCRYPTION_PADDING_NONE korrekt.
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
-                .setUnwrapAlgorithm("AES")
                 .build()
             val keyGen = javax.crypto.KeyGenerator.getInstance("AES", "AndroidKeyStore")
             keyGen.init(spec)

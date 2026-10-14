@@ -163,11 +163,14 @@ class ShinonService : Service() {
                     // entschlüsselte Wert wird hier injiziert.
                 }
             }
-            nodeProcess = ProcessBuilder(command)
+            // ProcessBuilder-Kette: environment() liefert die Map, und
+            // putAll() darauf gibt Unit zurück. redirectErrorStream() gehört
+            // deshalb auf den Builder — nicht ans Ende der putAll-Kette.
+            val builder = ProcessBuilder(command)
                 .directory(dshDir)
-                .environment().putAll(env)
                 .redirectErrorStream(true)
-                .start()
+            builder.environment().putAll(env)
+            nodeProcess = builder.start()
             ioThread = Thread { parseReadyUrl(nodeProcess!!) }
             ioThread!!.start()
         } catch (e: Exception) {
@@ -272,7 +275,12 @@ class ShinonService : Service() {
         nodeProcess?.let { proc ->
             try {
                 proc.destroy()
-                if (!proc.waitFor(KILL_GRACE_MS, TimeUnit.MILLISECONDS)) {
+                // Explizites if/else: das try ist der Rückgabewert des
+                // let-Lambda, ein if ohne else wäre dort ein Ausdruck und
+                // damit ein Compile-Fehler (Kotlin 1.9).
+                if (proc.waitFor(KILL_GRACE_MS, TimeUnit.MILLISECONDS)) {
+                    Log.d(TAG, "Prozess sauber mit SIGTERM beendet")
+                } else {
                     Log.w(TAG, "Prozess kam nicht mit SIGTERM — SIGKILL")
                     proc.destroyForcibly()
                 }
