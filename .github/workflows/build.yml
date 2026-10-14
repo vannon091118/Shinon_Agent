@@ -36,6 +36,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+          cache: 'false'
+
       - name: Decode Keystore from Secrets (temporär, NIE als Artifact)
         env:
           SHINON_KEYSTORE_B64: ${{ secrets.SHINON_KEYSTORE_B64 }}
@@ -63,7 +69,7 @@ jobs:
           fi
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        run: gradle assembleRelease
 
       - name: "APK-Content-Gate (Entkopplung: keine Forge-Daten, kein DSH-Vendor)"
         run: |
