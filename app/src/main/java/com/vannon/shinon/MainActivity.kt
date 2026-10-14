@@ -86,8 +86,8 @@ class MainActivity : Activity() {
         retryButton.setOnClickListener { startService() }
         showSplash()
 
-        registerReceiver(urlReadyReceiver, IntentFilter(ShinonService.INTENT_URL_READY))
-        registerReceiver(processEndReceiver, IntentFilter(ShinonService.INTENT_PROCESS_END))
+        registerReceiver(urlReadyReceiver, IntentFilter(ShinonService.INTENT_URL_READY), Context.RECEIVER_NOT_EXPORTED)
+        registerReceiver(processEndReceiver, IntentFilter(ShinonService.INTENT_PROCESS_END), Context.RECEIVER_NOT_EXPORTED)
         startService()
     }
 
@@ -119,8 +119,9 @@ class MainActivity : Activity() {
                 val scheme = request.url?.scheme ?: return false
                 val host = request.url?.host ?: return false
                 // Nur die lokale DSH-URL bleibt in der WebView.
+                // NUR http auf 127.0.0.1 — https wäre ein privilegierter
+                // Zugang zu einer fremden HTTPS-Seite auf Loopback.
                 if (scheme == "http" && host == "127.0.0.1") return false
-                if (scheme == "https" && host == "127.0.0.1") return false
                 startActivity(Intent(Intent.ACTION_VIEW, request.url))
                 return true
             }

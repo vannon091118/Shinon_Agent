@@ -8,6 +8,10 @@
     <!-- Foreground-Service hält den DSH-Prozess gegen Doze/Background-Kills -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- dataSync wurde ab Android 14 zur Pflicht-Permission — ohne sie
+         bricht der Foreground-Service auf API 28–33 mit
+         InvalidServiceTypeException. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Android 12+: FOREGROUND_SERVICE_DATA_SYNC-Modus, wenn der
          Foreground-Service Daten synchronisiert (N/A hier, aber

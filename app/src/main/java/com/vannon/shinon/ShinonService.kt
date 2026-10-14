@@ -253,7 +253,14 @@ class ShinonService : Service() {
     private fun stopEngine() {
         stopNodeProcess()
         running = false
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        // STOP_FOREGROUND_REMOVE ist erst ab API 29 (Android 10) verfügbar.
+        // Ältere Geräte müssen den Service manuell entfernen; das Flag wird
+        // nur gesetzt, wenn die API-Level vorhanden ist.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            stopForeground(true)
+        }
         stopSelf()
     }
 
