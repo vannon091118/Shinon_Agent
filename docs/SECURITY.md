@@ -85,9 +85,12 @@ nie gestartet wurde.
 | `INTERNET` | Provider-Aufrufe der Engine | erforderlich |
 | `FOREGROUND_SERVICE` | Dienst | erforderlich |
 | `FOREGROUND_SERVICE_DATA_SYNC` | `foregroundServiceType="dataSync"` | erforderlich ab API 34 |
-| `WAKE_LOCK` | gegen Doze | **deklariert, unbenutzt** (kein `PowerManager`-Aufruf) |
-| `POST_NOTIFICATIONS` | Dienst-Sichtbarkeit API 33+ | deklariert, **nie zur Laufzeit angefragt** |
+| `POST_NOTIFICATIONS` | Dienst-Sichtbarkeit ab API 33 | deklariert **und** zur Laufzeit angefragt (`MainActivity.requestNotificationPermissionIfNeeded`) |
 | `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | von AGP automatisch ergänzt | erwartet |
+
+`WAKE_LOCK` ist **entfernt**: kein Code hält einen Wakelock, die Deklaration war
+wirkungslos. Dadurch sind die angeforderten Rechte auf das für Netz, Dienst und
+Benachrichtigung nötige Minimum begrenzt.
 
 Bewusst **nicht** angefordert: externer Speicher, Boot-Receiver, Standort —
 entsprechend dem Nicht-Ziel-Katalog in [`EXTENSIONS-PLAN.md`](EXTENSIONS-PLAN.md).

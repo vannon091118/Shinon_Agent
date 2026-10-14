@@ -8,7 +8,7 @@
 
 | ID | Implementierungsort | Nachweis | Gate | Status |
 |---|---|---|---|---|
-| AND-BUILD-001 | `app/build.gradle.kts`, `settings.gradle.kts`, `gradlew` | `:app:assembleDebug` → `BUILD SUCCESSFUL`, APK `e58934b6…73c4` | 1, 2 | **IMPLEMENTED** |
+| AND-BUILD-001 | `app/build.gradle.kts`, `settings.gradle.kts`, `gradlew` | `:app:assembleDebug` → `BUILD SUCCESSFUL`, APK `b83615ae…cd6f` | 1, 2 | **IMPLEMENTED** |
 | AND-BUILD-002 | `app/build.gradle.kts` (`signingConfigs.release`), `.github/workflows/build.yml` | `:app:validateSigningRelease` → Exit 1 ohne Keystore | 5 | **PARTIAL** |
 | AND-SETUP-001 | `SetupActivity.onCreate`, `installRuntime` | Code-Review; Rückgabewert wird ignoriert | 3 | **PARTIAL** |
 | AND-SETUP-002 | `SetupActivity.installRuntime` (Platzhalter) | Marker wird nie erzeugt | 3 | **PLANNED** |
@@ -23,7 +23,7 @@
 | SEC-HOST-001 | `MainActivity.shouldOverrideUrlLoading`, `loadUrl` | doppelte Prüfung, statisch geprüft | Gerät | **IMPLEMENTED** (Code) |
 | SEC-SIGN-001 | `.gitignore`, CI-Steps 4/10 | Ignore-Regeln + fail-closed belegt | 0, 5 | **IMPLEMENTED** |
 | SVC-FGS-001 | `ShinonService.onStartCommand`, `stopEngine`, `stopNodeProcess` | Code vorhanden, nie ausgeführt | 3 | **UNVERIFIED** |
-| SVC-NOTIF-001 | `Manifest` (`POST_NOTIFICATIONS`), `createNotificationChannel` | Laufzeitabfrage fehlt | Gerät | **PARTIAL** |
+| SVC-NOTIF-001 | `Manifest` (`POST_NOTIFICATIONS`), `MainActivity.requestNotificationPermissionIfNeeded`, `ShinonService.createNotificationChannel` | Laufzeitabfrage vorhanden; Sichtbarkeit auf einem Gerät nicht geprüft | Gerät | **PARTIAL** |
 | WEB-RCV-001 | `MainActivity.onCreate` (`Context.RECEIVER_NOT_EXPORTED`) | keine Weiche für API < 33 | Gerät | **PARTIAL** |
 | APP-RESTART-001 | `SetupActivity` (`setup_done`), `START_STICKY` | nur ein Flag persistiert | Gerät | **PARTIAL** |
 | RT-BIONIC-001 | — | `koffi`, `node-pty`, `sharp`, `node-addon-require-builtin` per `npm view` belegt | 3 | **BLOCKED** |
@@ -43,7 +43,7 @@
 | 2 | `unzip -l`, Entkopplungsgate, `apksigner verify`, `aapt2 dump badging` | **PASS** |
 | 3 | nicht ausgeführt (kein Gerät, kein KVM, kein Runtime-Paket, kein `mobile`-Profil) | **BLOCKED** |
 | 4 | nicht ausgeführt (kein Prozess, keine Zugangsdaten, kein Key-Pfad) | **BLOCKED** |
-| 5 | `:app:validateSigningRelease` | **PARTIAL** (fail-closed belegt, Signaturlauf offen) |
+| 5 | `:app:validateSigningRelease`, `:app:minifyReleaseWithR8` | **PARTIAL** (fail-closed belegt, R8 grün, Signaturlauf offen) |
 
 ## 3. Offene Befunde → Dokument
 
@@ -58,7 +58,7 @@
 | Lint nicht ausführbar | N-1 |
 | keine Tests | N-2 |
 | grobe Fehlertrennung | N-3, OPEN-003 |
-| ungenutzte Deklarationen | N-4 |
+| ungenutzte Deklarationen | N-4 (bereinigt) |
 | `RECEIVER_NOT_EXPORTED` ohne Weiche | N-5 |
 | Doku-Verweise ins andere Repo | N-6, OPEN-005 |
 

@@ -112,16 +112,35 @@ Falsche Node-Fassung, fehlendes Modul, nativer Ladefehler und Auth-Fehler
 landen alle im generischen Reconnect-Pfad (`Exit ≠ 0` → 3 Versuche → `crash`).
 Zielbild Punkt 9 („Fehler sauber unterscheiden") ist offen.
 
-## N-4 — Ungenutzte/fragliche Deklarationen
+## N-4 — Ungenutzte Deklarationen: **BEREINIGT**
 
-- `WAKE_LOCK` ist deklariert, aber im Code nicht verwendet.
-- `androidx.webkit:webkit:1.11.0` ist deklariert, aber nirgends importiert.
-- `POST_NOTIFICATIONS` ist deklariert, wird zur Laufzeit nie angefragt.
-- `ACTION_STATUS` existiert, wird nicht behandelt.
-- Der Workflow nennt `develop` als Push-Branch; den Branch gibt es nicht.
+Alle fünf Punkte sind entfernt bzw. aufgelöst. Die Nummer bleibt als
+Verweisziel erhalten, der Befund ist geschlossen.
 
-Diese Punkte wurden **bewusst nicht** eigenmächtig entfernt — sie sind
-Kandidaten für eine bestätigte Bereinigung.
+| Deklaration | Auflösung | Beleg |
+|---|---|---|
+| `WAKE_LOCK` | entfernt — es gab keinen `PowerManager`-Aufruf | Permission-Liste der APK enthält sie nicht; `unzip -p … AndroidManifest.xml \| strings \| grep -c WAKE_LOCK` → `0` |
+| `androidx.webkit:webkit:1.11.0` | Dependency entfernt, dazu die nur darauf bezogene Regel `-keep class androidx.webkit.**` in `app/proguard-rules.pro` | `:app:dependencies` zeigt kein `webkit` mehr im Runtime-Classpath; `:app:minifyReleaseWithR8` → `BUILD SUCCESSFUL in 2m 5s`, kein „Missing class“ |
+| `POST_NOTIFICATIONS` | **nicht gelöscht**, sondern wirksam gemacht: Laufzeitabfrage in `MainActivity.requestNotificationPermissionIfNeeded()` (API 33+). Löschen hätte SVC-NOTIF-001 gebrochen | Code vorhanden; APK-Deklaration unverändert — Sichtbarkeit auf Gerät **UNVERIFIED** |
+| `ACTION_STATUS` | Konstante entfernt (wurde in `onStartCommand` nie behandelt) | `grep -rn ACTION_STATUS app/src/` leer |
+| `develop` in `.github/workflows/build.yml` | aus den Push-Triggern entfernt — den Branch gibt es nicht | `on.push.branches: [ main ]` |
+
+**Zusätzlich bereinigt** (dieselbe Kategorie, beim Prüfen gefunden): fünf
+ungenutzte Imports in `MainActivity.kt` (`Uri`, `FrameLayout`, `ProgressBar`,
+`TextView`, `WebSettings`), das write-only Feld `urlReceived` (nur geschrieben,
+nie gelesen) und `android.defaults.buildfeatures.buildconfig=true` in
+`gradle.properties` — `BuildConfig` wird nirgends referenziert, und AGP 8 meldet
+das Property als deprecated (die Warnung ist seither aus dem Build-Log
+verschwunden).
+
+**Verblieben und bewusst nicht geändert:** `-dontwarn org.webkit.**` in
+`app/proguard-rules.pro`. Die Regel war an `androidx.webkit` gekoppelt; ihre
+Entfernung ist nur mit einem vollständigen Release-Lauf belegbar. Sie ist
+harmlos, wird aber erst mit einem signierten Release geprüft.
+
+**Gesamtnachweis:** `scripts/build.sh :app:assembleDebug` → `BUILD SUCCESSFUL
+in 32s`, APK 5.649.778 Bytes, SHA256 `b83615ae…cd6f`, Entkopplungsgate `PASS`,
+keine Kotlin-Warnung über ungenutzte Symbole.
 
 ## N-5 — `RECEIVER_NOT_EXPORTED` ohne Versionsweiche
 

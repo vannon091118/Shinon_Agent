@@ -24,7 +24,7 @@
   ersetzen (größerer Eingriff, andere Dateien).
 - **Konsequenz:** Lokaler Build über `./gradlew` möglich. **Die CI nutzt weiter
   `gradle` statt `./gradlew`** — dort fällt ein Wrapper-Defekt nach wie vor
-  nicht auf; ein Prüfschritt dafür fehlt (siehe [`KNOWN-LIMITATIONS.md`](KNOWN-LIMITATIONS.md) N-4).
+  nicht auf; ein Prüfschritt dafür fehlt (siehe [`CI-AND-RELEASE.md`](CI-AND-RELEASE.md) §4).
 - **Beleg:** `GRADLE_USER_HOME=/tmp/gw-test ./gradlew --version` → Gradle 8.7
   startet nach vollständigem Eigen-Download (Exit 0).
 
@@ -124,6 +124,38 @@
   unverändert liegen lassen (zwei konkurrierende Wahrheiten).
 - **Konsequenz:** Eine gültige Doku-Struktur; die historische Datei bleibt lesbar.
 - **Beleg:** Diese Dokumente; [`README.md`](../README.md) Doku-Index.
+
+## DEC-009 — N-4 bereinigt: ungenutzte Deklarationen entfernt statt dokumentiert
+
+- **Kontext:** Befund N-4 listete vier Deklarationen ohne Wirkung und einen
+  CI-Trigger auf einen nicht existierenden Branch. Das Dokument hielt sie als
+  Kandidaten fest, statt sie zu ändern.
+- **Entscheidung:**
+  1. `WAKE_LOCK` entfernt — es gibt keinen `PowerManager`-Aufruf.
+  2. `androidx.webkit:webkit` entfernt (nirgends importiert), dazu die nur
+     darauf bezogene ProGuard-Regel `-keep class androidx.webkit.**`.
+  3. `ACTION_STATUS` entfernt — die Konstante wurde in `onStartCommand` nie
+     behandelt.
+  4. `develop` aus den Push-Triggern entfernt — den Branch gibt es nicht.
+  5. `POST_NOTIFICATIONS` **nicht** entfernt, sondern wirksam gemacht: die
+     Manifest-Deklaration allein zeigt die Dienst-Benachrichtigung ab API 33
+     nicht an. `MainActivity.requestNotificationPermissionIfNeeded()` fragt sie
+     zur Laufzeit an (Löschen wäre eine Regression gegen SVC-NOTIF-001).
+  6. Zusätzlich beim Prüfen gefunden und mitbereinigt: fünf ungenutzte Imports,
+     das write-only Feld `urlReceived`, sowie
+     `android.defaults.buildfeatures.buildconfig=true` (`BuildConfig` wird
+     nirgends referenziert; AGP 8 meldet das Property als deprecated).
+- **Alternativen:** Alles unverändert lassen — hätte wirkungslose Rechte und
+  einen toten Trigger im Repo belassen. Oder `POST_NOTIFICATIONS` löschen — hätte
+  eine dokumentierte Soll-Anforderung gebrochen.
+- **Konsequenz:** Kleineres Berechtigungsprofil (kein `WAKE_LOCK`), kleinere APK
+  (5.649.778 statt 5.702.163 Bytes), keine AGP-Deprecation-Warnung mehr.
+  `-dontwarn org.webkit.**` bleibt bewusst stehen (harmlos; Entfernung nur mit
+  vollem Release-Lauf belegbar). Die Sichtbarkeit der Benachrichtigung auf einem
+  Gerät ist weiterhin **UNVERIFIED**.
+- **Beleg:** `:app:assembleDebug` → `BUILD SUCCESSFUL in 32s` (APK-SHA256
+  `b83615ae…cd6f`), `:app:minifyReleaseWithR8` → `BUILD SUCCESSFUL in 2m 5s`,
+  `:app:dependencies` ohne `webkit`, Permission-Liste im APK ohne `WAKE_LOCK`.
 
 ---
 

@@ -46,7 +46,7 @@ Nach vollständiger Umsetzung soll die App:
 | SEC-HOST-001 | WebView nur `http://127.0.0.1` | Muss | Prüfung im Code vorhanden | — | Externe URL → Systembrowser | Gerätetest | **IMPLEMENTED** (Code) / **UNVERIFIED** (Gerät) |
 | SEC-SIGN-001 | Keystore/Secrets nie im Repo | Muss | `.gitignore` deckt `*.jks`, `keystore/` | — | Repo-Scan leer | Gate 0 | **IMPLEMENTED** (verifiziert) |
 | SVC-FGS-001 | Foreground-Service startet/stoppt kontrolliert | Muss | Code vorhanden | Runtime | Dienst sichtbar, stoppbar, kein Orphan | Gate 3 | **UNVERIFIED** |
-| SVC-NOTIF-001 | Nutzer sieht die Dienst-Benachrichtigung | Soll | `POST_NOTIFICATIONS` deklariert, **nie angefragt** | Laufzeitabfrage API 33+ | Benachrichtigung sichtbar | Gerätetest | **PARTIAL** |
+| SVC-NOTIF-001 | Nutzer sieht die Dienst-Benachrichtigung | Soll | deklariert **und** Laufzeitabfrage vorhanden (API 33+) | — | Benachrichtigung sichtbar | Gerätetest | **PARTIAL** (Gerätetest offen) |
 | WEB-RCV-001 | Receiver-Registrierung API-34-konform | Muss | `RECEIVER_NOT_EXPORTED` gesetzt, ohne Fallback für API < 33 | Versionsweiche | Kein Crash auf API 26–32 | Gerätetest | **PARTIAL** |
 | APP-RESTART-001 | Zustand über App-Neustarts erhalten | Soll | Nur `setup_done`-Flag | — | Neustart zeigt denselben Zustand | Gerätetest | **PARTIAL** |
 | RT-BIONIC-001 | Native DSH-Addons laufen auf Bionic | Muss | **Nicht untersucht** | Nachweis auf Gerät | DSH startet ohne `dlopen`-Fehler | Gate 3 | **BLOCKED** (koffi, node-pty, sharp — siehe KNOWN-LIMITATIONS) |

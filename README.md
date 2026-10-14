@@ -21,10 +21,10 @@ nicht auf `PASS`. Details: [`docs/TESTING.md`](docs/TESTING.md).
 | 0 | Repository + Build-Umgebung | **PASS** | JDK 17.0.20.1, Android SDK 34, Gradle 8.7, Kommando läuft |
 | 1 | Compiler + statische Integrität | **PASS** | `:app:assembleDebug` kompiliert; 5 Fehler behoben |
 | 1b | Lint | **BLOCKED** | Prozess im Container per OOM-Killer beendet (Exit 137) |
-| 2 | Debug-APK + Inhalt | **PASS** | `app-debug.apk`, 5.702.163 Bytes, SHA256 `e58934b6…73c4` |
+| 2 | Debug-APK + Inhalt | **PASS** | `app-debug.apk`, 5.649.778 Bytes, SHA256 `b83615ae…cd6f` |
 | 3 | Runtime-Smoke (Gate A) auf Android | **BLOCKED** | kein Gerät, `/dev/kvm` nicht zugänglich, kein `mobile`-Profil |
 | 4 | Provider-Aufruf (Gate B) | **BLOCKED** | keine Zugangsdaten, keine laufende Runtime |
-| 5 | Release | **PARTIAL** | Fail-closed-Verhalten verifiziert; kein signiertes APK (keine Secrets) |
+| 5 | Release | **PARTIAL** | Fail-closed verifiziert, R8-Lauf grün; kein signiertes APK (keine Secrets) |
 
 **Kurzfassung des ehrlichen Stands:** Die App **baut** und erzeugt ein
 installierbares Debug-APK. Sie **startet die Engine noch nicht**: Die

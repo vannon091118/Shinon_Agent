@@ -107,7 +107,7 @@ Runtime-Paket (geplant, siehe [`SCOPE.md`](SCOPE.md) RT-PIN-001).
 ## 6. Externe Abhängigkeiten
 
 **App (Gradle, aufgelöst — verifiziert):** `androidx.core:core-ktx:1.13.1`,
-`androidx.appcompat:appcompat:1.7.0`, `androidx.webkit:webkit:1.11.0`,
+`androidx.appcompat:appcompat:1.7.0`,
 `androidx.lifecycle:lifecycle-runtime-ktx:2.8.3`,
 `com.google.android.material:material:1.12.0`, `kotlin-stdlib:1.9.24` (transitiv).
 
@@ -120,16 +120,16 @@ Runtime-Paket (geplant, siehe [`SCOPE.md`](SCOPE.md) RT-PIN-001).
 (`dsh-subprocess-local`), `sharp ^0.35.3` (`dsh-attachment-local`),
 `node-addon-require-builtin ^0.1.6` (`dsh`).
 
-Der `androidx.webkit`-Eintrag ist deklariert, wird im Code aber nicht
-verwendet (keine `WebViewCompat`-Nutzung) — Kandidat für Entfernung, aber
-bewusst nicht ohne Rücksprache geändert.
+`androidx.webkit:webkit` war deklariert, wurde aber nirgends verwendet und ist
+entfernt — samt der zugehörigen ProGuard-Regel. Beleg: [`KNOWN-LIMITATIONS.md`](KNOWN-LIMITATIONS.md) N-4.
 
 ## 7. Prozessgrenzen und Android-Restriktionen
 
 - **Ein** Kindprozess (Node). Kein Daemon-Cluster, keine Services-Worker.
 - Der Dienst läuft mit `foregroundServiceType="dataSync"` und `START_STICKY`.
-- `WAKE_LOCK` ist deklariert, aber im Code **nicht** verwendet (kein
-  `PowerManager`-Aufruf) — die Service-Laufzeit hängt an Doze/OEM-Regeln.
+- Es ist **keine** `WAKE_LOCK`-Berechtigung mehr deklariert: kein Code hält
+  einen Wakelock. Die Service-Laufzeit hängt damit vollständig an
+  Doze-/OEM-Regeln — das ist der Ist-Zustand, kein geprüftes Verhalten.
 - Ein Kindprozess unter Android erbt die App-Sandbox; ausführbare Dateien aus
   dem privaten Verzeichnis sind zulässig, viele glibc-Binaries aber nicht
   lauffähig (Bionic).

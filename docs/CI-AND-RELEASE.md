@@ -5,7 +5,7 @@
 ## 1. Workflow-Struktur
 
 Ein Job `android-build` auf `ubuntu-latest` (`timeout-minutes: 45`), ausgelöst
-durch Push auf `main`/`develop` und `workflow_dispatch` (optional mit `tag`).
+durch Push auf `main` und `workflow_dispatch` (optional mit `tag`).
 
 | # | Schritt | Fail-closed? |
 |---|---|---|
@@ -51,7 +51,7 @@ getrennte Schichten ([`ARCHITECTURE.md`](ARCHITECTURE.md) §1); Runtime-Daten,
 `node_modules` und Forge-Profile gehören in das Runtime-Paket, nicht in die APK.
 
 **Verifiziert:** Die Gate-Logik wurde am erzeugten Debug-APK
-(`e58934b6…73c4`, 890 Einträge, keine `.so`) nachgefahren — kein Treffer.
+(`b83615ae…cd6f`, 889 Einträge, keine `.so`) nachgefahren — kein Treffer.
 
 **Einschränkung:** Im Workflow greift das Gate nur auf dem **Release**-Artefakt.
 Ein Debug-Build wird von der CI derzeit **nicht** erzeugt (`CI-DEBUG-001` ist
@@ -66,7 +66,8 @@ Ein Debug-Build wird von der CI derzeit **nicht** erzeugt (`CI-DEBUG-001` ist
    ein CI-Schritt, der `./gradlew` prüft, fehlt weiterhin.
 2. **Keine Unit-Test- und keine Lint-Stufe** im Workflow (`CI-DEBUG-001`, Gate 1b).
 3. **Kein Podest für Gate 3/4:** es gibt keinen `android-device-smoke`-Job. Der
-   Workflow-Titel nennt `develop` als Push-Branch, den es im Remote nicht gibt.
+   frühere `develop`-Trigger ist entfernt — den Branch gibt es im Remote nicht
+   (siehe [`KNOWN-LIMITATIONS.md`](KNOWN-LIMITATIONS.md) N-4).
 4. **Alle beobachteten Läufe waren rot** (GitHub-Actions-Oberfläche: 24 Läufe,
    letzter `build` #10 am 2026-10-14). Diese Beobachtung ist nicht in dieser
    Umgebung nachgemessen; ein grüner Lauf ist damit **nicht** belegt.
@@ -81,6 +82,10 @@ Ein Release ist erst zulässig, wenn:
 4. Gate 4 grün ist (echter Provider-Aufruf, Erfolg **und** Auth-Fehler getrennt);
 5. die Signing-Secrets gesetzt sind (sonst fail-closed, kein ungesigniertes APK);
 6. die Prüfsumme des Artefakts veröffentlicht ist.
+
+**Belegt:** Release-Kompilierung und R8 laufen durch (`:app:minifyReleaseWithR8`
+→ `BUILD SUCCESSFUL in 2m 5s`), und ohne Signing-Secrets bricht der Lauf ab.
+**Nicht belegt:** ein signiertes Release-APK.
 
 **Heute ist Punkt 3 und 4 BLOCKED** und Punkt 5 nicht durchgeführt — also ist
 **kein Release freigegeben**.

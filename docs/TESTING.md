@@ -68,8 +68,8 @@ kein Lint-Befund: es wurde kein Report erzeugt, also ist auch keine Aussage
 
 ```
 :app:assembleDebug                     →  BUILD SUCCESSFUL
-app-debug.apk                          →  5.702.163 Bytes, 890 Einträge
-SHA256                                 →  e58934b637b599c4cf3b82d7060792e2fc3cfcf56f59ed06aefd9013942773c4
+app-debug.apk                          →  5.649.778 Bytes, 889 Einträge
+SHA256                                 →  b83615ae2673b844ecb0919312c7a87f36652af8851ef57c481e9405669bcd6f
 classes.dex, classes2.dex, classes3.dex, AndroidManifest.xml, resources.arsc   →  vorhanden
 res/layout/activity_main.xml, res/layout/activity_setup.xml, ic_launcher*      →  vorhanden
 lib/**/*.so                            →  keine (keine nativen Anteile in der App)
@@ -91,7 +91,7 @@ unzip -l app-debug.apk | grep -Ei 'node_modules|shinon-forge|/dsh|profile[s]?/mo
 ```
 package: name='com.vannon.shinon' versionCode='1' versionName='0.0.1'
 sdkVersion:'26'   targetSdkVersion:'34'
-uses-permission: INTERNET, WAKE_LOCK, FOREGROUND_SERVICE,
+uses-permission: INTERNET, FOREGROUND_SERVICE,
                  FOREGROUND_SERVICE_DATA_SYNC, POST_NOTIFICATIONS,
                  com.vannon.shinon.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 application-label:'Shinon'
@@ -130,6 +130,10 @@ Android-Runtime-Start beweisen und wurde deshalb nicht als Ersatz geführt.
 :app:validateSigningRelease
 → BUILD FAILED: "Keystore file '…/app/keystore/release.jks' not found for signing config 'release'."
 → Exit 1
+
+:app:minifyReleaseWithR8
+→ BUILD SUCCESSFUL in 2m 5s (28 Tasks, 2 ausgeführt, kein "Missing class")
+→ Release-Kompilierung und die geänderten ProGuard-Regeln sind damit belegt
 ```
 
 Damit ist das **Fail-closed-Verhalten bewiesen**: ohne Keystore-Secrets entsteht
@@ -169,4 +173,5 @@ scripts/build.sh :app:assembleDebug                                        # Gat
 unzip -l app/build/outputs/apk/debug/app-debug.apk \
   | grep -Ei 'node_modules|shinon-forge|/dsh|profile[s]?/mobile' || echo "Entkopplungsgate PASS"
 ./gradlew :app:validateSigningRelease                                     # Gate 5 fail-closed
+./gradlew :app:minifyReleaseWithR8                                        # Release-Code + R8-Regeln
 ```
