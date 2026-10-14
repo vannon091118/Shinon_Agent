@@ -5,6 +5,15 @@
 | android-build | Release-/Debug-Build, Kotlin-Logik, Manifest/Permissions, reproduzierbare Runtime-Pins, SHA256-Verifikation | ab W4 |
 | android-device-smoke | Install, Start, READY/Token, WebView, Prozessende, Offline-/Crash-Recovery, Display-Lock (Emulator/echtes Gerät) | nach stabiler Runner-Verfügbarkeit, schrittweise required |
 
+> **Klarstellung:** `Shinon_Agent` ist der **parallele zweite
+> Zweig von Shinon Forge** — er konzentriert sich auf die
+> **App-Entwicklung** (Android-Shell, WebView, Foreground-Service,
+> Release-Flow). **Dateimanager, Terminal, Device-Tools sind
+> kein Teil der W4-Shell** — sie sind ein bewusster
+> Nicht-Ziel von v1 und in [`docs/EXTENSIONS-PLAN.md`](docs/EXTENSIONS-PLAN.md)
+> geplant, **nicht** umgesetzt (erst nach dem ersten Live-Test
+> + Update-Mechanismus + Third-Party-Lizenzen).
+
 Kein `android-device-smoke` als Required, bis ein reproduzierbarer Runner steht (MOBILE-PLAN.md §5 W3: „zunächst nicht required; nach stabiler Runner-Verfügbarkeit schrittweise required").
 
 ### Secrets-Vertrag: Release-Keystore NIE im Repo
