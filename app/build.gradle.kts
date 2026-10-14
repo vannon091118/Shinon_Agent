@@ -43,7 +43,12 @@ android {
             isMinifyEnabled = true
             isDebuggable = false
             signingConfig = signingConfigs.getByName("release")
-            proguardFiles(getDefaultProguardFile("proguard-rules-opt.txt"), "proguard-rules.pro")
+            // Default ProGuard-Opt-Regel (AGP-valid): proguard-android-optimize.txt
+            // + Projekt-Regel (app/proguard-rules.pro).
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         debug {
             isMinifyEnabled = false
