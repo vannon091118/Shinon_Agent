@@ -1,5 +1,12 @@
 # Planung: Erweiterungen jenseits der W4-Shell
 
+> **Status:** Entwurf — nicht umgesetzt, nicht abgenommen (Stand 2026-10-14).
+> Verbindliche Scope-Einordnung: [`SCOPE.md`](SCOPE.md) §3, Kategorie „Später“.
+> **Hinweis zu den Verweisen:** `MOBILE-PLAN.md` liegt **nicht** in diesem
+> Repository, sondern in `shinon-forge/docs/MOBILE-PLAN.md`. Die Angaben
+> „§5 W4“, „W3“, „W1“ darunter sind Verweise in das andere Repo und aus
+> diesem Repo heraus nicht prüfbar.
+
 > **Klarstellung zuerst:** `Shinon_Agent` ist der **parallele zweite
 > Zweig von Shinon Forge** — er konzentriert sich auf die
 > **App-Entwicklung** (Android-Shell, WebView, Foreground-Service,

@@ -1,5 +1,25 @@
 # S0-Bestandsaufnahme — Shinon Forge × Shinon Agent
-> Stand: 2026-10-14 · Branches: `shinon-forge/develop`, `Shinon_Agent/main`
+
+> ## ⚠️ ARCHIVIERT — historisches Dokument, nicht Projektstand
+>
+> Diese Bestandsaufnahme ist **überholt** und bleibt nur zur Nachvollziehbarkeit
+> erhalten (nichts wurde gelöscht). Sie beschreibt F-1 bis F-3 als offen —
+> diese Fehler sind im Code inzwischen behoben und durch einen Build bestätigt.
+>
+> - Gültige Fassungen: [`../SCOPE.md`](../SCOPE.md),
+>   [`../KNOWN-LIMITATIONS.md`](../KNOWN-LIMITATIONS.md),
+>   [`../TESTING.md`](../TESTING.md).
+> - Der hier genannte Branch `shinon-forge/develop` **existiert nicht**, der
+>   Commit `d7d38ce` **ebenfalls nicht** (geprüft per `git ls-remote`; GitHub
+>   liefert 404). Der Pin war eine Annahme, kein Beleg.
+> - `MOBILE-PLAN.md` liegt **nicht** in diesem Repo, sondern in
+>   `shinon-forge/docs/MOBILE-PLAN.md` — alle Verweise darauf sind extern.
+> - Die Aussage „Forge-Gate `gate:full` läuft grün“ bezieht sich auf einen
+>   Commit, der nicht mehr belegbar ist.
+>
+> Zeitdokument · Stand: 2026-10-14 · ursprünglich zu `b87fb1d`
+
+> Ursprünglicher Kopf: Branches `shinon-forge/develop`, `Shinon_Agent/main` ·
 > Prüfer: S0 (Bestand und Risiken) · Keine Implementierung in diesem Slice
 
 ---

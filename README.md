@@ -1,101 +1,95 @@
-## 4. CI und Release-Signing (MOBILE-PLAN.md §5 W4-Gates)
+# Shinon Agent
 
-| Gate / Job | Prüft | Wann blockierend |
-|---|---|---|
-| android-build | Release-/Debug-Build, Kotlin-Logik, Manifest/Permissions, reproduzierbare Runtime-Pins, SHA256-Verifikation | ab W4 |
-| android-device-smoke | Install, Start, READY/Token, WebView, Prozessende, Offline-/Crash-Recovery, Display-Lock (Emulator/echtes Gerät) | nach stabiler Runner-Verfügbarkeit, schrittweise required |
+Android-Shell für **[Shinon Forge](https://github.com/vannon091118/shinon-forge)** (Engine) und **DSH**.
+Die App startet die Engine als Foreground-Service und zeigt die Weboberfläche
+in einer WebView. Die App ist **nicht** die Engine: Engine und Vendor
+(`node_modules`) liegen zur Laufzeit im App-Speicher, nie in der APK.
 
-> **Klarstellung:** `Shinon_Agent` ist der **parallele zweite
-> Zweig von Shinon Forge** — er konzentriert sich auf die
-> **App-Entwicklung** (Android-Shell, WebView, Foreground-Service,
-> Release-Flow). **Dateimanager, Terminal, Device-Tools sind
-> kein Teil der W4-Shell** — sie sind ein bewusster
-> Nicht-Ziel von v1 und in [`docs/EXTENSIONS-PLAN.md`](docs/EXTENSIONS-PLAN.md)
-> geplant, **nicht** umgesetzt (erst nach dem ersten Live-Test
-> + Update-Mechanismus + Third-Party-Lizenzen).
+- Kotlin-Shell: `app/src/main/java/com/vannon/shinon/`
+- Paket: `com.vannon.shinon` · `minSdk 26` · `targetSdk 34` · `compileSdk 34`
+- Lizenz: MIT (`LICENSE`)
 
-Kein `android-device-smoke` als Required, bis ein reproduzierbarer Runner steht (MOBILE-PLAN.md §5 W3: „zunächst nicht required; nach stabiler Runner-Verfügbarkeit schrittweise required").
+## Status — Stand 2026-10-14
 
-### Secrets-Vertrag: Release-Keystore NIE im Repo
+**Ausgangsstand:** `e78ca1a` (== `origin/main`).
+**Aussagekraft:** Jeder Status unten ist am Code oder durch einen ausgeführten
+Befehl belegt. Was nicht ausgeführt werden konnte, steht auf `BLOCKED` und
+nicht auf `PASS`. Details: [`docs/TESTING.md`](docs/TESTING.md).
 
-Der `.jks`-Keystore liegt **nie** im Repository (`.gitignore`: `*.jks`, `keystore/`). Stattdessen:
-
-1. **Lokale .jks-Datei erzeugen** (einmalig, lokal — kommt nicht ins Repo):
-   ```bash
-   keytool -genkeypair \
-     -v -keystore keystore/release.jks \
-     -alias shinon -keyalg RSA -keysize 4096 -validity 10000 \
-     -storepass <PASSWORT> -keypass <PASSWORT> \
-     -dname "CN=Shinon, OU=Vannon, O=Vannon, L=DE, ST=DE, C=DE"
-   ```
-
-2. **In GitHub Repository Secrets** (Settings → Secrets and variables → Actions):
-   ```bash
-   # Base64-Konvertierung (der String, nicht die Datei, ins Repo)
-   base64 -w0 keystore/release.jks > keystore/release.jks.b64
-   # Als Secrets setzen:
-   #   SHINON_KEYSTORE_B64    = Inhalt von keystore/release.jks.b64
-   #   SHINON_KEYSTORE_ALIAS  = shinon
-   #   SHINON_KEYSTORE_PASS   = <PASSWORT>
-   #   SHINON_KEY_ALIAS_PASS  = <PASSWORT>
-   ```
-
-3. **CI-Workflow** (`.github/workflows/build.yml`) dekodiert das Keystore temporär in der Runner-Umgebung:
-   ```yaml
-   - name: Decode Keystore from Secrets
-     env:
-       SHINON_KEYSTORE_B64: ${{ secrets.SHINON_KEYSTORE_B64 }}
-     run: |
-       mkdir -p keystore
-       echo "${SHINON_KEYSTORE_B64}" | base64 -d > keystore/release.jks
-       echo "SHINON_KEYSTORE_PATH=$(pwd)/keystore/release.jks" >> $GITHUB_ENV
-   ```
-   Die `.jks`-Datei bleibt **nur** in der Runner-Umgebung — nie als Artifact, nie in Logs.
-
-4. **`app/build.gradle.kts`** liest die Signatur aus Environment-Variablen (`signingConfigs.release`):
-   - `storeFile`: `SHINON_KEYSTORE_PATH` (in CI dekodiert)
-   - `storePassword`: `SHINON_KEYSTORE_PASS`
-   - `keyAlias`: `SHINON_KEYSTORE_ALIAS`
-   - `keyPassword`: `SHINON_KEY_ALIAS_PASS`
-
-**Fail-closed:** `SHINON_KEYSTORE_B64` fehlt → CI-Step `Decode Keystore` schlägt fehl, **kein** ungesigntes APK wird hochgeladen.
-
-### Release-Flow (erster Live-Test, v0.0.1)
-
-- **APK-Download:** Das signierte APK wird von der CI als [actions/upload-artifact](https://github.com/actions/upload-artifact) hochgeladen (`shinon-agent-v0.0.1.apk`) **und** an das [GitHub Release](https://github.com/vannon091118/Shinon_Agent/releases) `v0.0.1` gehängt (actions/release).
-- **Live-Test-Quoten:** `android-device-smoke` läuft **nicht** required (MOBILE-PLAN.md §5 W3). Die Abnahme (Gate `android-build`) ist der erste, reproduzierbare Release-Lauf; das Live-Test-Device wird manuell installiert, nicht per CI-Emulator.
-
-## 5.1 Entkopplungsvertrag (App ≠ Engine ≠ Vendor)
-
-`Shinon_Agent` (die Kotlin-Shell), `shinon-forge` (die DSH-Engine)
-und der DSH-Vendor (`node_modules`) sind **bewusst getrennt** —
-die APK kennt keine von beiden:
-
-| Schicht | Leben in | Update | Gehört NIE in die APK |
+| Gate | Umfang | Status | Nachweis |
 |---|---|---|---|
-| **App** (Kotlin, WebView, Foreground-Service) | APK | Play-Store / APK-Release | Engine-Daten, Vendor, Secrets |
-| **Engine** (`shinon-forge` gepinnt) | `filesDir/runtime/shinon-forge/` (Runtime-Paket, SHA256-geprüft) | SetupActivity (neuer Pin) | — |
-| **DSH-Vendor** (`node_modules`, `dsh`-Entry-Point) | `filesDir/runtime/shinon-forge/node_modules/` (Runtime-Paket) | SetupActivity | — |
+| 0 | Repository + Build-Umgebung | **PASS** | JDK 17.0.20.1, Android SDK 34, Gradle 8.7, Kommando läuft |
+| 1 | Compiler + statische Integrität | **PASS** | `:app:assembleDebug` kompiliert; 5 Fehler behoben |
+| 1b | Lint | **BLOCKED** | Prozess im Container per OOM-Killer beendet (Exit 137) |
+| 2 | Debug-APK + Inhalt | **PASS** | `app-debug.apk`, 5.702.163 Bytes, SHA256 `e58934b6…73c4` |
+| 3 | Runtime-Smoke (Gate A) auf Android | **BLOCKED** | kein Gerät, `/dev/kvm` nicht zugänglich, kein `mobile`-Profil |
+| 4 | Provider-Aufruf (Gate B) | **BLOCKED** | keine Zugangsdaten, keine laufende Runtime |
+| 5 | Release | **PARTIAL** | Fail-closed-Verhalten verifiziert; kein signiertes APK (keine Secrets) |
 
-- **Prüfung (fail-closed):** Die CI-Zeile `APK-Content-Gate` in
-  `.github/workflows/build.yml` dekodiert die fertige APK und macht
-  den Build rot, wenn `node_modules`, `shinon-forge`, `dsh` oder
-  `profile(s)/mobile` darin auftauchen. Ein einziger Fund bricht den
-  Release-Lauf — kein „zufällig drin"-Paket.
-- **Prüfung (Runtime):** `ShinonService.startEngine()` prüft vor dem
-  Start, dass `node` und `node_modules/.bin/dsh` im Runtime-Paket
-  liegen (`runtime_missing`-Broadcast), nicht in der APK.
-- **Konsequenz:** Die Engine wird aktualisierbar, ohne die App zu
-  komprieren — und die App läuft, wenn das Runtime-Paket fehlt,
-  nicht kaputt, sondern mit klarem `runtime_missing` (Setup-
-  Hinweis), nicht mit einem stummen `ENOENT`.
+**Kurzfassung des ehrlichen Stands:** Die App **baut** und erzeugt ein
+installierbares Debug-APK. Sie **startet die Engine noch nicht**: Die
+Runtime-Installation ist ein Platzhalter, der API-Key erreicht den Prozess
+nicht, und das im Code fest verdrahtete Profil `mobile` existiert in
+`shinon-forge` noch nicht (dort nur geplant, siehe `docs/KNOWN-LIMITATIONS.md`).
 
-## 5.2 Integration mit shinon-forge
+## Voraussetzungen
 
-- **Git-Dependency:** `shinon-forge` als Submodule (pin: `develop`-Stand am 2026-10-14, `d7d38ce`) oder als gepinnte Git-URL im Gradle-Script. **Nicht** als npm-Paket — `shinon-forge` ist kein published NPM-Paket.
-- **Profil-Override:** Der Android-Host startet DSH mit `--profile mobile` (explizit, ohne die `scripts.dev`-Konfiguration von `shinon-forge` anzufassen — `bin/shinon.mjs` und `scripts/open.mjs` tragen den `--profile`-Override).
-- **Gate-Verdrahtung:** `shinon-forge` prüft das Mobile-Profil per `gate:full` (Zweig 10 in `commit-guard.yml`, fail-closed Verdikt).
+| Werkzeug | Fassung | Warum |
+|---|---|---|
+| JDK | 17 | AGP 8.5 / Kotlin 1.9 (`compileOptions` VERSION_17) |
+| Android SDK | `platforms;android-34`, `build-tools;34.0.0`, `platform-tools` | `compileSdk 34` |
+| Gradle | 8.7 (über `./gradlew`) | `gradle/wrapper/gradle-wrapper.properties` |
+| Node.js (nur Engine-Seite) | `^22.19.0 \|\| >=24.0.0` | `engines.node` von `shinon-forge` |
 
-## 6. Lizenz
+## Build
 
-MIT — wie `shinon-forge` (dritte Parteien: `@deepseek-ai/*`-Bundles, AndroidX). Third-Party-Notices im Release-Flow, nicht in v1.
+```bash
+scripts/setup-toolchain.sh     # einmalig: JDK 17 + Android SDK nach .local/
+source .local/env.sh          # JAVA_HOME/ANDROID_HOME setzen
+
+./gradlew :app:assembleDebug  # Debug-APK (empfohlen mit Speicherdeckel: s. u.)
+scripts/build.sh :app:assembleDebug
+```
+
+Ausgabe: `app/build/outputs/apk/debug/app-debug.apk`
+
+**Speicherhinweis:** `gradle.properties` setzt `-Xmx2048m`. In Umgebungen mit
+wenig RAM beendet der OOM-Killer den Build (Exit 137). `scripts/build.sh` deckelt
+Heap und Worker-Anzahl und ist in dieser Umgebung verifiziert durchgelaufen.
+Details: [`docs/SETUP-AND-RUNTIME.md`](docs/SETUP-AND-RUNTIME.md).
+
+**Release** ist fail-closed: ohne `SHINON_KEYSTORE_*`-Secrets bricht der Build
+ab und es wird **kein** ungesigniertes APK erzeugt. Siehe
+[`docs/CI-AND-RELEASE.md`](docs/CI-AND-RELEASE.md).
+
+## Was die App tut
+
+1. `SetupActivity` legt `filesDir/runtime/` an und setzt das `setup_done`-Flag.
+2. `MainActivity` startet den `ShinonService` und lädt die READY-URL in die WebView.
+3. `ShinonService` startet `node` gegen `filesDir/runtime/shinon-forge/` und
+   wartet auf die READY-Zeile `dsh web: http://…`.
+4. `ShinonApp`/`ShinonKeystore` soll den Provider-Schlüssel im Android Keystore halten.
+
+## Was die App bewusst nicht ist
+
+- Kein Dateimanager, kein Terminal, keine Device-Tools (v1-Nicht-Ziele,
+  [`docs/EXTENSIONS-PLAN.md`](docs/EXTENSIONS-PLAN.md)).
+- Kein Capacitor/React Native, kein DSH-Fork.
+- Kein Runtime-Binary und kein `node_modules` in der APK
+  (Entkopplungsvertrag, [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)).
+
+## Dokumentation
+
+| Datei | Inhalt |
+|---|---|
+| [`docs/SCOPE.md`](docs/SCOPE.md) | Muss/Soll/Später/Nicht + Scope-Matrix mit IDs |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Komponenten, Prozessgrenzen, Datenfluss, Fehlerpfade |
+| [`docs/SETUP-AND-RUNTIME.md`](docs/SETUP-AND-RUNTIME.md) | Toolchain, Build, Runtime-Pfade, Logs, Wiederherstellung |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Key-Lebenszyklus, Keystore, WebView, Logging, Bedrohungsmodell |
+| [`docs/TESTING.md`](docs/TESTING.md) | Gates 0–5, ausgeführte Kommandos, echte Ergebnisse |
+| [`docs/CI-AND-RELEASE.md`](docs/CI-AND-RELEASE.md) | Workflow, Signing, Artefakte, Release-Gates |
+| [`docs/KNOWN-LIMITATIONS.md`](docs/KNOWN-LIMITATIONS.md) | Offene Blocker + konkrete nächste Schritte |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architekturentscheidungen (ADR), offene Entscheidungen |
+| [`docs/TRACEABILITY.md`](docs/TRACEABILITY.md) | Anforderungs-ID → Code → Test → Gate |
+| [`docs/EXTENSIONS-PLAN.md`](docs/EXTENSIONS-PLAN.md) | Entwurf für Erweiterungen nach v1 |
+| [`docs/archive/S0-BESTANDS-AUFNAHME.md`](docs/archive/S0-BESTANDS-AUFNAHME.md) | Historische Bestandsaufnahme (überholt, archiviert) |
