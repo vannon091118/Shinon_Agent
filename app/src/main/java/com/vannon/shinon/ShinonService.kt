@@ -53,7 +53,6 @@ class ShinonService : Service() {
         const val ACTION_START = "com.vannon.shinon.START"
         const val ACTION_STOP = "com.vannon.shinon.STOP"
         const val ACTION_RESTART = "com.vannon.shinon.RESTART"
-        const val ACTION_STATUS = "com.vannon.shinon.STATUS"
         const val MAX_RESTART_ATTEMPTS = 3
         const val RESTART_DELAY_MS = 5000L
         const val KILL_GRACE_MS = 3000L

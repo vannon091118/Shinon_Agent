@@ -1,20 +1,18 @@
 package com.vannon.shinon
 
+import android.Manifest
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.Uri
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.FrameLayout
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Button
 
 /**
@@ -44,13 +42,15 @@ class MainActivity : Activity() {
 
     companion object {
         private const val TAG = "MainActivity"
+
+        /** Request-Code für die Laufzeitabfrage von POST_NOTIFICATIONS (API 33+). */
+        private const val REQUEST_POST_NOTIFICATIONS = 1
     }
 
     private lateinit var webView: WebView
     private lateinit var splashView: View
     private lateinit var errorView: View
     private lateinit var retryButton: Button
-    private var urlReceived = false
 
     private val urlReadyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -66,7 +66,6 @@ class MainActivity : Activity() {
                 "crash" -> {
                     // Service startet von selbst neu (max. 3×) —
                     // die Splash-Ansicht bleibt, bis die neue URL kommt.
-                    urlReceived = false
                     showError()
                 }
             }
@@ -88,6 +87,7 @@ class MainActivity : Activity() {
 
         registerReceiver(urlReadyReceiver, IntentFilter(ShinonService.INTENT_URL_READY), Context.RECEIVER_NOT_EXPORTED)
         registerReceiver(processEndReceiver, IntentFilter(ShinonService.INTENT_PROCESS_END), Context.RECEIVER_NOT_EXPORTED)
+        requestNotificationPermissionIfNeeded()
         startService()
     }
 
@@ -132,7 +132,6 @@ class MainActivity : Activity() {
         // NUR die lokale DSH-URL (http://127.0.0.1:…) wird geladen —
         // externe Seiten niemals (MOBILE-PLAN.md §5 W4).
         if (!url.startsWith("http://127.0.0.1")) return
-        urlReceived = true
         webView.loadUrl(url)
         webView.visibility = View.VISIBLE
         splashView.visibility = View.GONE
@@ -150,6 +149,25 @@ class MainActivity : Activity() {
         splashView.visibility = View.GONE
         webView.visibility = View.GONE
         webView.loadUrl("about:blank")
+    }
+
+    /**
+     * Ab API 33 zeigt Android die laufende Dienst-Benachrichtigung nur, wenn
+     * POST_NOTIFICATIONS erteilt ist — die Manifest-Deklaration allein genügt
+     * dort nicht. Ohne Anfrage bliebe der Foreground-Service für den Nutzer
+     * unsichtbar (der Dienst selbst läuft weiter).
+     */
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        requestPermissions(
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            REQUEST_POST_NOTIFICATIONS
+        )
     }
 
     private fun startService() {
