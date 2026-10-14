@@ -65,6 +65,20 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
+      - name: "APK-Content-Gate (Entkopplung: keine Forge-Daten, kein DSH-Vendor)"
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk)
+          echo "Prüfe Entkopplung: $APK"
+          # Die APK darf NIE shinon-forge-Daten (Engine, Profil, Bundles)
+          # oder den DSH-Vendor (node_modules, dsh) enthalten — die
+          # gehören zum Runtime-Paket (filesDir/runtime/, SetupActivity).
+          # Ein einziger Fund macht den Build ROT (fail-closed).
+          if unzip -l "$APK" | grep -Ei 'node_modules|shinon-forge|/dsh|profile[s]?/mobile'; then
+            echo "::error::APK enthält Forge-Daten oder DSH-Vendor — Entkopplungsvertrag verletzt (MOBILE-PLAN.md W4)"
+            exit 1
+          fi
+          echo "APK-Content-Gate: PASS (keine Forge-Daten, kein DSH-Vendor)"
+
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:

@@ -124,8 +124,18 @@ class ShinonService : Service() {
         val nodeBin = runtimeDir.resolve("node")
         val dshDir = runtimeDir.resolve("shinon-forge")
 
-        if (!nodeBin.exists() || !File(dshDir, "node_modules").exists()) {
-            Log.w(TAG, "Runtime fehlt unter ${runtimeDir.absolutePath} — SetupActivity muss vor dem Start laufen")
+        // Entkopplung (MOBILE-PLAN.md W4): Die DSH-Engine (shinon-forge)
+        // und der DSH-Vendor (node_modules) sind NIE Teil der APK —
+        // sie gehören zum Runtime-Paket, das SetupActivity in
+        // filesDir/runtime/ lädt (Bionic-ARM64-Node + gepinntes
+        // shinon-forge + node_modules, SHA256-geprüft). Das hier ist
+        // die Vendor-Prüfung: das DSH-Vendor-Entry-Point muss im
+        // Runtime-Paket sein, nicht in der App.
+        val dshVendor = dshDir.resolve("node_modules/.bin/dsh")
+        if (!nodeBin.exists() || !dshVendor.exists()) {
+            Log.w(TAG, "Runtime/Vendor fehlt unter ${runtimeDir.absolutePath} " +
+                "(node=${nodeBin.exists()}, dsh-vendor=${dshVendor.exists()}) — " +
+                "SetupActivity muss vor dem Start laufen")
             broadcastEnd("runtime_missing")
             running = false
             return
@@ -134,7 +144,7 @@ class ShinonService : Service() {
         try {
             val command = listOf(
                 nodeBin.absolutePath,
-                dshDir.resolve("node_modules/.bin/dsh").absolutePath,
+                dshVendor.absolutePath,
                 "--profile", "mobile",
                 "--no-open",
                 "--trusted-host", "localhost",

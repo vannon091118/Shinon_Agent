@@ -65,7 +65,32 @@ Der `.jks`-Keystore liegt **nie** im Repository (`.gitignore`: `*.jks`, `keystor
 - **APK-Download:** Das signierte APK wird von der CI als [actions/upload-artifact](https://github.com/actions/upload-artifact) hochgeladen (`shinon-agent-v0.0.1.apk`) **und** an das [GitHub Release](https://github.com/vannon091118/Shinon_Agent/releases) `v0.0.1` gehängt (actions/release).
 - **Live-Test-Quoten:** `android-device-smoke` läuft **nicht** required (MOBILE-PLAN.md §5 W3). Die Abnahme (Gate `android-build`) ist der erste, reproduzierbare Release-Lauf; das Live-Test-Device wird manuell installiert, nicht per CI-Emulator.
 
-## 5. Integration mit shinon-forge
+## 5.1 Entkopplungsvertrag (App ≠ Engine ≠ Vendor)
+
+`Shinon_Agent` (die Kotlin-Shell), `shinon-forge` (die DSH-Engine)
+und der DSH-Vendor (`node_modules`) sind **bewusst getrennt** —
+die APK kennt keine von beiden:
+
+| Schicht | Leben in | Update | Gehört NIE in die APK |
+|---|---|---|---|
+| **App** (Kotlin, WebView, Foreground-Service) | APK | Play-Store / APK-Release | Engine-Daten, Vendor, Secrets |
+| **Engine** (`shinon-forge` gepinnt) | `filesDir/runtime/shinon-forge/` (Runtime-Paket, SHA256-geprüft) | SetupActivity (neuer Pin) | — |
+| **DSH-Vendor** (`node_modules`, `dsh`-Entry-Point) | `filesDir/runtime/shinon-forge/node_modules/` (Runtime-Paket) | SetupActivity | — |
+
+- **Prüfung (fail-closed):** Die CI-Zeile `APK-Content-Gate` in
+  `.github/workflows/build.yml` dekodiert die fertige APK und macht
+  den Build rot, wenn `node_modules`, `shinon-forge`, `dsh` oder
+  `profile(s)/mobile` darin auftauchen. Ein einziger Fund bricht den
+  Release-Lauf — kein „zufällig drin"-Paket.
+- **Prüfung (Runtime):** `ShinonService.startEngine()` prüft vor dem
+  Start, dass `node` und `node_modules/.bin/dsh` im Runtime-Paket
+  liegen (`runtime_missing`-Broadcast), nicht in der APK.
+- **Konsequenz:** Die Engine wird aktualisierbar, ohne die App zu
+  komprieren — und die App läuft, wenn das Runtime-Paket fehlt,
+  nicht kaputt, sondern mit klarem `runtime_missing` (Setup-
+  Hinweis), nicht mit einem stummen `ENOENT`.
+
+## 5.2 Integration mit shinon-forge
 
 - **Git-Dependency:** `shinon-forge` als Submodule (pin: `develop`-Stand am 2026-10-14, `d7d38ce`) oder als gepinnte Git-URL im Gradle-Script. **Nicht** als npm-Paket — `shinon-forge` ist kein published NPM-Paket.
 - **Profil-Override:** Der Android-Host startet DSH mit `--profile mobile` (explizit, ohne die `scripts.dev`-Konfiguration von `shinon-forge` anzufassen — `bin/shinon.mjs` und `scripts/open.mjs` tragen den `--profile`-Override).
