@@ -1,123 +1,21 @@
-# ─── Python ────────────────────────────────────────────────────
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-*.egg
-
-# ─── Node ──────────────────────────────────────────────────────
 node_modules/
-npm-debug.log*
-.next/
-.next-*/
-frontend/.next-*/
-ShinonLLM-main/frontend/.next-*/
-ShinonLLM-main/.runtime/
-ShinonLLM-main/frontend/.next-dev/
-ShinonLLM-main/frontend/.next-build/
-
-# ─── Environment & Secrets ─────────────────────────────────────
-.env
-.env.*
-!.env.example
-*.toml.bak.*
-*.env.bak.*
-
-# ─── SQLite ────────────────────────────────────────────────────
-*.db-shm
-*.db-wal
-*.sqlite3
-
-# ─── IDE & Editor ──────────────────────────────────────────────
-.vscode/
+build/
+.local/
+captures/
+.cxx/
+*.iml
 .idea/
-*.swp
-*.swo
-*~
-
-# ─── OS ────────────────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-
-# ─── Build Artifacts ───────────────────────────────────────────
-/tmp/
-*.log
-!phase3_finish.log
-!.goal/**/*.log
-*.replay
-
-# ─── Freebuff / Workspace ──────────────────────────────────────
-.freebuff/
-.goal/
-.promtset/state/
-!promtset-state.example/
-# Generated Promtguard reports are reproducible locally, not release source.
-pipeline-state.db
-.agents/skills/goal-chain/db/*.db
-.agents/skills/goal-chain/db/*.db.bak
-.agents/skills/live/registry.jsonl
-limen-main/data/
-ShinonLLM-main/.git/
-.freebuff/preview-*.log
-.freebuff/desktop-v2.db
-.freebuff/run.md
-.promtset/state/claim-log.jsonl
-
-# ─── Large Archives ────────────────────────────────────────────
-*.7z
-*.zip
-!assets/*.zip
-
-# ─── Data directories (keep schema, ignore runtime data) ──────
-Promtguard-main/.promtset/out/
-Promtguard-main/.promtset/state/
-karma-main/state/
-karma-main/data/
-fusion-main/data/
-.promtset/state/*.jsonl
-!.promtset/state/*.md
-
-# ─── Shinon Control Plane runtime data (project-relative, fully portable) ──
-# Standalone Mode: all state is inside the project, NOT in $HOME.
-# This makes the project folder moveable / portable.
-data/**/*.db
-data/**/*.db-shm
-data/**/*.db-wal
-data/logs/**
-data/pids/**
-!data/**/.gitkeep
-config/*.local.*
-config/*.bak.*
-# Runtime install marker (JSON timestamp written by install.py). Don't commit.
-config/.install-done
-# Backward-compat: legacy `.ctl/` runtime directory (deprecated — now ./data/{logs,pids}/)
-.ctl/
-.venv/
-
-# ─── Test residue ──────────────────────────────────────────────
-/goal-chain-test-*.db
-.test_*
-test_*.py
-!karma-main/karma/tests/test_fact_validation.py
-!karma-main/karma/tests/test_evidence_entailment.py
-!karma-main/karma/tests/test_knowledge_graph_evidence.py
-!tests/test_shinon_engine_annotation_only.py
-!tests/test_chat_router_intent.py
-!tests/test_shinon_db_unification.py
-!tests/test_chat_prosa_routing.py
-!tests/test_cli_task_hint_recognizer.mjs
-!tests/test_evil_twin_helpers_regression.py
-!redteam/attacks/rt05_gate_skipping.py
-!.agents/skills/goal-chain/scripts/test-rt05-gate-skipping.sh
-test_*.json
-
-# ─── Shinon UI / Server ───────────────────────────────────────
-/tmp/shinon-*.log
-.freebuff/shinon-ui.html
-
-# ─── Stray chain scripts (test artifacts) ─────────────────────
-.agents/skills/goal-chain/scripts/[a-z][0-9].sh
-.agents/skills/goal-chain/scripts/[a-z][0-9]*.sh
+.gradle/
+local.properties
+# Android Studio ignores
+captures/
+.cxx/
+# Build artifacts (APK/AAB — nur als CI-Artifact, NIE im Repo)
+*.apk
+*.aab
+# Keystore — NIE im Repo (Base64 via CI, GitHub Secrets)
+*.jks
+keystore/
+# App-interner Runtime-Speicher (SetupActivity-Download) — NIE im Repo.
+app/src/main/assets/runtime/
+app/release/

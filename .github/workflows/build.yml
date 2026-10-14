@@ -1,0 +1,90 @@
+# Shinon Forge — Android-Shell · CI: Build + Release-Signing + APK-Upload
+#
+# Gate: android-build (MOBILE-PLAN.md §5 W4) — blockierend ab W4.
+# Secrets (Settings → Secrets and variables → Actions, NIE im Repo):
+#   SHINON_KEYSTORE_B64    Base64-String der .jks-Datei
+#   SHINON_KEYSTORE_ALIAS  Alias-Name (z. B. shinon)
+#   SHINON_KEYSTORE_PASS   Keystore-Passwort
+#   SHINON_KEY_ALIAS_PASS  Alias-Passwort
+# Fail-closed: fehlt SHINON_KEYSTORE_B64, bricht der Build ABE — kein
+# ungesigntes APK wird je hochgeladen.
+
+name: build
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release-Tag (z. B. v0.0.1) — leer = nur Build, kein Release"
+        required: false
+        default: ""
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Decode Keystore from Secrets (temporär, NIE als Artifact)
+        env:
+          SHINON_KEYSTORE_B64: ${{ secrets.SHINON_KEYSTORE_B64 }}
+        run: |
+          if [ -z "${SHINON_KEYSTORE_B64}" ]; then
+            echo "::error::SHINON_KEYSTORE_B64 fehlt — fail-closed, kein ungesigntes APK"
+            exit 1
+          fi
+          mkdir -p keystore
+          echo "${SHINON_KEYSTORE_B64}" | base64 -d > keystore/release.jks
+          # In die Runner-Umgebung (keine Secret-Leaks in Logs)
+          echo "SHINON_KEYSTORE_PATH=$(pwd)/keystore/release.jks" >> "$GITHUB_ENV"
+
+      - name: Configure Signing
+        env:
+          SHINON_KEYSTORE_PASS: ${{ secrets.SHINON_KEYSTORE_PASS }}
+          SHINON_KEYSTORE_ALIAS: ${{ secrets.SHINON_KEYSTORE_ALIAS }}
+          SHINON_KEY_ALIAS_PASS: ${{ secrets.SHINON_KEY_ALIAS_PASS }}
+        run: |
+          # Die build.gradle.kts liest die Signatur aus Environment.
+          # Existenzcheck (fail-closed): alle vier müssen gesetzt sein.
+          if [ -z "${SHINON_KEYSTORE_PASS}" ] || [ -z "${SHINON_KEYSTORE_ALIAS}" ]; then
+            echo "::error::Signing-Secrets unvollständig (PASS/ALIAS fehlen)"
+            exit 1
+          fi
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shinon-agent-v0.0.1.apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Create Release (only when tag is set)
+        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.tag }}" \
+            app/build/outputs/apk/release/*.apk \
+            --title "Shinon Agent ${{ inputs.tag }}" \
+            --generate-notes
+          # Das signierte APK hängt am Release — Download für den
+          # ersten Live-Test ohne Runner-Dependence.
+
+      - name: Clean up Keystore (nie im Runner-Artefakt übrig)
+        if: always()
+        run: |
+          rm -f keystore/release.jks
