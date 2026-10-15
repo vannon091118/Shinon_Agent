@@ -169,6 +169,13 @@ class ShinonService : Service() {
                 .directory(dshDir)
                 .redirectErrorStream(true)
             builder.environment().putAll(env)
+            // DSH löst Profile als `$DSH_HOME/profiles/<name>` auf (dsh-README:
+            // "--profile <name> = the profile under $DSH_HOME/profiles to boot").
+            // Ohne DSH_HOME sucht DSH das Profil im falschen Wurzelverzeichnis;
+            // der Forge-Launcher `bin/shinon.mjs` setzt es ebenfalls explizit
+            // (DSH_HOME=<Repo-Root>). Für die App ist der Repo-Root das
+            // Runtime-Verzeichnis, in dem auch `node_modules/.bin/dsh` liegt.
+            builder.environment()["DSH_HOME"] = dshDir.absolutePath
             nodeProcess = builder.start()
             ioThread = Thread { parseReadyUrl(nodeProcess!!) }
             ioThread!!.start()
