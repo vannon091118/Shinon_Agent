@@ -5,26 +5,38 @@
     android:orientation="vertical"
     android:gravity="center"
     android:background="#000000"
-    android:padding="24dp">
+    android:padding="28dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Shinon Forge"
         android:textSize="24sp"
+        android:textStyle="bold"
         android:textColor="#FFFFFF" />
 
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/setup_status"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="First-Run Setup — lädt Runtime und fragt API-Key ab"
+        android:layout_marginTop="18dp"
+        android:text="Prüfe Runtime …"
         android:textSize="14sp"
-        android:textColor="#888888"
-        android:gravity="center" />
+        android:lineSpacingExtra="4dp"
+        android:gravity="center"
+        android:textColor="#BBBBBB" />
 
     <ProgressBar
+        android:id="@+id/setup_progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp" />
+
+    <Button
+        android:id="@+id/setup_retry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:visibility="gone"
+        android:text="Erneut versuchen" />
 </LinearLayout>

@@ -25,6 +25,7 @@ class ShinonApp : Application() {
         super.onCreate()
         keystore = ShinonKeystore(this)
         keystore.initialize()
+        NativeLib.initNative(filesDir.absolutePath)
     }
 }
 

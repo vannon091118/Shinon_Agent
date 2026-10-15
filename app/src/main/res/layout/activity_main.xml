@@ -33,26 +33,38 @@
             android:textColor="#888888" />
     </LinearLayout>
 
-    <!-- Fehler-Overlay: Crash / Runtime fehlt -->
+    <!-- Prototyp-Status: keine Runtime wird vorgetäuscht. -->
     <LinearLayout
         android:id="@+id/error_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
+        android:padding="28dp"
         android:visibility="gone"
         android:background="#111111">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Engine nicht erreichbar"
-            android:textSize="18sp"
+            android:text="Shinon Agent 0.02"
+            android:textSize="22sp"
+            android:textStyle="bold"
             android:textColor="#FFFFFF" />
+        <TextView
+            android:id="@+id/error_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:text="Runtime wird geprüft …"
+            android:textSize="15sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#BBBBBB" />
         <Button
             android:id="@+id/retry_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Erneut versuchen" />
+            android:layout_marginTop="24dp"
+            android:text="Runtime erneut starten" />
     </LinearLayout>
 </FrameLayout>

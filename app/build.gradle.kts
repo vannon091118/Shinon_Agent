@@ -3,16 +3,28 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+
+val shinonRuntimeRelease = providers.gradleProperty("shinonRuntimeRelease").orElse("dev-unavailable").get()
+val shinonRuntimeSha256 = providers.gradleProperty("shinonRuntimeSha256").orElse("dev-unavailable").get()
+check(shinonRuntimeRelease.matches(Regex("[a-z0-9-]+"))) { "shinonRuntimeRelease must be a lowercase release tag" }
+check(shinonRuntimeSha256 == "dev-unavailable" || shinonRuntimeSha256.matches(Regex("[0-9a-f]{64}"))) {
+    "shinonRuntimeSha256 must be a lowercase SHA-256 digest"
+}
+
 android {
     namespace = "com.vannon.shinon"
     compileSdk = 34
+    ndkVersion = "26.3.11579264"
 
     defaultConfig {
         applicationId = "com.vannon.shinon"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.0.1"
+        versionName = "0.02"
+        buildConfigField("String", "SHINON_RUNTIME_RELEASE", "\"$shinonRuntimeRelease\"")
+        buildConfigField("String", "SHINON_RUNTIME_SHA256", "\"$shinonRuntimeSha256\"")
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     signingConfigs {
@@ -66,6 +78,11 @@ android {
     // Die WebView-Bridge + AndroidX für die App
     buildFeatures {
         viewBinding = false
+        buildConfig = true
+    }
+
+    androidResources {
+        noCompress += listOf("xz")
     }
 }
 

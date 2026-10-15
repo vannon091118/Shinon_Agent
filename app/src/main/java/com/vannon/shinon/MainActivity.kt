@@ -7,86 +7,60 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.content.ContextCompat
 import android.widget.Button
+import android.widget.TextView
 
-/**
- * MainActivity — WebView-Fenster (MOBILE-PLAN.md W4).
- *
- * EINE Aufgabe: die tokenisierte DSH-READY-URL aus dem Service in
- * einer WebView laden. Nichts sonst.
- *
- * Sicherheit (MOBILE-PLAN.md §5 W4):
- *   - WebView lädt NUR die lokale DSH-URL (http://127.0.0.1:…).
- *     Alle anderen externen Links gehen in den Systembrowser —
- *     keine privilegierten JavaScript-Bridges auf fremde Seiten.
- *   - javaScriptEnabled + domStorageEnabled: an (DSH-Client ist ein
- *     vollwertiges Web-UI-Bundle).
- *   - Zoom bleibt an (user-scalable — MOBILE-PLAN.md §2: Zoom nicht
- *     für Touch deaktivieren, Nutzer dürfen weiter vergrößern).
- *   - Crash-Recovery: Wenn der Service neu startet, wird die
- *     WebView automatisch neu geladen (PROCESS_END → URL_READY).
- *   - App-Logs enthalten keine Schlüssel und keine tokenisierte URL.
- *
- * Layout (R.layout.activity_main, drei Ansichten):
- *   - WebView (fill, unsichtbar bis READY)
- *   - Splash/Loader-Overlay (Shinon-Brand, läuft bis die URL kommt)
- *   - Fehler-Overlay (problemtastischer Text, Retry-Button)
- */
+/** WebView shell for the tokenized loopback URL proven by ShinonService. */
 class MainActivity : Activity() {
 
     companion object {
-        private const val TAG = "MainActivity"
-
-        /** Request-Code für die Laufzeitabfrage von POST_NOTIFICATIONS (API 33+). */
         private const val REQUEST_POST_NOTIFICATIONS = 1
+        private const val TAG = "MainActivity"
     }
 
     private lateinit var webView: WebView
     private lateinit var splashView: View
     private lateinit var errorView: View
     private lateinit var retryButton: Button
+    private lateinit var errorMessage: TextView
+    private var engineOrigin: Uri? = null
 
     private val urlReadyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val url = intent.getStringExtra("url") ?: return
-            loadUrl(url)
+            val value = intent.getStringExtra("url") ?: return
+            loadUrl(value)
         }
     }
 
     private val processEndReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            when (intent.getStringExtra("reason")) {
-                "clean", "runtime_missing" -> showError()
-                "crash" -> {
-                    // Service startet von selbst neu (max. 3×) —
-                    // die Splash-Ansicht bleibt, bis die neue URL kommt.
-                    showError()
-                }
-            }
+            val reason = intent.getStringExtra("reason") ?: "unknown"
+            showError(reason)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         webView = findViewById(R.id.webview)
         splashView = findViewById(R.id.splash_view)
         errorView = findViewById(R.id.error_view)
         retryButton = findViewById(R.id.retry_button)
+        errorMessage = findViewById(R.id.error_message)
 
         configureWebView()
         retryButton.setOnClickListener { startService() }
         showSplash()
-
-        registerReceiver(urlReadyReceiver, IntentFilter(ShinonService.INTENT_URL_READY), Context.RECEIVER_NOT_EXPORTED)
-        registerReceiver(processEndReceiver, IntentFilter(ShinonService.INTENT_PROCESS_END), Context.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, urlReadyReceiver, IntentFilter(ShinonService.INTENT_URL_READY), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, processEndReceiver, IntentFilter(ShinonService.INTENT_PROCESS_END), ContextCompat.RECEIVER_NOT_EXPORTED)
         requestNotificationPermissionIfNeeded()
         startService()
     }
@@ -98,41 +72,44 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
-    /**
-     * WebView-Konfiguration: JS + DOM-Storage an (DSH-Client braucht
-     * beides), kein Datei-Zugriff (kein /sdcard), externe Links →
-     * Systembrowser.
-     */
     private fun configureWebView() {
-        val settings = webView.settings
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.allowFileAccess = false
-        settings.javaScriptCanOpenWindowsAutomatically = false
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.settings.allowFileAccess = false
+        webView.settings.javaScriptCanOpenWindowsAutomatically = false
 
         webView.webViewClient = object : WebViewClient() {
-            /**
-             * Externe Navigation (alles außer der lokalen DSH-URL) →
-             * Systembrowser. Die WebView bleibt bei der Engine.
-             */
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val scheme = request.url?.scheme ?: return false
-                val host = request.url?.host ?: return false
-                // Nur die lokale DSH-URL bleibt in der WebView.
-                // NUR http auf 127.0.0.1 — https wäre ein privilegierter
-                // Zugang zu einer fremden HTTPS-Seite auf Loopback.
-                if (scheme == "http" && host == "127.0.0.1") return false
-                startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                val target = request.url
+                val origin = engineOrigin
+                if (origin != null &&
+                    target.scheme == "http" &&
+                    target.host == origin.host &&
+                    target.port == origin.port
+                ) {
+                    return false
+                }
+                startActivity(Intent(Intent.ACTION_VIEW, target))
                 return true
             }
         }
     }
 
-    private fun loadUrl(url: String) {
-        // NUR die lokale DSH-URL (http://127.0.0.1:…) wird geladen —
-        // externe Seiten niemals (MOBILE-PLAN.md §5 W4).
-        if (!url.startsWith("http://127.0.0.1")) return
-        webView.loadUrl(url)
+    private fun loadUrl(value: String) {
+        val parsed = Uri.parse(value)
+        val host = parsed.host?.lowercase()
+        val valid = parsed.scheme == "http" &&
+            (host == "127.0.0.1" || host == "localhost") &&
+            parsed.port in 1..65535 &&
+            !parsed.getQueryParameter("token").isNullOrBlank() &&
+            parsed.userInfo == null &&
+            parsed.fragment == null
+        if (!valid) {
+            showError("invalid_ready_url")
+            return
+        }
+        engineOrigin = parsed
+        webView.loadUrl(value)
         webView.visibility = View.VISIBLE
         splashView.visibility = View.GONE
         errorView.visibility = View.GONE
@@ -144,40 +121,34 @@ class MainActivity : Activity() {
         webView.visibility = View.GONE
     }
 
-    private fun showError() {
+    private fun showError(reason: String) {
+        val readable = when (reason) {
+            "runtime_missing" -> "Runtime-Dateien fehlen. Setup erneut ausführen."
+            "spawn_failed" -> "Die native Runtime konnte nicht gestartet werden. Geräte-Log prüfen."
+            "ready_timeout" -> "Die Runtime hat nicht rechtzeitig geantwortet. Kein READY wurde bestätigt."
+            "health_check_failed" -> "Der lokale Engine-Endpunkt antwortet nicht mehr."
+            "crash" -> "Die Runtime wurde unerwartet beendet."
+            "invalid_ready_url" -> "Die Engine lieferte eine ungültige lokale READY-Adresse."
+            "clean" -> "Die Runtime wurde beendet."
+            else -> "Runtime-Fehler: " + reason
+        }
+        errorMessage.text = readable
         errorView.visibility = View.VISIBLE
         splashView.visibility = View.GONE
         webView.visibility = View.GONE
+        engineOrigin = null
         webView.loadUrl("about:blank")
     }
 
-    /**
-     * Ab API 33 zeigt Android die laufende Dienst-Benachrichtigung nur, wenn
-     * POST_NOTIFICATIONS erteilt ist — die Manifest-Deklaration allein genügt
-     * dort nicht. Ohne Anfrage bliebe der Foreground-Service für den Nutzer
-     * unsichtbar (der Dienst selbst läuft weiter).
-     */
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        requestPermissions(
-            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-            REQUEST_POST_NOTIFICATIONS
-        )
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_POST_NOTIFICATIONS)
     }
 
     private fun startService() {
-        val intent = Intent(this, ShinonService::class.java).apply {
-            action = ShinonService.ACTION_START
-        }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
+        showSplash()
+        val intent = Intent(this, ShinonService::class.java).setAction(ShinonService.ACTION_START)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent) else startService(intent)
     }
 }
