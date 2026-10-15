@@ -30,7 +30,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-          cache: 'false'
+          cache-disabled: true
 
       - name: Build installable prototype APK (debug-signed)
         run: gradle --no-daemon :app:assembleDebug
