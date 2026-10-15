@@ -1,6 +1,9 @@
 # Audit — Ist-Zustand, Prüfpunkte und Blocker
 
-> Stand: 2026-10-15 · Basis: Ausgangsstand `e78ca1a`, Arbeitsstand `347d958` + DSH_HOME-Fix
+> Stand: 2026-10-15 · Basis: Ausgangsstand `e78ca1a` (`main`), Arbeitsbranch
+> `feat/scope-audit-and-docs`. Bewusst **kein Tip-SHA**: die Arbeit auf dem
+> Branch wächst, ein hier genannter Einzelcommit wäre am nächsten Tag falsch.
+> Die Commit-Kette steht im Abschlussbericht und in `git log` des Branches.
 >
 > Dieses Dokument ist die **Belegschicht**: jeder Befund nennt Fundstelle,
 > beobachtetes Verhalten, Auswirkung, Reproduktionsschritt und Korrektur.
