@@ -1,5 +1,12 @@
 # Planung: Erweiterungen jenseits der W4-Shell
 
+> **Status:** Entwurf — nicht umgesetzt, nicht abgenommen (Stand 2026-10-14).
+> Verbindliche Scope-Einordnung: [`SCOPE.md`](SCOPE.md) §3, Kategorie „Später“.
+> **Hinweis zu den Verweisen:** `MOBILE-PLAN.md` liegt **nicht** in diesem
+> Repository, sondern in `shinon-forge/docs/MOBILE-PLAN.md`. Die Angaben
+> „§5 W4“, „W3“, „W1“ darunter sind Verweise in das andere Repo und aus
+> diesem Repo heraus nicht prüfbar.
+
 > **Klarstellung zuerst:** `Shinon_Agent` ist der **parallele zweite
 > Zweig von Shinon Forge** — er konzentriert sich auf die
 > **App-Entwicklung** (Android-Shell, WebView, Foreground-Service,
@@ -123,9 +130,10 @@ hat kein glibc-Shell-Ökosystem) auf und zeigt die Ausgabe.
 - **Auto-Start nach Reboot** (`BootReceiver` + `Shadows`/`WorkManager`
   — der Foreground-Service startet nach einem Device-Neustart,
   ohne dass der Nutzer die App öffnet).
-- **Doze-Modus-Override** (`WAKE_LOCK` bleibt, aber der `WorkManager`
-  bekommt einen `Constraints.NETWORK_TYPE_UNMETERED`-Trigger, damit
-  der Provider-Aufruf nicht stumm im Doze-Modus stirbt).
+- **Doze-Modus-Override** (der `WorkManager` bekommt einen
+  `Constraints.NETWORK_TYPE_UNMETERED`-Trigger, damit der Provider-Aufruf
+  nicht stumm im Doze-Modus stirbt; `WAKE_LOCK` wäre dann **neu** zu
+  deklarieren — in v1 entfernt, siehe [`KNOWN-LIMITATIONS.md`](KNOWN-LIMITATIONS.md) N-4).
 - **Crash-Diagnose** (ein `FileWriter` schreibt den letzten
   `Log.d`-Tag an `filesDir/diagnosis/last-crash.txt`, max.
   50 KB, nicht in `/sdcard`).

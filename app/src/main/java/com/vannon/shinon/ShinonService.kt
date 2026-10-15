@@ -53,7 +53,6 @@ class ShinonService : Service() {
         const val ACTION_START = "com.vannon.shinon.START"
         const val ACTION_STOP = "com.vannon.shinon.STOP"
         const val ACTION_RESTART = "com.vannon.shinon.RESTART"
-        const val ACTION_STATUS = "com.vannon.shinon.STATUS"
         const val MAX_RESTART_ATTEMPTS = 3
         const val RESTART_DELAY_MS = 5000L
         const val KILL_GRACE_MS = 3000L
@@ -163,11 +162,21 @@ class ShinonService : Service() {
                     // entschlüsselte Wert wird hier injiziert.
                 }
             }
-            nodeProcess = ProcessBuilder(command)
+            // ProcessBuilder-Kette: environment() liefert die Map, und
+            // putAll() darauf gibt Unit zurück. redirectErrorStream() gehört
+            // deshalb auf den Builder — nicht ans Ende der putAll-Kette.
+            val builder = ProcessBuilder(command)
                 .directory(dshDir)
-                .environment().putAll(env)
                 .redirectErrorStream(true)
-                .start()
+            builder.environment().putAll(env)
+            // DSH löst Profile als `$DSH_HOME/profiles/<name>` auf (dsh-README:
+            // "--profile <name> = the profile under $DSH_HOME/profiles to boot").
+            // Ohne DSH_HOME sucht DSH das Profil im falschen Wurzelverzeichnis;
+            // der Forge-Launcher `bin/shinon.mjs` setzt es ebenfalls explizit
+            // (DSH_HOME=<Repo-Root>). Für die App ist der Repo-Root das
+            // Runtime-Verzeichnis, in dem auch `node_modules/.bin/dsh` liegt.
+            builder.environment()["DSH_HOME"] = dshDir.absolutePath
+            nodeProcess = builder.start()
             ioThread = Thread { parseReadyUrl(nodeProcess!!) }
             ioThread!!.start()
         } catch (e: Exception) {
@@ -272,7 +281,12 @@ class ShinonService : Service() {
         nodeProcess?.let { proc ->
             try {
                 proc.destroy()
-                if (!proc.waitFor(KILL_GRACE_MS, TimeUnit.MILLISECONDS)) {
+                // Explizites if/else: das try ist der Rückgabewert des
+                // let-Lambda, ein if ohne else wäre dort ein Ausdruck und
+                // damit ein Compile-Fehler (Kotlin 1.9).
+                if (proc.waitFor(KILL_GRACE_MS, TimeUnit.MILLISECONDS)) {
+                    Log.d(TAG, "Prozess sauber mit SIGTERM beendet")
+                } else {
                     Log.w(TAG, "Prozess kam nicht mit SIGTERM — SIGKILL")
                     proc.destroyForcibly()
                 }

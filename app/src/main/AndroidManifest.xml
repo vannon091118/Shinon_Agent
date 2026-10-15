@@ -5,17 +5,14 @@
     <!-- App-interne Runtime, kein externer Netzverkehr außer Provider-Aufrufe -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Foreground-Service hält den DSH-Prozess gegen Doze/Background-Kills -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- dataSync wurde ab Android 14 zur Pflicht-Permission — ohne sie
-         bricht der Foreground-Service auf API 28–33 mit
-         InvalidServiceTypeException. -->
+    <!-- dataSync ist der Dienst-Typ des Foreground-Service (siehe <service>);
+         die zugehörige Permission verlangt Android ab API 34. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-    <!-- Android 12+: FOREGROUND_SERVICE_DATA_SYNC-Modus, wenn der
-         Foreground-Service Daten synchronisiert (N/A hier, aber
-         explizit ab Android 14). -->
+    <!-- Ab API 33 ist die laufende Dienst-Benachrichtigung nur sichtbar, wenn
+         diese Permission erteilt ist. Die Manifest-Deklaration allein genügt
+         dort nicht — MainActivity fragt sie zur Laufzeit an. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
