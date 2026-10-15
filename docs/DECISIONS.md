@@ -149,13 +149,34 @@
   einen toten Trigger im Repo belassen. Oder `POST_NOTIFICATIONS` löschen — hätte
   eine dokumentierte Soll-Anforderung gebrochen.
 - **Konsequenz:** Kleineres Berechtigungsprofil (kein `WAKE_LOCK`), kleinere APK
-  (5.649.778 statt 5.702.163 Bytes), keine AGP-Deprecation-Warnung mehr.
+  (5.649.850 statt 5.702.163 Bytes), keine AGP-Deprecation-Warnung mehr.
   `-dontwarn org.webkit.**` bleibt bewusst stehen (harmlos; Entfernung nur mit
   vollem Release-Lauf belegbar). Die Sichtbarkeit der Benachrichtigung auf einem
   Gerät ist weiterhin **UNVERIFIED**.
 - **Beleg:** `:app:assembleDebug` → `BUILD SUCCESSFUL in 32s` (APK-SHA256
-  `b83615ae…cd6f`), `:app:minifyReleaseWithR8` → `BUILD SUCCESSFUL in 2m 5s`,
+  `e315cbb4…e2d6`), `:app:minifyReleaseWithR8` → `BUILD SUCCESSFUL in 2m 5s`,
   `:app:dependencies` ohne `webkit`, Permission-Liste im APK ohne `WAKE_LOCK`.
+
+## DEC-010 — `DSH_HOME` explizit setzen (Prozessstart-Korrektur)
+
+- **Kontext:** DSH löst Profile als **`$DSH_HOME/profiles/<name>`** auf
+  (dsh-README: „`--profile <name>` = the profile under `$DSH_HOME/profiles` to
+  boot"). Belegt in der Registry: `@deepseek-ai/dsh@0.2.1-alpha.1`
+  `README.md:11` und `lib/bin.js:105` („the profile under $DSH_HOME/profiles to
+  boot“). Der Forge-Einstieg `bin/shinon.mjs:107` setzt `DSH_HOME` deshalb
+  explizit auf den Repo-Root. `ShinonService.startEngine()` setzte es **nicht**.
+- **Entscheidung:** `DSH_HOME` im Builder-Environment auf das Runtime-Verzeichnis
+  setzen (`builder.environment()["DSH_HOME"] = dshDir.absolutePath`), passend zum
+  ohnehin gesetzten `cwd = dshDir`.
+- **Alternativen:** `DSH_HOME` aus `System.getenv()` erben — auf Android nicht
+  gesetzt, also wirkungslos. Auf das `cwd` vertrauen — nicht belegt, dass DSH
+  daraus das Home ableitet.
+- **Konsequenz:** Der Prozessstart entspricht den realen Anforderungen der
+  Engine. **Damit ist B-2 nicht gelöst:** das Profil `mobile` selbst fehlt
+  weiterhin (`OPEN-001`), und ein Lauf ist ohne Gerät nicht nachweisbar.
+- **Beleg:** `scripts/build.sh :app:assembleDebug` → `BUILD SUCCESSFUL in 46s`,
+  APK-SHA256 `e315cbb4…e2d6`, Entkopplungsgate `PASS`. Der Laufzeitnachweis
+  bleibt Gate 3 (`BLOCKED`).
 
 ---
 

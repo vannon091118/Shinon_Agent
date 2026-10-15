@@ -8,15 +8,15 @@
 
 | ID | Implementierungsort | Nachweis | Gate | Status |
 |---|---|---|---|---|
-| AND-BUILD-001 | `app/build.gradle.kts`, `settings.gradle.kts`, `gradlew` | `:app:assembleDebug` → `BUILD SUCCESSFUL`, APK `b83615ae…cd6f` | 1, 2 | **IMPLEMENTED** |
+| AND-BUILD-001 | `app/build.gradle.kts`, `settings.gradle.kts`, `gradlew` | `:app:assembleDebug` → `BUILD SUCCESSFUL`, APK `e315cbb4…e2d6` | 1, 2 | **IMPLEMENTED** |
 | AND-BUILD-002 | `app/build.gradle.kts` (`signingConfigs.release`), `.github/workflows/build.yml` | `:app:validateSigningRelease` → Exit 1 ohne Keystore | 5 | **PARTIAL** |
 | AND-SETUP-001 | `SetupActivity.onCreate`, `installRuntime` | Code-Review; Rückgabewert wird ignoriert | 3 | **PARTIAL** |
 | AND-SETUP-002 | `SetupActivity.installRuntime` (Platzhalter) | Marker wird nie erzeugt | 3 | **PLANNED** |
 | AND-SETUP-003 | `SetupActivity.onCreate` (nur `Log.w`) | fehlender Dialog | 4 | **PLANNED** |
 | RT-NODE-001 | — (keine Prüfung im Code) | — | 3 | **PLANNED** |
-| RT-PROC-001 | `ShinonService.startEngine` | Code vorhanden, nie ausgeführt | 3 | **UNVERIFIED** |
-| RT-PROF-001 | `ShinonService.startEngine` (`--profile mobile`) | Profil fehlt in `shinon-forge` main | 3 | **BLOCKED** |
-| RT-READY-001 | `ShinonService.parseReadyUrl` (`Regex("dsh web: (http://\\S+)")`) | Regex vorhanden, nie gegen echtes DSH | 3 | **UNVERIFIED** |
+| RT-PROC-001 | `ShinonService.startEngine` (`:144-172`), `DSH_HOME` (`:178`) | Code vorhanden, nie ausgeführt; `DSH_HOME`-Anforderung der Engine belegt und umgesetzt (DEC-010) | 3 | **UNVERIFIED** |
+| RT-PROF-001 | `ShinonService.startEngine` (`--profile mobile`) | Profil fehlt in `shinon-forge` main (`profiles/` = headless, shinon) | 3 | **BLOCKED** |
+| RT-READY-001 | `ShinonService.parseReadyUrl` (`Regex("dsh web: (http://\\S+)")`) | Format aus DSH-Quelle belegt (`dsh-web-app` `lib/index.js:211`), Lauf nicht | 3 | **PARTIAL** |
 | SEC-KEY-001 | `ShinonApp.ShinonKeystore` | keine `storeSecret`-Methode | 4 | **PLANNED** |
 | SEC-KEY-002 | `ShinonService.startEngine` (`env`-Map) | Schlüssel wird nicht eingetragen | 4 | **PLANNED** |
 | SEC-LOG-001 | `ShinonService.maskSecrets` | nur `token`/`apikey`/`AGNES_API_KEY` | 3/4 | **PARTIAL** |
@@ -46,6 +46,9 @@
 | 5 | `:app:validateSigningRelease`, `:app:minifyReleaseWithR8` | **PARTIAL** (fail-closed belegt, R8 grün, Signaturlauf offen) |
 
 ## 3. Offene Befunde → Dokument
+
+Vollständige Belegschicht mit Fundstelle, Reproduktion und Korrektur je Prüfpunkt:
+[`AUDIT.md`](AUDIT.md).
 
 | Befund | Ort |
 |---|---|

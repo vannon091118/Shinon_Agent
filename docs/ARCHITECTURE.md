@@ -56,7 +56,7 @@ App-Absturz, sondern ein `PROCESS_END`-Broadcast.
 | 4 | `SetupActivity.onCreate` | setzt `setup_done = true` |
 | 5 | `MainActivity.onCreate` | registriert Receiver, `startForegroundService(ACTION_START)` |
 | 6 | `ShinonService.startEngine` | prüft `runtime/node` und `runtime/shinon-forge/node_modules/.bin/dsh` |
-| 7 | `ShinonService.startEngine` | `ProcessBuilder(node, dsh, --profile mobile, --no-open, --trusted-host …, --port 0)` |
+| 7 | `ShinonService.startEngine` | `ProcessBuilder(node, dsh, --profile mobile, --no-open, --trusted-host …, --port 0)` mit `cwd = runtime/shinon-forge` und `DSH_HOME` = dasselbe Verzeichnis (DSH löst Profile als `$DSH_HOME/profiles/<name>` auf) |
 | 8 | `ShinonService.parseReadyUrl` | liest stdout, sucht `dsh web: (http://\S+)`, broadcastet URL |
 | 9 | `MainActivity.urlReadyReceiver` | `loadUrl(url)` — nur wenn `http://127.0.0.1`-Präfix |
 | 10 | `MainActivity.showError` | bei `runtime_missing`/`crash`/`clean` |

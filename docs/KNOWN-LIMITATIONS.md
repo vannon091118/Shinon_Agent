@@ -5,8 +5,10 @@
 >
 > Belegquellen: `app/src/main/java/com/vannon/shinon/…` (Repo),
 > `.local/audit/shinon-forge` (Leseklon von `shinon-forge` main `59a86a4`),
-> `npm view` (Registry), sowie die in [`TESTING.md`](TESTING.md) genannten
-> Kommandos.
+> `npm view` und `npm pack` (Registry), sowie die in [`TESTING.md`](TESTING.md)
+> genannten Kommandos. Die vollständige Belegschicht — je Befund Fundstelle,
+> beobachtetes Verhalten, Auswirkung, Reproduktion und Korrektur — liegt in
+> [`AUDIT.md`](AUDIT.md).
 
 ## B-1 — Die Runtime wird nie installiert (Blocker für alles)
 
@@ -30,8 +32,21 @@ Im Leseklon von `shinon-forge` (main `59a86a4`) enthält `profiles/` nur
 `docs/MOBILE-PLAN.md` als **Plan** (W1, „Startkandidat") und in
 `docs/CI.md` als geplanter Gate `mobile-profile-boot`.
 
+**Zusätzlich (im Zuge dieses Audits gefunden und behoben):** DSH löst Profile als
+`$DSH_HOME/profiles/<name>` auf (dsh-README Zeile 11, `lib/bin.js:105`), und der
+Forge-Einstieg setzt `DSH_HOME` explizit (`bin/shinon.mjs:107`).
+`ShinonService.startEngine()` setzte es **nicht** — die App hätte also selbst mit
+vorhandenem Profil im falschen Wurzelverzeichnis gesucht. Das ist korrigiert
+(`ShinonService.kt:178`, siehe [`DECISIONS.md`](DECISIONS.md) DEC-010).
+
 **Auswirkung:** Selbst mit installierter Runtime würde DSH das Profil nicht
 auflösen; der READY-Handshake kann so nicht zustandekommen.
+
+**Was jetzt belegt ist:** Der READY-Zeilen-Vertrag der App passt zur Wirklichkeit —
+DSH druckt `dsh web: <url>` und ohne `--public-url` die Loopback-URL
+(`dsh-web-app@0.2.1-alpha.1` `lib/index.js:211`, `README.md:56`). Die Regex
+`dsh web: (http://\S+)` erfasst das. Der **Lauf** ist damit weiterhin nicht
+belegt, nur das Format.
 
 **Nächster Schritt:** Entscheidung OPEN-001 (Profil upstream bauen **oder** die
 App auf ein vorhandenes Profil umstellen). Beides ist eine Architekturentscheidung,
@@ -139,7 +154,7 @@ Entfernung ist nur mit einem vollständigen Release-Lauf belegbar. Sie ist
 harmlos, wird aber erst mit einem signierten Release geprüft.
 
 **Gesamtnachweis:** `scripts/build.sh :app:assembleDebug` → `BUILD SUCCESSFUL
-in 32s`, APK 5.649.778 Bytes, SHA256 `b83615ae…cd6f`, Entkopplungsgate `PASS`,
+in 32s`, APK 5.649.850 Bytes, SHA256 `e315cbb4…e2d6`, Entkopplungsgate `PASS`,
 keine Kotlin-Warnung über ungenutzte Symbole.
 
 ## N-5 — `RECEIVER_NOT_EXPORTED` ohne Versionsweiche

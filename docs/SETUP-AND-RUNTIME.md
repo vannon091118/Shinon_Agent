@@ -68,9 +68,12 @@ Lint in Gate 1.
 | `filesDir/runtime/shinon-forge/` | Engine (`cwd` des Kindprozesses) | geplant |
 | `filesDir/runtime/shinon-forge/node_modules/.bin/dsh` | DSH-Entry-Point | geplant |
 
-Der Kindprozess startet mit `cwd = filesDir/runtime/shinon-forge`. DSH erwartet
-laut `bin/shinon.mjs` `DSH_HOME=<Repo-Root>`; **die App setzt `DSH_HOME` nicht**.
-Das ist ein offener Punkt (siehe [`KNOWN-LIMITATIONS.md`](KNOWN-LIMITATIONS.md) B-3).
+Der Kindprozess startet mit `cwd = filesDir/runtime/shinon-forge` und setzt
+`DSH_HOME` auf dasselbe Verzeichnis. Notwendig, weil DSH Profile als
+`$DSH_HOME/profiles/<name>` auflöst (dsh-README Zeile 11) und der
+Forge-Einstieg `bin/shinon.mjs` es ebenso explizit setzt. Die Korrektur ist in
+[`DECISIONS.md`](DECISIONS.md) DEC-010 festgehalten; der Laufzeitnachweis steht
+weiterhin aus (Gate 3).
 
 ## 4. Engine-Seite (shinon-forge) — geprüfter Stand
 

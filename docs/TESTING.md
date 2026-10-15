@@ -68,8 +68,8 @@ kein Lint-Befund: es wurde kein Report erzeugt, also ist auch keine Aussage
 
 ```
 :app:assembleDebug                     →  BUILD SUCCESSFUL
-app-debug.apk                          →  5.649.778 Bytes, 889 Einträge
-SHA256                                 →  b83615ae2673b844ecb0919312c7a87f36652af8851ef57c481e9405669bcd6f
+app-debug.apk                          →  5.649.850 Bytes, 889 Einträge
+SHA256                                 →  e315cbb469beaaa8fe0278700e3bd3da8575dc5c944bec6a80f5cce1b9e1e2d6
 classes.dex, classes2.dex, classes3.dex, AndroidManifest.xml, resources.arsc   →  vorhanden
 res/layout/activity_main.xml, res/layout/activity_setup.xml, ic_launcher*      →  vorhanden
 lib/**/*.so                            →  keine (keine nativen Anteile in der App)
@@ -111,11 +111,15 @@ Nicht ausgeführt. Gründe (jeder einzeln ausreichend):
 4. **Kein passendes Profil:** Der Dienst startet `--profile mobile`, das in
    `shinon-forge` nicht existiert (dort nur geplant).
 
-**Was ohne Gerät belegbar wäre und trotzdem fehlt:** ein Node-Lauf auf
-Desktop-Linux gegen `shinon-forge` würde den READY-Zeilenformat prüfen, aber
-**nicht** die Android-Runtime. Es wurde bewusst nicht als Gate-3-Ersatz
-gewertet und die App läuft in einer Android-Prozesssandbox, die nicht simuliert
-werden kann.
+**Was ohne Gerät erreichbar war — und kein Gate-3-Ersatz ist:** Das
+READY-Zeilenformat wurde **aus der DSH-Registry-Quelle** belegt
+(`dsh-web-app@0.2.1-alpha.1` `lib/index.js:211` druckt `dsh web: <url>`, ohne
+`--public-url` die Loopback-URL; siehe [`AUDIT.md`](AUDIT.md) §3). Das belegt
+den **Vertrag**, nicht den **Lauf**. Ein tatsächlicher DSH-Start auf
+Desktop-Linux wurde versucht (`npm install @deepseek-ai/dsh@0.2.1-alpha.1`) und
+**zweimal vom OOM-Killer beendet** (Exit 137) — er ist damit nicht ausgeführt
+und würde ohnehin keinen Android-Runtime-Start beweisen. Gate 3 bleibt
+`BLOCKED`.
 
 ### Gate 4 — Provider (Gate B): **BLOCKED**
 

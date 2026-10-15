@@ -51,7 +51,7 @@ getrennte Schichten ([`ARCHITECTURE.md`](ARCHITECTURE.md) §1); Runtime-Daten,
 `node_modules` und Forge-Profile gehören in das Runtime-Paket, nicht in die APK.
 
 **Verifiziert:** Die Gate-Logik wurde am erzeugten Debug-APK
-(`b83615ae…cd6f`, 889 Einträge, keine `.so`) nachgefahren — kein Treffer.
+(`e315cbb4…e2d6`, 889 Einträge, keine `.so`) nachgefahren — kein Treffer.
 
 **Einschränkung:** Im Workflow greift das Gate nur auf dem **Release**-Artefakt.
 Ein Debug-Build wird von der CI derzeit **nicht** erzeugt (`CI-DEBUG-001` ist

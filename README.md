@@ -21,7 +21,7 @@ nicht auf `PASS`. Details: [`docs/TESTING.md`](docs/TESTING.md).
 | 0 | Repository + Build-Umgebung | **PASS** | JDK 17.0.20.1, Android SDK 34, Gradle 8.7, Kommando läuft |
 | 1 | Compiler + statische Integrität | **PASS** | `:app:assembleDebug` kompiliert; 5 Fehler behoben |
 | 1b | Lint | **BLOCKED** | Prozess im Container per OOM-Killer beendet (Exit 137) |
-| 2 | Debug-APK + Inhalt | **PASS** | `app-debug.apk`, 5.649.778 Bytes, SHA256 `b83615ae…cd6f` |
+| 2 | Debug-APK + Inhalt | **PASS** | `app-debug.apk`, 5.649.850 Bytes, SHA256 `e315cbb4…e2d6` |
 | 3 | Runtime-Smoke (Gate A) auf Android | **BLOCKED** | kein Gerät, `/dev/kvm` nicht zugänglich, kein `mobile`-Profil |
 | 4 | Provider-Aufruf (Gate B) | **BLOCKED** | keine Zugangsdaten, keine laufende Runtime |
 | 5 | Release | **PARTIAL** | Fail-closed verifiziert, R8-Lauf grün; kein signiertes APK (keine Secrets) |
@@ -82,6 +82,7 @@ ab und es wird **kein** ungesigniertes APK erzeugt. Siehe
 
 | Datei | Inhalt |
 |---|---|
+| [`docs/AUDIT.md`](docs/AUDIT.md) | Ist-Bericht (Phase A), Prüfpunkt-Matrix mit Fundstellen, Blockerbericht |
 | [`docs/SCOPE.md`](docs/SCOPE.md) | Muss/Soll/Später/Nicht + Scope-Matrix mit IDs |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Komponenten, Prozessgrenzen, Datenfluss, Fehlerpfade |
 | [`docs/SETUP-AND-RUNTIME.md`](docs/SETUP-AND-RUNTIME.md) | Toolchain, Build, Runtime-Pfade, Logs, Wiederherstellung |

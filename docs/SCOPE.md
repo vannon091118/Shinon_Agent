@@ -38,8 +38,8 @@ Nach vollständiger Umsetzung soll die App:
 | AND-SETUP-003 | API-Key erfassen und speichern | Muss | Dialog fehlt, nur Log-Warnung | `ShinonKeystore.storeSecret()` | Key liegt verschlüsselt im Keystore | Gate 4 | **PLANNED** |
 | RT-NODE-001 | Kompatible Node-Fassung erzwingen | Muss | **Keine** Prüfung im App-Code | Node-Binary ≥ 22 im Runtime-Paket | Falsche Fassung → klarer Fehler statt Absturz | Gate 3 | **PLANNED** |
 | RT-PROC-001 | Prozessstart über `ProcessBuilder` + Env | Muss | Code vorhanden, **nie ausgeführt** | Runtime-Paket | Prozess startet, Exit-Code wird behandelt | Gate 3 | **UNVERIFIED** |
-| RT-PROF-001 | DSH lädt das Profil `mobile` | Muss | Profil existiert in `shinon-forge` **nicht** | Profil upstream (dort geplant) | `--dump-config` löst alle Layer auf | Gate 3 | **BLOCKED** |
-| RT-READY-001 | READY-Handshake `dsh web: http://…` | Muss | Regex vorhanden, nie gegen echtes DSH gelaufen | RT-PROF-001 | READY-URL mit Port, maschinenlesbar | Gate 3 | **UNVERIFIED** |
+| RT-PROF-001 | DSH lädt das Profil `mobile` | Muss | Profil existiert in `shinon-forge` **nicht**; `DSH_HOME` war zusätzlich nicht gesetzt (korrigiert, DEC-010) | Profil upstream (dort geplant) | `--dump-config` löst alle Layer auf | Gate 3 | **BLOCKED** |
+| RT-READY-001 | READY-Handshake `dsh web: http://…` | Muss | Regex vorhanden; Format aus DSH-Quelle belegt (`dsh-web-app` `lib/index.js:211`), Lauf nicht | RT-PROF-001 | READY-URL mit Port, maschinenlesbar | Gate 3 | **PARTIAL** (Format belegt, Lauf offen) |
 | SEC-KEY-001 | Provider-Key im Android Keystore | Muss | Key wird erzeugt, **Wert nie gespeichert** | `storeSecret()`-Implementierung | `hasKey()` nach Speichern wahr | Gate 4 | **PLANNED** |
 | SEC-KEY-002 | Key nur per Environment an den Prozess | Muss | Env-Map wird gebaut, Key fehlt darin | SEC-KEY-001 | Key steht in `environment()`, nie in argv | Gate 4 | **PLANNED** |
 | SEC-LOG-001 | Keine Secrets in Logs | Soll | `maskSecrets()` vorhanden | Erweiterte Muster | Kein Token in Logausgabe | Gate 3/4 (Logsichtung) | **PARTIAL** (nur `token`/`apikey`/`AGNES_API_KEY`) |
