@@ -4,48 +4,19 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
-import java.util.concurrent.TimeUnit
+import java.net.HttpURLConnection
+import java.net.URL
 
-/**
- * ShinonService — Foreground-Service (MOBILE-PLAN.md W4).
- *
- * Was dieser Dienst macht:
- *   - Startet den Node-Prozess gegen das im App-Storage geladene
- *     shinon-forge (filesDir/runtime/ — NIE /sdcard: Symlink-,
- *     Rechte- und Execute-Beschränkungen).
- *   - Lädt DSH mit dem Mobile-Profil (`--profile mobile`).
- *   - Der lokale Server (127.0.0.1, Port vom OS gewählt: `--port 0`)
- *     liefert die Weboberfläche aus.
- *   - Broadcast der tokenisierten READY-URL an die MainActivity
- *     (NIE in die Logs: Auth-Token-Vertrag, MOBILE-PLAN.md §5 W4).
- *   - Foreground-Service mit sichtbarer Benachrichtigung (Android
- *     verlangt das; `START_STICKY` allein ist kein Beweis gegen
- *     OEM-/Doze-Kills — der Lifecycle gehört in die Tests).
- *
- * Sicherheit:
- *   - API-Key kommt aus dem Android Keystore (ShinonKeystore), NIE
- *     aus dem Build, NIE aus dem Repo, NIE aus der URL, NIE in den
- *     Logs, NIE in der ProcessBuilder-Kommandozeile.
- *   - WebView darf nur auf die lokale DSH-URL navigieren
- *     (verantwortet die MainActivity).
- *
- * Prozessende:
- *   - Stop: SIGTERM → 3 s → SIGKILL, kein Orphan.
- *   - Crash: max. MAX_RESTART_ATTEMPTS Reconnects (5 s Pause),
- *     danach Fehler-Status — keine Endlosschleife.
- */
+/** Owns the proot process and publishes READY only after a tokenized loopback URL answers HTTP. */
 class ShinonService : Service() {
-
     companion object {
         private const val TAG = "ShinonService"
         private const val CHANNEL_ID = "shinon_service"
@@ -53,261 +24,287 @@ class ShinonService : Service() {
         const val ACTION_START = "com.vannon.shinon.START"
         const val ACTION_STOP = "com.vannon.shinon.STOP"
         const val ACTION_RESTART = "com.vannon.shinon.RESTART"
-        const val MAX_RESTART_ATTEMPTS = 3
-        const val RESTART_DELAY_MS = 5000L
-        const val KILL_GRACE_MS = 3000L
-
         const val INTENT_URL_READY = "com.vannon.shinon.URL_READY"
         const val INTENT_PROCESS_END = "com.vannon.shinon.PROCESS_END"
+        private const val READY_TIMEOUT_MS = 120_000L
+        private const val POLL_MS = 1_000L
+        private const val HEALTH_INTERVAL_MS = 5_000L
+        private const val MAX_RESTART_ATTEMPTS = 3
     }
 
-    private var nodeProcess: Process? = null
-    private var restartAttempts = 0
-    private var ioThread: Thread? = null
     @Volatile private var running = false
+    @Volatile private var enginePid = -1
+    @Volatile private var supervisor: Thread? = null
+    @Volatile private var restartAttempts = 0
+    @Volatile private var lastReadyUrl: String? = null
+    @Volatile private var stopRequested = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, "Shinon Engine", NotificationManager.IMPORTANCE_LOW)
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START, null -> startEngine()
-            ACTION_RESTART -> restartEngine()
-            ACTION_STOP -> stopEngine()
-            else -> stopSelf()
+            ACTION_STOP -> {
+                stopRequested = true
+                stopEngine()
+                return START_NOT_STICKY
+            }
+            ACTION_RESTART -> {
+                stopRequested = false
+                stopEngineProcessOnly()
+                startForegroundNow("Shinon startet neu")
+                startEngine()
+            }
+            else -> {
+                stopRequested = false
+                startForegroundNow("Runtime wird gestartet")
+                startEngine()
+            }
         }
-        startForeground(NOTIFICATION_ID, buildNotification("Shinon läuft"))
         return START_STICKY
     }
 
-    private fun createNotificationChannel() {
-        val manager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(
-                NotificationChannel(
-                    CHANNEL_ID,
-                    "Shinon Engine",
-                    NotificationManager.IMPORTANCE_LOW
-                )
-            )
-        }
+    private fun startForegroundNow(message: String) {
+        startForeground(NOTIFICATION_ID, buildNotification(message))
     }
 
-    private fun buildNotification(text: String): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(message: String): Notification =
+        NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Shinon Forge")
-            .setContentText(text)
+            .setContentText(message)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .build()
-    }
 
-    /**
-     * Startet den Node-Prozess.
-     *
-     * Runtime im App-Storage (MOBILE-PLAN.md §4.2):
-     *   Rootfs, Node, ausführbare Dateien und node_modules gehören in die
-     *   private App-Laufzeit (filesDir/runtime/), nicht ungeprüft auf
-     *   /sdcard (Symlink-, Rechte- und Execute-Beschränkungen).
-     */
+    @Synchronized
     private fun startEngine() {
-        if (running) return
-        running = true
-        restartAttempts = 0
-
-        val runtimeDir = filesDir.resolve("runtime")
-        val nodeBin = runtimeDir.resolve("node")
-        val dshDir = runtimeDir.resolve("shinon-forge")
-
-        // Entkopplung (MOBILE-PLAN.md W4): Die DSH-Engine (shinon-forge)
-        // und der DSH-Vendor (node_modules) sind NIE Teil der APK —
-        // sie gehören zum Runtime-Paket, das SetupActivity in
-        // filesDir/runtime/ lädt (Bionic-ARM64-Node + gepinntes
-        // shinon-forge + node_modules, SHA256-geprüft). Das hier ist
-        // die Vendor-Prüfung: das DSH-Vendor-Entry-Point muss im
-        // Runtime-Paket sein, nicht in der App.
-        val dshVendor = dshDir.resolve("node_modules/.bin/dsh")
-        if (!nodeBin.exists() || !dshVendor.exists()) {
-            Log.w(TAG, "Runtime/Vendor fehlt unter ${runtimeDir.absolutePath} " +
-                "(node=${nodeBin.exists()}, dsh-vendor=${dshVendor.exists()}) — " +
-                "SetupActivity muss vor dem Start laufen")
-            broadcastEnd("runtime_missing")
-            running = false
+        if (running || stopRequested) return
+        val runtimeDir = File(filesDir, "runtime/shinon-forge")
+        val rootfsNode = File(filesDir, "rootfs/debian/usr/bin/node")
+        val proot = File(filesDir, "proot/proot")
+        val dshEntry = File(runtimeDir, "node_modules/@deepseek-ai/dsh/lib/bin.js")
+        val profile = File(runtimeDir, "profiles/mobile/package.json")
+        if (!rootfsNode.isFile || !proot.isFile || !dshEntry.isFile || !profile.isFile) {
+            publishEnd("runtime_missing")
+            updateNotification("Shinon Runtime fehlt")
             return
         }
 
-        try {
-            val command = listOf(
-                nodeBin.absolutePath,
-                dshVendor.absolutePath,
-                "--profile", "mobile",
-                "--no-open",
-                "--trusted-host", "localhost",
-                "--trusted-host", "127.0.0.1",
-                "--port", "0"
-            )
-            // API-Key aus dem Android Keystore (NIE aus Build/Repo/URL/Logs/
-            // ProcessBuilder-Kommandozeile, MOBILE-PLAN.md §5 W4). Der Wert
-            // wird im Speicher gelesen und NUR per Environment übergeben.
-            val app = applicationContext as ShinonApp
-            val env = HashMap<String, String>().apply {
-                putAll(System.getenv())
-                if (app.keystore.hasKey("shinon_agnes")) {
-                    // Der Key-Wert selbst kommt aus dem Keystore (AES-GCM,
-                    // nicht exportierbar). In v1: nur die Existenz; der
-                    // entschlüsselte Wert wird hier injiziert.
-                }
-            }
-            // ProcessBuilder-Kette: environment() liefert die Map, und
-            // putAll() darauf gibt Unit zurück. redirectErrorStream() gehört
-            // deshalb auf den Builder — nicht ans Ende der putAll-Kette.
-            val builder = ProcessBuilder(command)
-                .directory(dshDir)
-                .redirectErrorStream(true)
-            builder.environment().putAll(env)
-            // DSH löst Profile als `$DSH_HOME/profiles/<name>` auf (dsh-README:
-            // "--profile <name> = the profile under $DSH_HOME/profiles to boot").
-            // Ohne DSH_HOME sucht DSH das Profil im falschen Wurzelverzeichnis;
-            // der Forge-Launcher `bin/shinon.mjs` setzt es ebenfalls explizit
-            // (DSH_HOME=<Repo-Root>). Für die App ist der Repo-Root das
-            // Runtime-Verzeichnis, in dem auch `node_modules/.bin/dsh` liegt.
-            builder.environment()["DSH_HOME"] = dshDir.absolutePath
-            nodeProcess = builder.start()
-            ioThread = Thread { parseReadyUrl(nodeProcess!!) }
-            ioThread!!.start()
-        } catch (e: Exception) {
-            Log.e(TAG, "Node-Prozess startete nicht: ${e.message}")
-            broadcastEnd("spawn_failed")
+        running = true
+        lastReadyUrl = null
+        val log = File(filesDir, "logs/dsh.log")
+        log.parentFile?.mkdirs()
+        // A stale READY line from an older process must never satisfy this boot.
+        if (log.exists() && !log.delete()) {
             running = false
+            publishEnd("spawn_failed")
+            updateNotification("Engine-Log nicht erneuerbar")
+            return
         }
+
+        val pid = try {
+            NativeLib.initNative(filesDir.absolutePath)
+            NativeLib.startDsh(runtimeDir.absolutePath, log.absolutePath)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Native start failed: " + (t.message ?: t.javaClass.simpleName))
+            -1
+        }
+        if (pid <= 0) {
+            running = false
+            publishEnd("spawn_failed")
+            updateNotification("Runtime konnte nicht gestartet werden")
+            Log.e(TAG, "Native runtime did not start (code=" + pid + ")")
+            return
+        }
+        enginePid = pid
+        Log.i(TAG, "Runtime process spawned pid=" + pid + "; awaiting verified READY")
+        supervisor = Thread({ supervise(pid, log) }, "shinon-runtime-supervisor").also { it.start() }
     }
 
-    /**
-     * Liest stdout (eigener IO-Pfad — NIE auf dem Hauptthread) und wartet
-     * auf die READY-Zeile:
-     *   dsh web: http://127.0.0.1:PORT/?token=…
-     *
-     * Die URL wird via Broadcast an die MainActivity übergeben — NIE in
-     * die Logs (Auth-Token-Vertrag). Der Rest von stdout bleibt im Log
-     * (Diagnose, ohne Token).
-     */
-    private fun parseReadyUrl(process: Process) {
-        BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-            while (running) {
-                val line = reader.readLine() ?: break
-                val ready = Regex("dsh web: (http://\\S+)").find(line)
-                if (ready != null) {
-                    val url = ready.groupValues[1]
-                    Log.d(TAG, "READY: lokaler Server ist auf (Port ${extractPort(url)})")
-                    // NUR die URL broadcasten — der Log oben nennt den Port,
-                    // NIE die tokenisierte URL.
-                    broadcastUrl(url)
-                } else {
-                    Log.d(TAG, "dsh: ${maskSecrets(line)}")
+    private fun supervise(pid: Int, log: File) {
+        val deadline = SystemClock.elapsedRealtime() + READY_TIMEOUT_MS
+        var readyUrl: String? = null
+        while (isCurrent(pid) && SystemClock.elapsedRealtime() < deadline) {
+            if (processEnded(pid)) {
+                handleCrash(pid, "spawn_failed")
+                return
+            }
+            val candidate = readReadyUrl(log)
+            if (candidate != null && probeReadyUrl(candidate)) {
+                readyUrl = candidate
+                break
+            }
+            try { Thread.sleep(POLL_MS) } catch (_: InterruptedException) { return }
+        }
+        if (!isCurrent(pid)) return
+        if (readyUrl == null) {
+            Log.e(TAG, "READY not verified before timeout")
+            stopPid(pid)
+            publishEnd("ready_timeout")
+            updateNotification("Shinon: READY-Timeout")
+            return
+        }
+
+        // READY means a new process printed the URL, token is present, and that
+        // exact URL returned HTTP 2xx. The tokenized URL is never written to logs.
+        lastReadyUrl = readyUrl
+        updateNotification("Shinon bereit")
+        publishUrl(readyUrl)
+        Log.i(TAG, "READY verified: loopback HTTP responded on port " + Uri.parse(readyUrl).port)
+
+        var failures = 0
+        while (isCurrent(pid)) {
+            try { Thread.sleep(HEALTH_INTERVAL_MS) } catch (_: InterruptedException) { return }
+            if (!isCurrent(pid)) return
+            if (processEnded(pid)) {
+                handleCrash(pid, "crash")
+                return
+            }
+            if (lastReadyUrl?.let { probeReadyUrl(it) } == true) failures = 0
+            else {
+                failures++
+                Log.w(TAG, "local health probe failed " + failures + "/3")
+                if (failures >= 3) {
+                    handleCrash(pid, "health_check_failed")
+                    return
                 }
             }
         }
-        val exitCode = process.waitFor()
-        when {
-            !running -> {
-                // Wir haben sauber gestoppt: kein Reconnect, kein Broadcast-Fehler.
-            }
-            exitCode == 0 -> broadcastEnd("clean")
-            restartAttempts < MAX_RESTART_ATTEMPTS -> {
-                restartAttempts++
-                Log.w(TAG, "Prozess endete (Exit $exitCode) — Versuch $restartAttempts/$MAX_RESTART_ATTEMPTS")
-                Thread {
-                    Thread.sleep(RESTART_DELAY_MS)
-                    if (running) restartEngine()
-                }.start()
-            }
-            else -> {
-                Log.e(TAG, "Prozess endete (Exit $exitCode) — Reconnect-Limit erreicht")
-                broadcastEnd("crash")
-                running = false
+    }
+
+    private fun isCurrent(pid: Int): Boolean = running && !stopRequested && enginePid == pid
+
+    private fun processEnded(pid: Int): Boolean {
+        return try {
+            NativeLib.reapExitStatus(pid) != NativeLib.PROCESS_RUNNING
+        } catch (t: Throwable) {
+            Log.e(TAG, "Could not read native process status")
+            true
+        }
+    }
+
+    private fun readReadyUrl(log: File): String? {
+        if (!log.isFile) return null
+        val text = try { log.readText() } catch (_: Exception) { return null }
+        val matches = Regex("dsh web: (http://\\S+)").findAll(text)
+        return matches.lastOrNull()?.groupValues?.getOrNull(1)?.let { value ->
+            if (isAllowedReadyUrl(value)) value else null
+        }
+    }
+
+    private fun isAllowedReadyUrl(value: String): Boolean {
+        return try {
+            val uri = Uri.parse(value)
+            val host = uri.host?.lowercase()
+            uri.scheme == "http" &&
+                (host == "127.0.0.1" || host == "localhost") &&
+                uri.port in 1..65535 &&
+                !uri.getQueryParameter("token").isNullOrBlank() &&
+                uri.userInfo == null &&
+                uri.fragment == null
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun probeReadyUrl(value: String): Boolean {
+        if (!isAllowedReadyUrl(value)) return false
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = URL(value).openConnection() as HttpURLConnection
+            connection.connectTimeout = 1_500
+            connection.readTimeout = 1_500
+            connection.instanceFollowRedirects = false
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Cache-Control", "no-cache")
+            connection.responseCode in 200..299
+        } catch (_: Exception) {
+            false
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    @Synchronized
+    private fun handleCrash(pid: Int, reason: String) {
+        if (enginePid != pid) return
+        enginePid = -1
+        running = false
+        lastReadyUrl = null
+        if (stopRequested) return
+        if (restartAttempts >= MAX_RESTART_ATTEMPTS) {
+            publishEnd(reason)
+            updateNotification("Shinon gestoppt: " + reason)
+            return
+        }
+        restartAttempts++
+        Log.w(TAG, "Runtime ended; restart " + restartAttempts + "/" + MAX_RESTART_ATTEMPTS)
+        Thread({
+            try { Thread.sleep(2_000) } catch (_: InterruptedException) { return@Thread }
+            if (!stopRequested) startEngine()
+        }, "shinon-runtime-restart").start()
+    }
+
+    private fun stopPid(pid: Int) {
+        try {
+            if (!NativeLib.stopDsh(pid)) Log.w(TAG, "Native stop could not confirm process shutdown")
+        } catch (_: Throwable) {
+            Log.e(TAG, "Native stop failed")
+        }
+        if (enginePid == pid) enginePid = -1
+        running = false
+        lastReadyUrl = null
+    }
+
+    private fun stopEngineProcessOnly() {
+        running = false
+        supervisor?.interrupt()
+        supervisor = null
+        val pid = enginePid
+        enginePid = -1
+        lastReadyUrl = null
+        if (pid > 0) {
+            try {
+                if (!NativeLib.stopDsh(pid)) Log.w(TAG, "Native stop did not confirm process shutdown")
+            } catch (_: Throwable) {
+                Log.e(TAG, "Native stop failed")
             }
         }
     }
 
-    /**
-     * Maskiert alles, was wie ein Secret aussehen könnte (token=…
-     * Abfrageparameter, ApiKey-Fields). Die Diagnostics behalten,
-     * die Secrets bleiben draußen.
-     */
-    private fun maskSecrets(line: String): String =
-        line
-            .replace(Regex("[?&](token|apikey|api_key|key)=[^&\\s]+"), "$1=***")
-            .replace(Regex("(AGNES_API_KEY\\s*[:=]\\s*)\\S+"), "${'$'}1***")
-
-    private fun extractPort(url: String): String =
-        Regex("://[^/]+:(\\d+)").find(url)?.groupValues?.get(1) ?: "?"
-
-    private fun broadcastUrl(url: String) {
-        sendBroadcast(Intent(INTENT_URL_READY).putExtra("url", url))
-    }
-
-    private fun broadcastEnd(reason: String) {
-        sendBroadcast(Intent(INTENT_PROCESS_END).putExtra("reason", reason))
-    }
-
-    private fun restartEngine() {
-        stopNodeProcess()
-        startEngine()
-    }
-
+    @Synchronized
     private fun stopEngine() {
-        stopNodeProcess()
-        running = false
-        // STOP_FOREGROUND_REMOVE ist erst ab API 29 (Android 10) verfügbar.
-        // Ältere Geräte müssen den Service manuell entfernen; das Flag wird
-        // nur gesetzt, wenn die API-Level vorhanden ist.
+        stopEngineProcessOnly()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
+            @Suppress("DEPRECATION")
             stopForeground(true)
         }
         stopSelf()
     }
 
-    /**
-     * Sauberes Beenden des Node-Prozesses: SIGTERM (destroy) →
-     * KILL_GRACE_MS → SIGKILL (destroyForcibly). Kein Orphan.
-     */
-    private fun stopNodeProcess() {
-        nodeProcess?.let { proc ->
-            try {
-                proc.destroy()
-                // Explizites if/else: das try ist der Rückgabewert des
-                // let-Lambda, ein if ohne else wäre dort ein Ausdruck und
-                // damit ein Compile-Fehler (Kotlin 1.9).
-                if (proc.waitFor(KILL_GRACE_MS, TimeUnit.MILLISECONDS)) {
-                    Log.d(TAG, "Prozess sauber mit SIGTERM beendet")
-                } else {
-                    Log.w(TAG, "Prozess kam nicht mit SIGTERM — SIGKILL")
-                    proc.destroyForcibly()
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Prozess-Ende: ${e.message}")
-            }
-        }
-        ioThread?.let { thread ->
-            try {
-                thread.interrupt()
-            } catch (e: Exception) {
-                // Thread war ohnehin am Ende — kein Befund.
-            }
-        }
-        nodeProcess = null
-        ioThread = null
+    private fun publishUrl(value: String) {
+        sendBroadcast(Intent(INTENT_URL_READY).putExtra("url", value))
+    }
+
+    private fun publishEnd(reason: String) {
+        sendBroadcast(Intent(INTENT_PROCESS_END).putExtra("reason", reason))
+    }
+
+    private fun updateNotification(message: String) {
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(message))
     }
 
     override fun onDestroy() {
-        running = false
-        stopNodeProcess()
+        stopRequested = true
+        stopEngineProcessOnly()
         super.onDestroy()
     }
 }

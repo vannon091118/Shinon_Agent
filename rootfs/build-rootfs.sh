@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Builds a minimal Debian bookworm arm64 rootfs with Node 22.19.0 (glibc),
+# pruned for embedding in the dsh-mobile APK. Run on an arm64 host (or
+# under qemu). Must be run as root (debootstrap).
+#
+# Usage: sudo ./build-rootfs.sh [output-dir]   (default: ./out)
+
+OUT="${1:-out}"
+NODE_VER="$(cat "$(dirname "$0")/node-version.txt")"
+ROOT="$(mktemp -d)/rootfs"
+
+if [ "$(id -u)" != "0" ]; then
+  echo "!! run as root (debootstrap requires it)" >&2
+  exit 2
+fi
+if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "arm64" ]; then
+  echo "!! must run on arm64 (or qemu-user under binfmt)" >&2
+  exit 2
+fi
+
+echo "==> debootstrap bookworm arm64"
+debootstrap --arch=arm64 --variant=minbase --include=ca-certificates \
+  bookworm "${ROOT}" http://deb.debian.org/debian
+
+echo "==> install Node ${NODE_VER} (glibc)"
+curl -fsSL "https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-arm64.tar.xz" -o /tmp/node.tar.xz
+# Official Node.js v22.19.0 linux-arm64 archive SHA-256 from SHASUMS256.txt.
+if [ "${NODE_VER}" = "v22.19.0" ]; then
+  echo "0b2d9f564b6594222a62c82e1df2efe119dd4a4aff29644f4dd325bf360b6bcc  /tmp/node.tar.xz" | sha256sum --check --status || {
+    echo "!! Node.js v22.19.0 archive checksum mismatch" >&2
+    exit 1
+  }
+else
+  echo "!! No verified checksum pinned for Node ${NODE_VER}" >&2
+  exit 1
+fi
+tar xJf /tmp/node.tar.xz -C "${ROOT}/usr" --strip-components=1 --exclude="*/share/doc" \
+  --exclude="*/share/man" --exclude="*/include"
+rm -f /tmp/node.tar.xz
+
+echo "==> prune"
+# Empty /dev: device nodes cannot be created on Android (no CAP_MKNOD) and
+# proot provides fake devices; keep only the directory for bind/mount points.
+rm -rf "${ROOT}/dev"
+mkdir "${ROOT}/dev"
+rm -rf "${ROOT}/var/lib/apt/lists" "${ROOT}/var/cache/apt" \
+       "${ROOT}/usr/share/doc" "${ROOT}/usr/share/man" "${ROOT}/usr/share/locale" \
+       "${ROOT}/usr/share/info" "${ROOT}/usr/share/common-licenses" \
+       "${ROOT}/root/.bashrc"
+find "${ROOT}/usr/lib" -name '*.a' -delete
+find "${ROOT}" -type f -name '*.pyc' -delete
+
+echo "==> tar.xz"
+mkdir -p "${OUT}"
+tar cJf "${OUT}/debian.tar.xz" -C "${ROOT}" .
+# bare 64-hex hash only (no filename): install_rootfs compares the raw string
+sha256sum "${OUT}/debian.tar.xz" | cut -d' ' -f1 > "${OUT}/debian.tar.xz.sha256"
+ls -la "${OUT}/debian.tar.xz"
+echo "==> rootfs done"

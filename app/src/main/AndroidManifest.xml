@@ -21,7 +21,9 @@
         android:label="Shinon"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Shinon"
-        android:hardwareAccelerated="true">
+        android:hardwareAccelerated="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false">
 
         <!-- SetupActivity: nur beim allerersten Start (Flag in SharedPreferences) -->
         <activity
