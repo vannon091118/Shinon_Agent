@@ -33,26 +33,37 @@
             android:textColor="#888888" />
     </LinearLayout>
 
-    <!-- Fehler-Overlay: Crash / Runtime fehlt -->
+    <!-- Prototyp-Status: keine Runtime wird vorgetäuscht. -->
     <LinearLayout
         android:id="@+id/error_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
+        android:padding="28dp"
         android:visibility="gone"
         android:background="#111111">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Engine nicht erreichbar"
-            android:textSize="18sp"
+            android:text="Shinon Agent 0.01"
+            android:textSize="22sp"
+            android:textStyle="bold"
             android:textColor="#FFFFFF" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:text="Prototyp-Shell installiert. Die Node-/DSH-/Forge-Runtime ist in dieser Version noch nicht enthalten. Die Engine kann deshalb noch nicht starten."
+            android:textSize="15sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#BBBBBB" />
         <Button
             android:id="@+id/retry_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Erneut versuchen" />
+            android:layout_marginTop="24dp"
+            android:text="Runtime erneut prüfen" />
     </LinearLayout>
 </FrameLayout>
