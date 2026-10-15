@@ -43,7 +43,10 @@ jobs:
           test -s "$APK"
           mkdir -p prototype-output
           cp "$APK" prototype-output/shinon-agent-0.01-prototype.apk
-          sha256sum prototype-output/shinon-agent-0.01-prototype.apk | tee prototype-output/SHA256SUMS.txt
+          (
+            cd prototype-output
+            sha256sum shinon-agent-0.01-prototype.apk > SHA256SUMS.txt
+          )
           printf 'versionName=0.01\nbuildType=debug\nsigning=Android debug keystore\nruntime=not bundled\n' > prototype-output/BUILD-INFO.txt
           unzip -l "$APK" | tail -n 5
 
