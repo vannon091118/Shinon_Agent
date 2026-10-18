@@ -71,6 +71,8 @@ jobs:
           # 4) local.properties (der AGP-Pfad, VOR dem Gradle-Start)
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "SDK-Prüfung: $(ls $ANDROID_HOME/platforms/)"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
           # ANDROID_HOME für ALLE Folge-Steps: der Gradle-Daemon (Build-Step)
           # braucht die Variable, um android.jar (Plattform-34) zu finden.
           # run: export (Shell-scope) reicht NIE — GITHUB_ENV ist der einzige

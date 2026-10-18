@@ -7,7 +7,6 @@ import android.content.Intent
 import android.text.method.PasswordTransformationMethod
 import android.util.Log
 import android.view.View
-import android.view.inputmethod.InputType
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -150,7 +149,7 @@ class SetupActivity : Activity() {
             textSize = 14f
         }
         val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_TEXT
+            inputType = 0x00000401  // TYPE_CLASS_TEXT (0x01) | TYPE_TEXT_VARIATION_PASSWORD (0x400)
             transformationMethod = PasswordTransformationMethod.getInstance()
             hint = "sk-…"
         }
