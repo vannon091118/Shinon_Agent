@@ -105,12 +105,19 @@ jobs:
           SHINON_KEYSTORE_ALIAS: ${{ secrets.SHINON_KEYSTORE_ALIAS }}
           SHINON_KEY_ALIAS_PASS: ${{ secrets.SHINON_KEY_ALIAS_PASS }}
         run: |
-          # Die build.gradle.kts liest die Signatur aus Environment.
-          # Existenzcheck (fail-closed): alle vier müssen gesetzt sein.
-          if [ -z "${SHINON_KEYSTORE_PASS}" ] || [ -z "${SHINON_KEYSTORE_ALIAS}" ]; then
-            echo "::error::Signing-Secrets unvollständig (PASS/ALIAS fehlen)"
+          # Fail-closed: alle vier Signing-Secrets müssen gesetzt sein.
+          # Die Env-Variablen (step-scoped) müssen in GITHUB_ENV übergeben
+          # werden, damit der Gradle-Build-Step (Build Release APK) sie
+          # sieht — der build.gradle.kts liest aus der Job-Umgebung,
+          # nicht aus step-scoped Env-Variablen.
+          if [ -z "${SHINON_KEYSTORE_PASS}" ] || [ -z "${SHINON_KEYSTORE_ALIAS}" ] || [ -z "${SHINON_KEY_ALIAS_PASS}" ]; then
+            echo "::error::Signing-Secrets unvollständig (PASS/ALIAS/KEYPASS fehlen)"
             exit 1
           fi
+          echo "SHINON_KEYSTORE_PASS=${SHINON_KEYSTORE_PASS}" >> "$GITHUB_ENV"
+          echo "SHINON_KEYSTORE_ALIAS=${SHINON_KEYSTORE_ALIAS}" >> "$GITHUB_ENV"
+          echo "SHINON_KEY_ALIAS_PASS=${SHINON_KEY_ALIAS_PASS}" >> "$GITHUB_ENV"
+          echo "Signing-Secrets in GITHUB_ENV gesetzt (4/4)"
 
       - name: "Fail-closed: Runtime-Release für den Forge-Pin existieren"
         run: |
