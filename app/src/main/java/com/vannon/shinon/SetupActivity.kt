@@ -51,7 +51,7 @@ class SetupActivity : Activity() {
          * proot-Strategie“ — die Hermes-App-Funktionsart). Der Runtime-
          * Tarball wird von CI gebaut (Release-Flow) und hier per URL geladen.
          */
-        const val SHINON_FORGE_PIN = "9118bc8"
+        const val SHINON_FORGE_PIN = "d2dbdf4"
         /**
          * B-1-Fix: Die Runtime-Bezugsquelle. In v1: der CI-Release-Tarball
          * von shinon-forge (proot-Rootfs + gepinntes forge + node_modules,
@@ -63,7 +63,7 @@ class SetupActivity : Activity() {
             "https://github.com/vannon091118/shinon-forge/releases/download/runtime-$SHINON_FORGE_PIN/shinon-runtime-arm64.tar.zst"
         /** Erwartete SHA256 des Runtime-Tarballs (hex, 64 Zeichen). */
         const val RUNTIME_SHA256 =
-            "AUSGEWICHSEN-ERSETZEN-DURCH-DEN-IM-CI-ERRECHNETEN-WERT"
+            "d776def11b852ba896288bdda644c31c100ab89f07e468684704dd2b87294868"
     }
 
     private lateinit var progressOverlay: FrameLayout
