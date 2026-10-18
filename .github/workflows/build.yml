@@ -97,10 +97,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          NOTES_FILE="RELEASE_NOTES.md"
+          # Die Release-Notes liegen im Repo (versioniert, mit Humor);
+          # der CI nimmt sie 1:1 — kein generischer Auto-Müll.
           gh release create "${{ inputs.tag }}" \
             app/build/outputs/apk/release/*.apk \
             --title "Shinon Agent ${{ inputs.tag }}" \
-            --generate-notes
+            --notes-file "$NOTES_FILE"
           # Das signierte APK hängt am Release — Download für den
           # ersten Live-Test ohne Runner-Dependence.
 

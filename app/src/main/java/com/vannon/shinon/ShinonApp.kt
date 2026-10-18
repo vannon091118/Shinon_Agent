@@ -150,7 +150,7 @@ class ShinonKeystore(private val app: Application) {
             val iv = cipher.iv // 12 Bytes, GCM-Standard
             val ciphertext = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
             val blob = Base64.encodeToString(iv + ciphertext, Base64.DEFAULT)
-            getSharedPreferences(PREFS, MODE_PRIVATE)
+            app.getSharedPreferences(PREFS, app.MODE_PRIVATE)
                 .edit()
                 .putString("secret_$keyAlias", blob)
                 .apply()
@@ -174,7 +174,7 @@ class ShinonKeystore(private val app: Application) {
             return null
         }
 
-        val blob = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val blob = app.getSharedPreferences(PREFS, app.MODE_PRIVATE)
             .getString("secret_$keyAlias", null) ?: return null
 
         return try {
