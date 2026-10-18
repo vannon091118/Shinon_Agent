@@ -150,7 +150,7 @@ class SetupActivity : Activity() {
             textSize = 14f
         }
         val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            inputType = InputType.TYPE_CLASS_TEXT
             transformationMethod = PasswordTransformationMethod.getInstance()
             hint = "sk-…"
         }

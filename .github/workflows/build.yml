@@ -36,6 +36,35 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Root-Cause (Lauf 39105891911): alle 6 CI-Läufe rot.
+      # Der Compiler meldete "Unresolved reference: InputType" — NUR,
+      # weil github/ubuntu-latest kein Android-SDK vorinstalliert hat
+      # und der Gradle-Build damit ohne android.jar (Plattform-34)
+      # lief. Alle android.*-Klassen (Context, InputType, Base64,
+      # MODE_PRIVATE) waren dem Kotlin-Compiler unbekannt.
+      #
+      # Fix: command-line-tools → platforms;android-34 + build-tools
+      # → local.properties (sdk.dir=...) vor dem ersten Gradle-Daemon-Start.
+      - name: Install Android SDK (plattform-34 + build-tools)
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="$HOME/android-sdk"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          # 1) command-line-tools herunterladen
+          curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o /tmp/cmdline-tools.zip
+          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline
+          # 2) SDK-Struktur aufbauen
+          mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+          mv /tmp/cmdline/cmdline-tools/* "$ANDROID_HOME/cmdline-tools/latest/"
+          # 3) Plattform-34 + Build-Tools installieren (Yes-to-All)
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+              "platforms;android-34" \
+              "build-tools;34.0.0" \
+              "platform-tools" 2>/dev/null
+          # 4) local.properties (der AGP-Pfad, VOR dem Gradle-Start)
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "SDK-Prüfung: $(ls $ANDROID_HOME/platforms/)"
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -67,6 +96,29 @@ jobs:
             echo "::error::Signing-Secrets unvollständig (PASS/ALIAS fehlen)"
             exit 1
           fi
+
+      - name: "Fail-closed: Runtime-Release für den Forge-Pin existieren"
+        run: |
+          # Der aktuelle Forge-Pin steht in SetupActivity.kt (SHINON_FORGE_PIN).
+          # Vor dem Build: die Existenz des Forge-Release runtime-<pin> prüfen.
+          # Fehlt es → der Build bricht hier, nicht erst im Device.
+          set -euo pipefail
+          PIN="$(grep 'SHINON_FORGE_PIN' app/src/main/java/com/vannon/shinon/SetupActivity.kt \
+                | grep -oE '[0-9a-f]{7,40}' | head -1)"
+          if [ -z "$PIN" ]; then
+            echo "::error::SHINON_FORGE_PIN in SetupActivity.kt nicht lesbar — fail-closed"
+            exit 1
+          fi
+          echo "Forge-Pin: $PIN"
+          SHORT="${PIN:0:7}"
+          URL="https://api.github.com/repos/vannon091118/shinon-forge/releases/tags/runtime-${SHORT}"
+          HTTP="$(curl -sL -H 'Accept: application/vnd.github+json' -o /dev/null -w '%{http_code}' "$URL")"
+          if [ "$HTTP" = "404" ]; then
+            echo "::error::Forge-Release runtime-${SHORT} existiert noch nicht (fail-closed)."
+            echo "Push zuerst nach shinon-forge main (der CI-Flow baut das Release)."
+            exit 1
+          fi
+          echo "Forge-Release runtime-${SHORT}: vorhanden (HTTP $HTTP)"
 
       - name: Build Release APK
         run: gradle assembleRelease

@@ -30,12 +30,18 @@ einfach so im Regen liegen lässt.
   Der erste Live-Test auf echtem Android-Gerät steht noch aus. Das ist kein
   Fehler — das ist der Stand der Dinge. Die App weiß, dass sie nicht auf
   dem Gerät gelaufen ist, und sie wird es dir auch nicht schönreden.
-- **Der Runtime-Download ist noch nicht verdrahtet.** Die `RUNTIME_TARBALL_URL`
-  und `RUNTIME_SHA256` stehen als Platzhalter da. Der eigentliche
-  Forge-Release-Lauf (der den proot-Tarball baut) ist noch nicht gelaufen.
-  Bis dahin: die App lädt nichts, sie *prüft* nur, ob was da ist.
+- **Der Runtime-Download.** Die `RUNTIME_SHA256` ist noch ein Platzhalter.
+  Die App verweigert den Start, solange die Summe nicht stimmt — das ist
+  der Fail-Closed-Vertrag, nicht der Fehler. Die echte SHA256 kommt aus
+  dem nächsten Forge-CI-Lauf (runtime-release.yml, Runtime-Release).
+  Bis dahin: die App *prüft*, sie lädt nichts. Das ist beabsichtigt.
 - **Kein Lint.** Der Lint-Lauf ist im Container per OOM-Killer gestorben
   (Exit 137). Das ist keine Ausrede, aber es ist die Wahrheit.
+- **Der Forge-Pin.** Die App pinnt `shinon-forge @ 9118bc8`. Das ist der
+  Stand, an dem `profiles/mobile` existiert und `dsh --profile mobile`
+  bootet. Wenn du auf dem Gerät die Engine starten willst, ist der
+  Runtime-Tarball aus dem Forge-Release der aktuelle Stand — die App
+  lädt ihn per SHA256-Prüfung. Kein Blind-Download.
 
 ## Installation (für die Geduldigen)
 
