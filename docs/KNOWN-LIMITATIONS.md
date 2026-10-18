@@ -110,6 +110,18 @@ die Addons laufen im proot-glibc-Kontext, nicht im Android-Bionic-Kontext.
 Das ist dieselbe Strategie, die die Hermes-App (das Android-Shell, auf
 der diese Arbeit ausgeführt wird) erfolgreich einsetzt.
 
+**FAIL-CLOSED-UPDATING (2026-10-18, `SetupActivity.kt`-Threading-Fix):**
+Die `extractTarZst()`-Funktion (zstd → tar-Kette im Bionic-Userland)
+prüfte die Exit-Codes NIE — beide `.start().waitFor()`-Rückgabewerte
+wurden ignoriert. Die fail-closed-Philosophie (kein stilles Weiterlaufen)
+brach an genau dieser Stelle ab. **Fix (Commit `76ba6d7`):**
+- `runProcess()` gibt jetzt den Exit-Code zurück; `!= 0` → `false`
+- `extractTarZst()` liefert einen Boolean; bei `false` wird die
+  Marker-Datei NIE geschrieben und das Tarball gelöscht
+- `installRuntimeAsync()` (SingleThreadExecutor) entkoppelt die
+  Installation vom Main-Thread — `onCreate` blockiert nicht mehr
+  (kein `NetworkOnMainThreadException`, kein ANR)
+
 **Rest:** Der Gerät-Smoke (Gate 3, B-6) bleibt `BLOCKED` — der Nachweis,
 dass die Addons im proot-Debian-Kontext auf dem echten ARM64-Device laden,
 braucht einen Live-Lauf. Bis dahin: `UNVERIFIED` (keine Annahme, kein
