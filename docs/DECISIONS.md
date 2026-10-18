@@ -171,12 +171,39 @@
 - **Alternativen:** `DSH_HOME` aus `System.getenv()` erben — auf Android nicht
   gesetzt, also wirkungslos. Auf das `cwd` vertrauen — nicht belegt, dass DSH
   daraus das Home ableitet.
-- **Konsequenz:** Der Prozessstart entspricht den realen Anforderungen der
-  Engine. **Damit ist B-2 nicht gelöst:** das Profil `mobile` selbst fehlt
-  weiterhin (`OPEN-001`), und ein Lauf ist ohne Gerät nicht nachweisbar.
+**Konsequenz:** Der Prozessstart entspricht den realen Anforderungen der
+Engine. **Damit ist B-2 nicht gelöst:** das Profil `mobile` selbst fehlt
+weiterhin (`OPEN-001`), und ein Lauf ist ohne Gerät nicht nachweisbar.
 - **Beleg:** `scripts/build.sh :app:assembleDebug` → `BUILD SUCCESSFUL in 46s`,
-  APK-SHA256 `e315cbb4…e2d6`, Entkopplungsgate `PASS`. Der Laufzeitnachweis
-  bleibt Gate 3 (`BLOCKED`).
+APK-SHA256 `e315cbb4…e2d6`, Entkopplungsgate `PASS`. Der Laufzeitnachweis
+bleibt Gate 3 (`BLOCKED`).
+
+## DEC-011 — proot-Debian-Rootfs-Strategie (OPEN-002-Entscheidung)
+
+- **Kontext:** `OPEN-002` fragt, welche Runtime-Strategie: proot mit
+  glibc-Rootfs, eigenständiges Bionic-Binary oder Anlehnung an ein
+  bestehendes Mobile-Projekt. Die native Addons (koffi/node-pty/sharp,
+  B-4) sind gegen glibc gebaut und unter Bionic nicht nativ ladbar.
+- **Entscheidung (2026-10-18):** **proot-Debian-Rootfs** — dasselbe
+  Modell, das die Hermes-App (Android, `hermes.agent.mobile`) einsetzt:
+  ein Debian-glibc-Userland, das den Node-Prozess + `shinon-forge` +
+  `node_modules` enthält und in der App-`filesDir/runtime/` liegt. Die
+  native Addons laufen in der glibc-Userland, NIE nativ unter Bionic.
+- **Alternativen:** (a) Eigenständiges Bionic-Node-Binary — die
+  native Addons müssten alle gegen Bionic neu gebaut werden (aufwändig,
+  nicht belegbar hier). (b) Anlehnung an `dsh-io/dsh-mobile` — ein
+  Fork-Basis-Kandidat, aber die Runtime-Pins/Verträge/Sicherheit/Lizenz
+  müssten separat geprüft werden (MOBILE-PLAN.md §3) und es ist eine
+  Abhängigkeit von einem externen Projekt.
+- **Konsequenz:** B-1 (Runtime-Installation), B-4 (Bionic-Addons) und
+  B-5 (Bezugsquelle) sind damit architektonisch gelöst. Der Runtime-
+  Tarball wird von der Forge-CI gebaut und als Release `runtime/9118bc8/`
+  an `shinon-forge` gehängt; die App lädt ihn per `RUNTIME_TARBALL_URL`
+  und prüft `RUNTIME_SHA256` (fail-closed). Die Kompilierung +
+  Live-Verifikation bleiben Gate 1 (CI) und Gate 3 (Device).
+- **Beleg:** `SetupActivity.kt` (proot-Tarball-Download + SHA256 + Marker),
+  `ShinonApp.kt` (API-Key-Keystore), `ShinonService.kt` (DSH_HOME +
+  AGNES_API_KEY-Env). `profiles/mobile` auf `shinon-forge` main `34163aa`.
 
 ---
 
@@ -184,26 +211,34 @@
 
 ## OPEN-001 — Wie wird das Profil `mobile` gelöst? (BLOCKIEREND)
 
-Die App startet `--profile mobile`; in `shinon-forge` main `59a86a4` existiert
-dieses Profil nicht (nur `shinon`, `headless`), es ist in
+Die App startet `--profile mobile`; in `shinon-forge` main `59a86a4`
+existierte dieses Profil nicht (nur `shinon`, `headless`), es war in
 `shinon-forge/docs/MOBILE-PLAN.md` als W1-Plan beschrieben.
 
-| Option | Konsequenz |
-|---|---|
-| A — Profil upstream in `shinon-forge` bauen | Sauber, aber Arbeit liegt im anderen Repo; die App bleibt bis dahin unverändert blockiert |
-| B — App auf ein vorhandenes Profil umstellen | Sofort lauffähig, ändert aber das Produktverhalten (das `shinon`-Profil ist der Desktop-Zuschnitt) |
-| C — Profilname konfigurierbar machen | Entkoppelt die App, braucht aber eine Quelle für den Wert (Setup-Feld oder Build-Config) |
-
-**Bis zur Entscheidung bleibt `RT-PROF-001` BLOCKED.** Es wurde bewusst keine
-Option still umgesetzt.
+**Status (2026-10-18): RESOLVED — Option A (Profil upstream gebaut).**
+`profiles/mobile` existiert jetzt auf `shinon-forge` main (`34163aa`).
+Die App pinnt den neuen Stand `SHINON_FORGE_PIN = "9118bc8"` (main,
+DSH `0.2.1-rc.2`), der `profiles/mobile` enthält (11 Bundles).
+`dsh --profile mobile --dump-config` liefert gegen den gemergten Stand
+einen sauberen DSH-Stack. B-2 ist damit RESOLVED.
 
 ## OPEN-002 — Welche Runtime-Strategie? (BLOCKIEREND)
 
 Node `< 22` ist ausgeschlossen (`engines.node`), native Addons brauchen
-plattformgeprüfte Binaries (B-4). Offen ist, ob proot mit glibc-Rootfs, ein
-eigenständig gebautes Bionic-Binary oder die Anlehnung an ein bestehendes
-Mobile-Projekt der Weg ist. Ohne diese Wahl gibt es kein Runtime-Artefakt und
-damit keinen Punkt, an dem Gate 3 überhaupt greifen kann.
+plattformgeprüfte Binaries (B-4). Offen war, ob proot mit glibc-Rootfs,
+ein eigenständig gebautes Bionic-Binary oder die Anlehnung an ein
+bestehendes Mobile-Projekt der Weg ist.
+
+**Status (2026-10-18): RESOLVED — proot-Debian-Rootfs (DEC-011).**
+Die Runtime-Strategie ist festgelegt: ein Debian-glibc-Userland
+(proot), das den Node-Prozess + `shinon-forge` + `node_modules` enthält.
+Die native Addons laufen in der glibc-Userland (B-4 gelöst). Der
+Runtime-Tarball wird von der Forge-CI gebaut und als Release
+`runtime/9118bc8/shinon-runtime-arm64.tar.zst` an `shinon-forge`
+gehängt; die App lädt ihn per `RUNTIME_TARBALL_URL` und prüft
+`RUNTIME_SHA256` (fail-closed, B-1/B-5 gelöst). Der Rest (Gate 3
+Device-Smoke, B-6) bleibt ein Laufzeitnachweis, nicht eine
+Architekturfrage.
 
 ## OPEN-003 — Fehlertrennung und Diagnose
 

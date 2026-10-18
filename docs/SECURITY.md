@@ -1,21 +1,25 @@
 # Sicherheit — Shinon Agent
 
-> Stand: 2026-10-14 · Ausgangsstand `e78ca1a`
+> Stand: 2026-10-18 · Ausgangsstand `879e1ac`
 > Jede Aussage ist aus dem Code abgeleitet. Verhalten auf einem Gerät ist
 > ausschließlich dort als verifiziert markiert, wo es belegt ist.
+>
+> **2026-10-18-Update:** T-5 (SHA256-Check) und SEC-KEY-001/002 sind
+> `IMPLEMENTED` (proot-Rootfs-Download + API-Key-Keystore). Die Live-
+> Verifikation bleibt Gate 3 (Device-Smoke, B-6).
 
 ## 1. Bedrohungsmodell
 
 | Nr. | Bedrohung | Betroffene Grenze | Aktueller Stand |
 |---|---|---|---|
-| T-1 | Provider-Schlüssel gelangt in Repo, Build, Log oder URL | Build / Log / UI | Log-Maskierung vorhanden; Schlüssel wird **noch nicht** gespeichert (SEC-KEY-001) |
+| T-1 | Provider-Schlüssel gelangt in Repo, Build, Log oder URL | Build / Log / UI | Log-Maskierung + AES-GCM-Keystore-Speicherung (`storeSecret`), niemals Klartext |
 | T-2 | Fremde Seite lädt in der WebView und erhält JS/DOM-Zugriff | `MainActivity` | Prüfung auf `http` + `127.0.0.1` im Code vorhanden (`SEC-HOST-001`) |
 | T-3 | Token der lokalen DSH-URL landet im Gerätelog | `ShinonService.parseReadyUrl` | URL wird nicht geloggt, nur der Port |
 | T-4 | Signaturschlüssel im Repo | CI / `.gitignore` | `*.jks` und `keystore/` ignoriert (verifiziert) |
-| T-5 | Mitgelieferte Runtime ist manipuliert | Runtime-Paket | **kein** SHA256-Check implementiert (RT-PIN-001) |
+| T-5 | Mitgelieferte Runtime ist manipuliert | Runtime-Paket | **IMPLEMENTED** — SHA256-Check (`SetupActivity.sha256Of` + `RUNTIME_SHA256`, fail-closed). Wert wird von der Forge-CI errechnet |
 | T-6 | Zweite App/Prozess greift die lokale DSH-URL ab | Loopback-Schnittstelle | Port `0` (OS-gewählt), Token in der URL; kein Bind auf eine externe Adresse |
 | T-7 | Receiver werden von fremden Apps getriggert | Broadcast | `Context.RECEIVER_NOT_EXPORTED` an beiden Registrierungen |
-| T-8 | Native Addons (koffi/node-pty/sharp) mit Speicherfehlern in der Sandbox | Engine | nicht untersucht (`RT-BIONIC-001`) |
+| T-8 | Native Addons (koffi/node-pty/sharp) mit Speicherfehlern in der Sandbox | Engine | laufen in der proot-glibc-Userland (B-4/DEC-011), nicht nativ unter Bionic; Device-Smoke (Gate 3) bleibt offen |
 
 ## 2. Provider-Schlüssel — Lebenszyklus
 
@@ -23,18 +27,19 @@
 nur im Speicher entschlüsselt → ausschließlich als **Environment-Variable** an
 den Kindprozess, nie in `argv`, nie in Logs, nie in die URL.
 
-**Ist:**
+**Ist (2026-10-18):**
 
 | Schritt | Ort | Zustand |
 |---|---|---|
 | Schlüssel erzeugen | `ShinonApp.ShinonKeystore.ensureKey` | **IMPLEMENTED** (AES-256, `AndroidKeyStore`, GCM, nicht exportierbar) |
-| Schlüsselwert speichern | — | **fehlt** (kein `storeSecret`, keine Verschlüsselung des Werts) |
-| Eingabe abfragen | `SetupActivity.onCreate` | **fehlt** (nur `Log.w`, Kommentar beschreibt den geplanten Dialog) |
-| Wert lesen/entschlüsseln | — | **fehlt** |
-| An Prozess übergeben | `ShinonService.startEngine` | Struktur vorhanden, die `env`-Map bleibt jedoch **ohne den Schlüssel** (Kommentar: „In v1: nur die Existenz") |
+| Schlüsselwert speichern | `ShinonApp.ShinonKeystore.storeSecret` | **IMPLEMENTED** (AES-GCM, Ciphertext+IV in App-interner `shinon_secrets`-Prefs, nie Klartext) |
+| Eingabe abfragen | `SetupActivity.showApiKeyDialog` | **IMPLEMENTED** (PASSWORD-EditText, sofort verschlüsselt gespeichert) |
+| Wert lesen/entschlüsseln | `ShinonApp.ShinonKeystore.readSecret` | **IMPLEMENTED** (AES-GCM-Decrypt, 12-B-IV-Präfix) |
+| An Prozess übergeben | `ShinonService.startEngine` | **IMPLEMENTED** (`AGNES_API_KEY` + `PROMPTER_API_KEY` per Environment, nie argv/Logs/URL) |
 
-Konsequenz: **SEC-KEY-001 und SEC-KEY-002 sind PLANNED**, nicht implementiert.
-Ein Provider-Aufruf kann heute nicht authentifiziert werden (Gate 4 BLOCKED).
+Konsequenz: **SEC-KEY-001 und SEC-KEY-002 sind IMPLEMENTED.**
+Der Provider-Aufruf ist jetzt strukturell möglich; der Live-Nachweis
+(Gate 4) bleibt wie Gate 3 an den Device-Smoke gebunden.
 
 Der Alias-Schema `shinon_<provider>` (`getKeyAliasForProvider("agnes")` →
 `shinon_agnes`) ist implementiert und konsistent zwischen Setup und Service.

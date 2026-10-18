@@ -156,10 +156,18 @@ class ShinonService : Service() {
             val app = applicationContext as ShinonApp
             val env = HashMap<String, String>().apply {
                 putAll(System.getenv())
-                if (app.keystore.hasKey("shinon_agnes")) {
-                    // Der Key-Wert selbst kommt aus dem Keystore (AES-GCM,
-                    // nicht exportierbar). In v1: nur die Existenz; der
-                    // entschlüsselte Wert wird hier injiziert.
+                // B-3-Fix: API-Key aus dem Android-Keystore (AES-GCM,
+                // verschlüsselt gespeichert, nur im Speicher entschlüsselt).
+                // Der Wert geht NUR per Environment an den Node-Prozess —
+                // nie in argv, Logs oder die URL.
+                val agnesKey = app.keystore.getApiKeyForProcess("agnes")
+                if (agnesKey != null) {
+                    put("AGNES_API_KEY", agnesKey)
+                }
+                // Zweite Provider-Route (Prompter One-Shot, opcional):
+                val prompterKey = app.keystore.getApiKeyForProcess("prompter")
+                if (prompterKey != null) {
+                    put("PROMPTER_API_KEY", prompterKey)
                 }
             }
             // ProcessBuilder-Kette: environment() liefert die Map, und

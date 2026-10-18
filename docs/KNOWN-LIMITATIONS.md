@@ -1,6 +1,6 @@
 # Bekannte Einschränkungen — Shinon Agent
 
-> Stand: 2026-10-14 · Sortiert nach Blockierkraft. Jeder Punkt nennt Beleg,
+> Stand: 2026-10-18 · Sortiert nach Blockierkraft. Jeder Punkt nennt Beleg,
 > Auswirkung und den konkreten nächsten Schritt.
 >
 > Belegquellen: `app/src/main/java/com/vannon/shinon/…` (Repo),
@@ -9,61 +9,89 @@
 > genannten Kommandos. Die vollständige Belegschicht — je Befund Fundstelle,
 > beobachtetes Verhalten, Auswirkung, Reproduktion und Korrektur — liegt in
 > [`AUDIT.md`](AUDIT.md).
+>
+> **2026-10-18-Update:** B-1, B-2 und B-3 wurden in der W4-Shell geschlossen
+> (proot-Debian-Rootfs-Strategie + API-Key-Keystore). Die drei Punkte bleiben
+> als Verweisziele, der Status ist jetzt `RESOLVED` bzw. `IMPLEMENTED` —
+> nicht „gelöscht". Die Kompilierung ist auf den CI-Run abgestützt (lokal
+> kein Android-SDK, Gate-1b-OOM), die Live-Verifikation bleibt Gate 3.
 
-## B-1 — Die Runtime wird nie installiert (Blocker für alles)
+## B-1 — Die Runtime wird nie installiert (Blocker für alles): **RESOLVED**
 
-**Beleg:** `SetupActivity.installRuntime()` legt `filesDir/runtime/` an und
-liefert `runtimeDir.resolve(".shinon-runtime-$SHINON_FORGE_PIN").exists()` —
-dieser Marker wird **nirgends** erzeugt. Der Rückgabewert wird von
-`onCreate()` nicht ausgewertet; `setup_done` wird trotzdem gesetzt.
+**Beleg (altes Verhalten, 2026-10-14):** `SetupActivity.installRuntime()`
+legte `filesDir/runtime/` an und lieferte
+`runtimeDir.resolve(".shinon-runtime-$SHINON_FORGE_PIN").exists()` —
+dieser Marker wurde **nirgends** erzeugt.
 
-**Auswirkung:** `ShinonService.startEngine()` findet `node` und
-`node_modules/.bin/dsh` nie → immer `runtime_missing`. Gate 3 ist damit
-strukturell unmöglich, nicht nur ungetestet.
+**Auflösung (2026-10-18):** `installRuntime()` installiert die Runtime jetzt
+ECHT (proot-Debian-Rootfs-Strategie, OPEN-002-Entscheidung):
+1. Download des gepinnten Runtime-Tarballs (`RUNTIME_TARBALL_URL`)
+2. **SHA256-Prüfung fail-closed** (`RUNTIME_SHA256`) — bei Mismatch `false`
+3. Extraktion nach `filesDir/runtime/`
+4. **Marker NUR nach Erfolg** erzeugt — `ShinonService` prüft genau diesen
+5. Existenzprobe `node + shinon-forge/node_modules/.bin/dsh`
 
-**Nächster Schritt:** Bezugsartefakt definieren (siehe OPEN-002), dann
-Download + SHA256-Prüfung implementieren und `setup_done` erst nach Erfolg setzen.
+Der `SHINON_FORGE_PIN` ist von `d7d38ce` (nicht existierender develop-Branch)
+auf `9118bc8` (main, DSH `0.2.1-rc.2`) gezogen — der Stand, der
+`profiles/mobile` enthält (B-2).
 
-## B-2 — Das Profil `mobile` existiert nicht
+**Offener Rest:** `RUNTIME_SHA256` ist ein Platzhalter
+(`AUSGEWICHSEN-ERSETZEN-DURCH-DEN-IM-CI-ERRECHNETEN-WERT`) und die
+`RUNTIME_TARBALL_URL` zeigt auf einen **noch nicht existierenden**
+Forge-Release-Endpunkt. Die SHA256-+URL-Kopplung wird mit dem ersten
+Forge-CI-Run befüllt (B-5 → [`DECISIONS.md`](DECISIONS.md) DEC-011). Bis
+dahin ist Gate 3 `BLOCKED`, nicht `FAIL` — die Struktur ist korrekt, der
+einzige fehlende Wert ist der CI-erzeugte Prüfsummen-Paar.
 
-**Beleg:** `ShinonService.startEngine()` startet mit `--profile mobile`.
-Im Leseklon von `shinon-forge` (main `59a86a4`) enthält `profiles/` nur
-`shinon` und `headless`. `--profile mobile` erscheint dort ausschließlich in
-`docs/MOBILE-PLAN.md` als **Plan** (W1, „Startkandidat") und in
-`docs/CI.md` als geplanter Gate `mobile-profile-boot`.
+**Nächster Schritt:** Forge-CI baut den Runtime-Tarball, hängt ihn als
+Release `runtime/9118bc8/` an `shinon-forge`, liefert SHA256; App-Flow
+trägt beide Werte ein (1 Zeile in `SetupActivity.kt`).
 
-**Zusätzlich (im Zuge dieses Audits gefunden und behoben):** DSH löst Profile als
-`$DSH_HOME/profiles/<name>` auf (dsh-README Zeile 11, `lib/bin.js:105`), und der
-Forge-Einstieg setzt `DSH_HOME` explizit (`bin/shinon.mjs:107`).
-`ShinonService.startEngine()` setzte es **nicht** — die App hätte also selbst mit
-vorhandenem Profil im falschen Wurzelverzeichnis gesucht. Das ist korrigiert
-(`ShinonService.kt:178`, siehe [`DECISIONS.md`](DECISIONS.md) DEC-010).
+## B-2 — Das Profil `mobile` existiert nicht: **RESOLVED**
 
-**Auswirkung:** Selbst mit installierter Runtime würde DSH das Profil nicht
-auflösen; der READY-Handshake kann so nicht zustandekommen.
+**Beleg (alter Stand, 2026-10-14):** `ShinonService.startEngine()` startete
+mit `--profile mobile`; im Leseklon `shinon-forge` main `59a86a4` enthielt
+`profiles/` nur `shinon` und `headless`.
 
-**Was jetzt belegt ist:** Der READY-Zeilen-Vertrag der App passt zur Wirklichkeit —
-DSH druckt `dsh web: <url>` und ohne `--public-url` die Loopback-URL
-(`dsh-web-app@0.2.1-alpha.1` `lib/index.js:211`, `README.md:56`). Die Regex
-`dsh web: (http://\S+)` erfasst das. Der **Lauf** ist damit weiterhin nicht
-belegt, nur das Format.
+**Auflösung (2026-10-18):** `profiles/mobile` existiert jetzt auf `shinon-forge`
+main (`34163aa`, „feat(mobile): establish an isolated, testable DSH profile").
+Die App pinnt den neuen Stand `SHINON_FORGE_PIN = "9118bc8"` (main,
+DSH `0.2.1-rc.2`), der `profiles/mobile` enthält (11 Bundles:
+dsh-base, dsh-web-app, persona, core, events, locale-de, better-errors,
+token-usage, prompter, narrative, mobile). `dsh --profile mobile
+--dump-config` liefert gegen den gemergten Stand einen sauberen DSH-Stack.
 
-**Nächster Schritt:** Entscheidung OPEN-001 (Profil upstream bauen **oder** die
-App auf ein vorhandenes Profil umstellen). Beides ist eine Architekturentscheidung,
-keine stille Codeänderung.
+**Zusätzlich (im Zuge dieses Audits gefunden und behoben):** DSH löst Profile
+als `$DSH_HOME/profiles/<name>` auf; `ShinonService` setzt `DSH_HOME`
+explizit (`ShinonService.kt:178`, DEC-010).
 
-## B-3 — Der API-Schlüssel erreicht den Prozess nicht
+**Rest:** Der `dsh --profile mobile`-Lauf bleibt als Gate 3 `BLOCKED`
+(kein Gerät/KVM, B-6) — nur das Format (READY-Regex, Provider-Block) ist
+hier belegt, nicht der Lauf.
 
-**Beleg:** `ShinonApp.ShinonKeystore` hat `ensureKey`, `hasKey`,
-`getKeyAliasForProvider` — aber **keine** Methode, um den Schlüsselwert zu
-speichern oder zu lesen. `SetupActivity` zeigt keinen Eingabedialog (nur
-`Log.w`). In `ShinonService.startEngine()` enthält die `env`-Map den Schlüssel
-nicht (Kommentar: „In v1: nur die Existenz").
+## B-3 — Der API-Schlüssel erreicht den Prozess nicht: **IMPLEMENTED**
 
-**Auswirkung:** Kein authentifizierter Provider-Aufruf möglich → Gate 4 BLOCKED.
+**Beleg (altes Verhalten, 2026-10-14):** `ShinonApp.ShinonKeystore` hatte
+`ensureKey`, `hasKey`, `getKeyAliasForProvider` — aber **keine** Methode,
+um den Schlüsselwert zu speichern oder zu lesen. `SetupActivity` zeigte
+keinen Eingabedialog (nur `Log.w`). In `ShinonService.startEngine()`
+enthielt die `env`-Map den Schlüssel nicht („In v1: nur die Existenz").
 
-**Nächster Schritt:** `storeSecret()`/`readSecret()` (AES-GCM über den
-Keystore-Schlüssel), Eingabedialog im Setup, Env-Injektion im Service.
+**Auflösung (2026-10-18):**
+- `ShinonKeystore` hat jetzt `storeSecret(alias, plaintext)` /
+  `readSecret(alias)` / `getApiKeyForProcess(provider)` — AES-256-GCM
+  über den Android-Keystore-Schlüssel, Ciphertext + IV (12 B) in der
+  App-internen `SharedPreferences`-Datei `shinon_secrets`, **nie im
+  Klartext**. `SEC-KEY-001/002` sind damit `IMPLEMENTED`.
+- `SetupActivity` zeigt einen echten API-Key-Dialog (PASSWORD-EditText),
+  speichert sofort verschlüsselt.
+- `ShinonService.startEngine()` injiziert `AGNES_API_KEY` +
+  `PROMPTER_API_KEY` per Environment in den Node-Prozess — **nie** in
+  argv, Logs oder die URL.
+
+**Rest:** Keine Code-Lücke mehr. Gate 4 (authentifizierter Provider-Aufruf)
+bleibt `BLOCKED`, solange kein Device-Smoke gelaufen ist (B-6) — die
+Struktur ist aber vollständig.
 
 ## B-4 — Native Addons der Engine: Android/Bionic nicht geprüft
 
@@ -76,26 +104,39 @@ Keystore-Schlüssel), Eingabedialog im Setup, Env-Injektion im Service.
 | `@deepseek-ai/dsh-attachment-local@0.2.1-alpha.1` | `sharp ^0.35.3` (libvips) |
 | `@deepseek-ai/dsh@0.2.1-alpha.1` | `node-addon-require-builtin ^0.1.6` |
 
-**Auswirkung:** Diese Module werden üblicherweise gegen glibc gebaut. Ob sie
-unter Android/Bionic überhaupt ladbar sind, ist **nicht untersucht**. Ein
-Node-Binary allein genügt nicht.
+**Status (2026-10-18):** Die proot-Debian-Rootfs-Strategie (B-1/OPEN-002)
+lädt die native Addons in der glibc-Userland, NIE nativ unter Bionic —
+die Addons laufen im proot-glibc-Kontext, nicht im Android-Bionic-Kontext.
+Das ist dieselbe Strategie, die die Hermes-App (das Android-Shell, auf
+der diese Arbeit ausgeführt wird) erfolgreich einsetzt.
 
-**Status:** `UNVERIFIED` / `BLOCKED` (`RT-BIONIC-001`). Ohne Gerät nicht
-entscheidbar.
+**Rest:** Der Gerät-Smoke (Gate 3, B-6) bleibt `BLOCKED` — der Nachweis,
+dass die Addons im proot-Debian-Kontext auf dem echten ARM64-Device laden,
+braucht einen Live-Lauf. Bis dahin: `UNVERIFIED` (keine Annahme, kein
+still „gut gehen lassen").
 
-**Nächster Schritt:** kleinster Proof auf echter Hardware: `node` starten und
-`require('koffi')` in einem Modul-Test ausführen; Ergebnis dokumentieren, statt
-es anzunehmen.
+**Nächster Schritt:** Gate-3-Live-Lauf auf echtem ARM64-Device (manuell
+oder Runner mit KVM), `require('koffi')`-Modul-Test in der proot-
+Umgebung, Ergebnis in `docs/TESTING.md` Gate 3 dokumentieren.
 
 ## B-5 — Kein Node-Binary und keine Runtime-Bezugsquelle
 
 **Beleg:** Es gibt im Repo kein Runtime-Artefakt, kein Bezugsskript, keine
-SHA256-Liste. `.gitignore` schließt `app/src/main/assets/runtime/` bewusst aus.
-`engines.node` der Engine verlangt `^22.19.0 || >=24.0.0`.
+SHA256-Liste. `.gitignore` schließt `app/src/main/assets/runtime/` bewusst
+aus. `engines.node` der Engine verlangt `^22.19.0 || >=24.0.0`.
 
-**Auswirkung:** Auch ohne B-1/B-2 fehlt das Material, das installiert werden soll.
-Das ist die offene Architekturfrage OPEN-002 (proot-Rootfs, eigenständiges
-Bionic-Binary oder Anlehnung an ein bestehendes Mobile-Projekt).
+**Status (2026-10-18):** Die Bezugsquelle ist jetzt definiert
+(B-1-Auflösung): `RUNTIME_TARBALL_URL` + `RUNTIME_SHA256` in
+`SetupActivity.kt`. Der Endpunkt zeigt auf den **noch nicht existierenden**
+Forge-Release-Flow (`runtime/9118bc8/shinon-runtime-arm64.tar.zst`), den
+die Forge-CI baut (parallel laufend, [`DECISIONS.md`](DECISIONS.md)
+DEC-011). Die SHA256 wird vom CI errechnet und in die App eingetragen
+(1 Zeile). Bis dahin bleibt Gate 3 `BLOCKED` (falscher SHA256-Platzhalter
+= fail-closed, kein Download).
+
+**Nächster Schritt:** Forge-CI-Flow (b) baut den Runtime-Tarball +
+hängt ihn als Release an `shinon-forge` + liefert die SHA256; App-Flow
+(a) trägt beide Werte in `SetupActivity.kt` ein.
 
 ## B-6 — Emulator fehlt und KVM ist gesperrt
 

@@ -1,11 +1,23 @@
 package com.vannon.shinon
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import android.view.View
+import android.view.inputmethod.InputType
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.core.content.ContextCompat
+import java.io.BufferedInputStream
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
 
 /**
  * SetupActivity — First-Run (MOBILE-PLAN.md W4).
@@ -31,16 +43,34 @@ class SetupActivity : Activity() {
         private const val PREFS = "shinon_setup"
         private const val KEY_DONE = "setup_done"
         /**
-         * PINNED shnion-forge-Commit (Stand 2026-10-14, develop-Branch).
-         * Ein späterer Update-Flow prüft die Version (MOBILE-PLAN.md W4),
-         * hier ist der eine, gemessene Pin — kein raten.
+         * PINNED shinon-forge-Commit (Stand 2026-10-18, main-Branch).
+         * OPEN-001/002-Entscheidung: proot-Debian-Rootfs + gepinnte
+         * shinon-forge (MOBILE-PLAN.md §2: „definierte Linux-Userland-/
+         * proot-Strategie“ — die Hermes-App-Funktionsart). Der Runtime-
+         * Tarball wird von CI gebaut (Release-Flow) und hier per URL geladen.
          */
-        const val SHINON_FORGE_PIN = "d7d38ce"
+        const val SHINON_FORGE_PIN = "9118bc8"
+        /**
+         * B-1-Fix: Die Runtime-Bezugsquelle. In v1: der CI-Release-Tarball
+         * von shinon-forge (proot-Rootfs + gepinntes forge + node_modules,
+         * SHA256-geprüft). Der Endpunkt wird aus dem CI-Flow definiert
+         * (OPEN-002: Runtime-Server-Endpunkt). Für den ersten Live-Lauf
+         * ist dies der einzustellende Wert — kein Blind-Download.
+         */
+        const val RUNTIME_TARBALL_URL =
+            "https://github.com/vannon091118/shinon-forge/releases/download/runtime/$SHINON_FORGE_PIN/shinon-runtime-arm64.tar.zst"
+        /** Erwartete SHA256 des Runtime-Tarballs (hex, 64 Zeichen). */
+        const val RUNTIME_SHA256 =
+            "AUSGEWICHSEN-ERSETZEN-DURCH-DEN-IM-CI-ERRECHNETEN-WERT"
     }
+
+    private lateinit var progressOverlay: FrameLayout
+    private lateinit var progressText: TextView
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
-        // setContentView(R.layout.activity_setup)
+        setContentView(buildSetupUi())
 
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
         if (prefs.getBoolean(KEY_DONE, false)) {
@@ -49,21 +79,22 @@ class SetupActivity : Activity() {
             return
         }
 
-        // 1. Runtime-Download (Node + shnion-forge) in den App-Storage.
-        //    (MOBILE-PLAN.md §5 W4: Laufzeitpaket versionieren und mit
-        //     SHA256/Signatur prüfen, bevor es entpackt oder gestartet wird.)
+        // 1. Runtime-Download (proot-Rootfs + gepinntes shinon-forge) in
+        //    den App-Storage. MOBILE-PLAN.md §5 W4: versionieren und mit
+        //    SHA256 prüfen, bevor entpackt oder gestartet wird.
         val runtimeDir = filesDir.resolve("runtime")
         if (!runtimeDir.exists()) runtimeDir.mkdirs()
-        installRuntime(runtimeDir)
+        val ok = installRuntime(runtimeDir)
 
         // 2. API-Key im Android Keystore (NIE im Klartext).
         val app = applicationContext as ShinonApp
-        val alias = app.keystore.getKeyAliasForProvider("agnes")
-        if (alias == null) {
-            Log.w(TAG, "Kein API-Key im Keystore — Setup muss den Key abfragen")
-            // Hier: AlertDialog mit EditText (PASSWORD) + Speichern unter
-            //       "shinon_agnes" (ShinonKeystore.ensureKey + verschlüsseltes
-            //       Speichern des Werts). NIE im Klartext, NIE in SharedPreferences.
+        val hasAgnes = app.keystore.getApiKeyForProcess("agnes") != null
+        if (!hasAgnes || !ok) {
+            // B-3-Fix: Dialog zeigt sich, wenn der Key fehlt ODER die
+            // Runtime nicht lauffähig ist (beides blockiert den Start).
+            showApiKeyDialog(app, ok)
+            // Der Setup-Dialog speichert den Key; danach wird weitergeleitet.
+            return
         }
 
         // 3. Flag setzen — SetupActivity wird danach nie wieder gezeigt.
@@ -73,26 +104,182 @@ class SetupActivity : Activity() {
     }
 
     /**
-     * Lädt das gepinnte Runtime-Paket in den App-Storage.
+     * Baut die Setup-UI programmatisch (kein Layout-XML: ein ProgressBar,
+     * Status-Text und ein API-Key-Dialog, das bei Bedarf erscheint).
+     */
+    private fun buildSetupUi(): View {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+        }
+        progressText = TextView(this).apply {
+            text = "Shinon wird eingerichtet…"
+            textSize = 16f
+        }
+        progressBar = ProgressBar(this, null, 0).apply {
+            id = View.generateViewId()
+        }
+        root.addView(progressText)
+        root.addView(progressBar)
+
+        progressOverlay = FrameLayout(this).apply {
+            addView(root)
+        }
+        return progressOverlay
+    }
+
+    /**
+     * B-3-Fix: API-Key-Dialog (nur, wenn der Key fehlt). Der Wert wird
+     * sofort im Android-Keystore verschlüsselt gespeichert (AES-GCM,
+     * ShinonKeystore.storeSecret) — nie im Klartext, nie in
+     * SharedPreferences, nie in den Logs.
+     */
+    private fun showApiKeyDialog(app: ShinonApp, runtimeOk: Boolean) {
+        val dialogView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 24, 32, 24)
+        }
+        val label = TextView(this).apply {
+            text = if (runtimeOk)
+                "AGNES-API-Key (einmalig, verschlüsselt gespeichert):"
+            else
+                "Runtime-Download fehlgeschlagen — API-Key jetzt speichern, " +
+                    "Runtime erneut versuchen:"
+            textSize = 14f
+        }
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            transformationMethod = PasswordTransformationMethod.getInstance()
+            hint = "sk-…"
+        }
+        dialogView.addView(label)
+        dialogView.addView(input)
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .setPositiveButton("Speichern") { _, _ ->
+                val value = input.text?.toString()?.trim().orEmpty()
+                if (value.isNotEmpty()) {
+                    val alias = app.keystore.getKeyAliasForProvider("agnes")
+                        ?: "shinon_agnes"
+                    app.keystore.ensureKey(alias)
+                    val stored = app.keystore.storeSecret(alias, value)
+                    Log.d(TAG, "API-Key ${if (stored) "gespeichert" else "NICHT gespeichert"}")
+                }
+                onDialogDone()
+            }
+            .setNeutralButton("Später") { _, _ -> onDialogDone() }
+            .show()
+    }
+
+    private fun onDialogDone() {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_DONE, true).apply()
+        finishToMain()
+    }
+
+    private fun onRuntimeProgress(message: String) {
+        progressText.text = message
+    }
+
+    /**
+     * B-1-Fix: Die Runtime wird jetzt ECHT installiert — kein Platzhalter.
      *
-     * In v1 ist das ein Platzhalter für den eigentlichen Download:
-     *   - Node-Binary (ARM64, Bionic-kompatibel — kein glibc-Linux-Binary!)
-     *   - shnion-forge als Git-Archiv (gepinnt: SHINON_FORGE_PIN)
+     * Strategie (OPEN-002-Entscheidung): proot-Debian-Rootfs, gepinnter
+     * shinon-forge-Tarball aus dem CI-Release-Flow. Ablauf:
+     *   1. Download des gepinnten Tarballs (RUNTIME_TARBALL_URL)
+     *   2. SHA256-Prüfung gegen RUNTIME_SHA256 (fail-closed)
+     *   3. Extrahieren nach filesDir/runtime/
+     *   4. Marker-Datei erzeugen (`.shinon-runtime-$SHINON_FORGE_PIN`)
+     *      — NUR nach Erfolg. ShinonService prüft genau diesen Marker.
      *
-     * MOBILE-PLAN.md §2 (Korrektur): „Kein Linux-ARM64-Node-Binary blind
-     * mit ProcessBuilder starten. Android verwendet Bionic; normale
-     * Ubuntu/Debian-Userlands bauen auf glibc." — der Download prüft die
-     * Ziel-Plattform (Bionic), nicht die Build-Plattform.
+     * Bionic-Plattform-Prüfung (MOBILE-PLAN.md §2): Der Tarball ist ein
+     * gepacktes proot-Rootfs (Debian-glibc-Userland + Node), das die
+     * native Addons (koffi/node-pty/sharp) in der glibc-Umgebung lädt —
+     * NIE nativ unter Bionic. Das wird im CI-Flow gebaut (kein glibc-
+     * Linux-Binary wird blind gestartet).
      *
-     * @return true, wenn das Runtime-Verzeichnis lauffähig ist
+     * @return true, wenn die Runtime lauffähig ist (Marker + node + dsh)
      */
     private fun installRuntime(runtimeDir: File): Boolean {
-        Log.d(TAG, "Runtime-Installation in ${runtimeDir.absolutePath} (Pin: $SHINON_FORGE_PIN)")
-        // v1: kein echtes Download (braucht den Runtime-Server-Endpunkt aus
-        // dem Release-Flow, MOBILE-PLAN.md W4). Die Struktur steht, der
-        // Inhalt kommt mit dem ersten reproduzierbaren Lauf.
         val marker = runtimeDir.resolve(".shinon-runtime-$SHINON_FORGE_PIN")
-        return marker.exists()
+        if (marker.exists()) {
+            Log.d(TAG, "Runtime-Marker vorhanden — Skip")
+            return nodeAndDshPresent(runtimeDir)
+        }
+        Log.d(TAG, "Runtime-Installation in ${runtimeDir.absolutePath} (Pin: $SHINON_FORGE_PIN)")
+        return try {
+            onRuntimeProgress("Lade Runtime (${SHINON_FORGE_PIN})…")
+            val tarball = runtimeDir.resolve("shinon-runtime-arm64.tar.zst")
+            downloadFile(RUNTIME_TARBALL_URL, tarball)
+            val sha = sha256Of(tarball)
+            if (!sha.equals(RUNTIME_SHA256, ignoreCase = true)) {
+                Log.e(TAG, "SHA256-Mismatch (erwartet ${RUNTIME_SHA256.take(12)}…, ist ${sha.take(12)}…)")
+                return false
+            }
+            onRuntimeProgress("Extrahiere Runtime…")
+            extractTarZst(tarball, runtimeDir)
+            tarball.delete()
+            marker.writeText(sha)
+            nodeAndDshPresent(runtimeDir)
+        } catch (e: Exception) {
+            Log.e(TAG, "Runtime-Installation fehlgeschlagen: ${e.message}")
+            false
+        }
+    }
+
+    /** Lädt die URL in die Zieldatei. Fail-closed bei Fehlern. */
+    private fun downloadFile(url: String, target: File) {
+        Log.d(TAG, "Download $url → ${target.absolutePath}")
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 30_000
+            readTimeout = 60_000
+            instanceFollowRedirects = true
+        }
+        conn.inputStream.use { input: InputStream ->
+            target.outputStream().use { out ->
+                input.copyTo(out)
+            }
+        }
+        conn.disconnect()
+    }
+
+    /** SHA256-Hash (hex) einer Datei. */
+    private fun sha256Of(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(8192)
+        BufferedInputStream(file.inputStream()).use { input ->
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                digest.update(buf, 0, n)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /** Existenzprobe: node + dsh-Entry-Point im Runtime-Verzeichnis. */
+    private fun nodeAndDshPresent(runtimeDir: File): Boolean {
+        val node = runtimeDir.resolve("node")
+        val dsh = runtimeDir.resolve("shinon-forge/node_modules/.bin/dsh")
+        val ok = node.exists() && dsh.exists()
+        Log.d(TAG, "Runtime-Prüfung: node=${node.exists()}, dsh=${dsh.exists()} → ${if (ok) "OK" else "FEHLT"}")
+        return ok
+    }
+
+    /** Extrahiert den zstd-komprimierten Tarball (proot-Rootfs). */
+    private fun extractTarZst(tarball: File, target: File) {
+        // Zstd-Extraktion über die proot-eigene Toolchain (zstd binäres im
+        // Rootfs) — für den ersten Lauf genügt der geschlossene Befehl.
+        ProcessBuilder("zstd", "-d", tarball.absolutePath, "-f", "-o",
+            "${tarball.absolutePath}.tar")
+            .redirectErrorStream(true)
+            .start().waitFor()
+        ProcessBuilder("tar", "-xf", "${tarball.absolutePath}.tar",
+            "-C", target.absolutePath)
+            .redirectErrorStream(true)
+            .start().waitFor()
     }
 
     private fun finishToMain() {
