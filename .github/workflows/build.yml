@@ -57,10 +57,17 @@ jobs:
           mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
           mv /tmp/cmdline/cmdline-tools/* "$ANDROID_HOME/cmdline-tools/latest/"
           # 3) Plattform-34 + Build-Tools installieren (Yes-to-All)
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
-              "platforms;android-34" \
-              "build-tools;34.0.0" \
-              "platform-tools" 2>/dev/null
+          #    `yes | sdkmanager` bricht unter pipefail mit SIGPIPE, wenn
+          #    sdkmanager fertig ist und den Pipe-Reader schließt. Fix:
+          #    zuerst --licenses akzeptieren (mit || true gegen SIGPIPE),
+          #    dann sdkmanager OHNE Pipe-Chain (die License-Datei liegt
+          #    schon im SDK-Verzeichnis, kein interaktiver Prompt mehr).
+          yes 2>/dev/null | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            --licenses 2>/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools" 2>/dev/null
           # 4) local.properties (der AGP-Pfad, VOR dem Gradle-Start)
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "SDK-Prüfung: $(ls $ANDROID_HOME/platforms/)"
