@@ -169,7 +169,7 @@ jobs:
       - name: Create Release (only when tag is set)
         if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
         run: |
           NOTES_FILE="RELEASE_NOTES.md"
           # Die Release-Notes liegen im Repo (versioniert, mit Humor);
