@@ -1,14 +1,14 @@
 package com.vannon.shinon
 
 import android.app.Application
+import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import java.security.KeyStore
-import java.security.SecureRandom
-import java.util.Base64
 
 /**
  * ShinonApp — Application-Klasse für die Android-Shell.
@@ -149,8 +149,8 @@ class ShinonKeystore(private val app: Application) {
             cipher.init(Cipher.ENCRYPT_MODE, key)
             val iv = cipher.iv // 12 Bytes, GCM-Standard
             val ciphertext = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
-            val blob = Base64.encode(iv + ciphertext)
-            app.getSharedPreferences(PREFS, app.MODE_PRIVATE)
+            val blob = Base64.encodeToString(iv + ciphertext, Base64.DEFAULT)
+            getSharedPreferences(PREFS, MODE_PRIVATE)
                 .edit()
                 .putString("secret_$keyAlias", blob)
                 .apply()
@@ -174,7 +174,7 @@ class ShinonKeystore(private val app: Application) {
             return null
         }
 
-        val blob = app.getSharedPreferences(PREFS, app.MODE_PRIVATE)
+        val blob = getSharedPreferences(PREFS, MODE_PRIVATE)
             .getString("secret_$keyAlias", null) ?: return null
 
         return try {

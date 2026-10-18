@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.text.method.PasswordTransformationMethod
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputType
@@ -15,6 +16,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import java.io.BufferedInputStream
 import java.io.File
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -58,7 +60,7 @@ class SetupActivity : Activity() {
          * ist dies der einzustellende Wert — kein Blind-Download.
          */
         const val RUNTIME_TARBALL_URL =
-            "https://github.com/vannon091118/shinon-forge/releases/download/runtime/$SHINON_FORGE_PIN/shinon-runtime-arm64.tar.zst"
+            "https://github.com/vannon091118/shinon-forge/releases/download/runtime-$SHINON_FORGE_PIN/shinon-runtime-arm64.tar.zst"
         /** Erwartete SHA256 des Runtime-Tarballs (hex, 64 Zeichen). */
         const val RUNTIME_SHA256 =
             "AUSGEWICHSEN-ERSETZEN-DURCH-DEN-IM-CI-ERRECHNETEN-WERT"
