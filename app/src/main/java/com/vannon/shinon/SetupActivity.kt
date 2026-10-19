@@ -52,7 +52,7 @@ class SetupActivity : Activity() {
          * proot-Strategie“ — die Hermes-App-Funktionsart). Der Runtime-
          * Tarball wird von CI gebaut (Release-Flow) und hier per URL geladen.
          */
-        const val SHINON_FORGE_PIN = "d2dbdf4"
+        const val SHINON_FORGE_PIN = "4525301"
         /**
          * B-1-Fix: Die Runtime-Bezugsquelle. In v1: der CI-Release-Tarball
          * von shinon-forge (proot-Rootfs + gepinntes forge + node_modules,
@@ -64,7 +64,7 @@ class SetupActivity : Activity() {
             "https://github.com/vannon091118/shinon-forge/releases/download/runtime-$SHINON_FORGE_PIN/shinon-runtime-arm64.tar.zst"
         /** Erwartete SHA256 des Runtime-Tarballs (hex, 64 Zeichen). */
         const val RUNTIME_SHA256 =
-            "d776def11b852ba896288bdda644c31c100ab89f07e468684704dd2b87294868"
+            "3029f7b2b6140ba6bd7cd76ba2c7abe17fb12e49f984794cecc2cf36fa311e97"
     }
 
     private lateinit var progressOverlay: FrameLayout
@@ -318,9 +318,13 @@ class SetupActivity : Activity() {
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    /** Existenzprobe: node + dsh-Entry-Point im Runtime-Verzeichnis. */
+    /** Existenzprobe: node + dsh-Entry-Point im Runtime-Verzeichnis.
+     *  Der proot-Rootfs-Tarball (CI runtime-release.yml) enthält:
+     *    node/bin/node  (ARM64-ELF, 115MB)
+     *    shinon-forge/node_modules/.bin/dsh
+     */
     private fun nodeAndDshPresent(runtimeDir: File): Boolean {
-        val node = runtimeDir.resolve("node")
+        val node = runtimeDir.resolve("node/bin/node")
         val dsh = runtimeDir.resolve("shinon-forge/node_modules/.bin/dsh")
         val ok = node.exists() && dsh.exists()
         Log.d(TAG, "Runtime-Prüfung: node=${node.exists()}, dsh=${dsh.exists()} → ${if (ok) "OK" else "FEHLT"}")

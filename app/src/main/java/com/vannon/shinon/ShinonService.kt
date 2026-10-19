@@ -120,7 +120,7 @@ class ShinonService : Service() {
         restartAttempts = 0
 
         val runtimeDir = filesDir.resolve("runtime")
-        val nodeBin = runtimeDir.resolve("node")
+        val nodeBin = runtimeDir.resolve("node/bin/node")
         val dshDir = runtimeDir.resolve("shinon-forge")
 
         // Entkopplung (MOBILE-PLAN.md W4): Die DSH-Engine (shinon-forge)
