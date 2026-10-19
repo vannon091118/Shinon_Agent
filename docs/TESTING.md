@@ -97,19 +97,42 @@ uses-permission: INTERNET, FOREGROUND_SERVICE,
 application-label:'Shinon'
 ```
 
-### Gate 3 — Runtime-Smoke (Gate A): **BLOCKED**
+### Gate 3 — Runtime-Smoke (Gate A): **PARTIAL** (Stand 2026-10-18)
 
-Nicht ausgeführt. Gründe (jeder einzeln ausreichend):
+**Vorher (2026-10-14): `BLOCKED` — kein Gerät, kein Emulator, kein KVM,
+kein Runtime-Paket, kein mobiles Profil.**
 
-1. **Kein Gerät, kein Emulator:** `avdmanager list avd` ist leer,
-   `sdkmanager --list_installed` enthält **kein** `system-images`.
-2. **Kein KVM-Zugriff:** `/dev/kvm` existiert (`root:kvm`, Modus `660`), ist für
-   diesen Benutzer aber weder lesbar noch schreibbar (`id`: nur Gruppe
-   `freebuff`) — ein Hardware-Emulator ist damit nicht möglich.
-3. **Kein Runtime-Paket:** `SetupActivity.installRuntime()` ist ein Platzhalter
-   und erzeugt nie einen Marker; es gibt kein Bezugsartefakt.
-4. **Kein passendes Profil:** Der Dienst startet `--profile mobile`, das in
-   `shinon-forge` nicht existiert (dort nur geplant).
+**Jetzt (2026-10-18): `PARTIAL` — Gerät bestätigt, Service startet,
+Engine fehlt planmäßig.**
+
+Ausgeführte Prüfung auf dem echten ARM64-Device:
+
+```
+App installieren → SetupActivity → ShinonService START
+→ Foreground-Notification "Shinon läuft" erscheint ✅
+→ service alive ✅
+→ nodeBin (filesDir/runtime/node/bin/node): exists() = false ⚠️
+→ dshVendor (filesDir/runtime/shinon-forge/node_modules/.bin/dsh): exists() = false ⚠️
+→ broadcastEnd("runtime_missing") — korrekt abgefangen, kein Crash
+→ Logcat: "Runtime/Vendor fehlt unter … (node=false, dsh-vendor=false)
+   — SetupActivity muss vor dem Start laufen"
+```
+
+**Befund:** Der Service-Lifecycle läuft korrekt (Start, Foreground,
+Clean-Exit, kein Orphan). Die Engine fehlt **planmäßig**, weil
+`SetupActivity.installRuntime()` noch nicht erfolgreich geladen hat
+(Tarball-Download + zstd/tar-Extraktion — B-4-Bootstrap-Limitation).
+Die Fail-Closed-Extraktion (Commit `76ba6d7`) bricht jetzt sauber ab,
+statt stumm weiterzulaufen.
+
+**Was noch fehlt für `PASS`:**
+1. `SetupActivity.installRuntime()` erfolgreich durchlaufen
+   (Runtime-Tarball in `filesDir/runtime/` extrahiert)
+2. `nodeAndDshPresent()` → `true` (node + dsh existieren)
+3. `ShinonService.startEngine()` → READY-URL Broadcast (dsh bootet)
+
+**Nächster Schritt:** Forge-Runtime-Tarball (CI `runtime-release.yml`)
+→ `SetupActivity` lädt + extrahiert → Gate 3 `PASS`.
 
 **Was ohne Gerät erreichbar war — und kein Gate-3-Ersatz ist:** Das
 READY-Zeilenformat wurde **aus der DSH-Registry-Quelle** belegt

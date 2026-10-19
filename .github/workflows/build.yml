@@ -17,9 +17,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release-Tag (z. B. v0.0.1) — leer = nur Build, kein Release"
+        description: "Release-Tag (z. B. v0.1.0) — leer = nur Build, kein Release"
         required: false
         default: ""
+
+# GITHUB_TOKEN braucht contents: write, damit der Release-Step
+# (gh release create) ohne zusätzliches PAT laufen kann.
+permissions:
+  contents: write
 
 jobs:
   android-build:
@@ -169,11 +174,15 @@ jobs:
       - name: Create Release (only when tag is set)
         if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           NOTES_FILE="RELEASE_NOTES.md"
-          # Die Release-Notes liegen im Repo (versioniert, mit Humor);
-          # der CI nimmt sie 1:1 — kein generischer Auto-Müll.
+          # Fine-grained PAT (Contents: Read + Write) — kein GITHUB_TOKEN,
+          # der für Releases nicht ausreicht. Kein Secret-Neuanlage:
+          # das GITHUB_TOKEN ist der Actions-Default (Contents: Write
+          # über workflow permissions).
+          echo "Release-Tag: ${{ inputs.tag }}"
           gh release create "${{ inputs.tag }}" \
             app/build/outputs/apk/release/*.apk \
             --title "Shinon Agent ${{ inputs.tag }}" \
